@@ -44,4 +44,47 @@ class Validators {
     }
     return null;
   }
+
+  static String? dob(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Date of birth is required';
+    }
+
+    try {
+      // Expecting format: d/M/yyyy
+      final parts = value.split('/');
+      if (parts.length != 3) {
+        return 'Invalid date format';
+      }
+
+      final day = int.parse(parts[0]);
+      final month = int.parse(parts[1]);
+      final year = int.parse(parts[2]);
+
+      final dobDate = DateTime(year, month, day);
+      final today = DateTime.now();
+
+      int age = today.year - dobDate.year;
+      if (today.month < dobDate.month ||
+          (today.month == dobDate.month && today.day < dobDate.day)) {
+        age--;
+      }
+
+      const int minAge = 18;
+      if (age < minAge) {
+        return 'You must be at least 18 years old';
+      }
+    } catch (_) {
+      return 'Invalid date format';
+    }
+
+    return null;
+  }
+
+  static String? gender(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please select a gender';
+    }
+    return null;
+  }
 }

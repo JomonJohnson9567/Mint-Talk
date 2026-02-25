@@ -2,6 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/utils/validators.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/phone_number/presentation/cubit/phone_form_state.dart';
 
+import 'package:injectable/injectable.dart';
+
+@injectable
 class PhoneFormCubit extends Cubit<PhoneFormState> {
   PhoneFormCubit() : super(const PhoneFormState());
 

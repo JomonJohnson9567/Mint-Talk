@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/otp_verification/presentation/screen/otp_verification.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/success/presentation/screen/success_screen.dart';
+import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
+import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/host_profile_screen/presentation/screen/host_profile_screen.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/privacy_policy/privacy_policy.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/splash/splash.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/welcome/welcome.dart';
@@ -11,8 +14,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/phone_number/presentation/cubit/country_selector_cubit.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart';
 import 'package:mint_talk/features/user_side/auth/presentation/screens/otp_verification/presentation/cubit/otp_verification/otp_verification_cubit.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/core/transitions/routes/morphing_page_route.dart';
+import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/screen/profile_setup.dart';
+import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/profile_setup_cubit.dart';
+import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/success_setup_screen.dart';
+import 'package:mint_talk/features/user_side/main_navigation/presentation/screen/main_navigation_screen.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/screen/settings_screen.dart';
+import 'package:mint_talk/core/di/injection.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -49,8 +59,8 @@ class AppRouter {
       case AppRoutes.phoneNumber:
         final screen = MultiBlocProvider(
           providers: [
-            BlocProvider(create: (context) => CountrySelectorCubit()),
-            BlocProvider(create: (context) => PhoneFormCubit()),
+            BlocProvider(create: (context) => getIt<CountrySelectorCubit>()),
+            BlocProvider(create: (context) => getIt<PhoneFormCubit>()),
           ],
           child: const PhoneScreen(),
         );
@@ -61,13 +71,43 @@ class AppRouter {
 
       case AppRoutes.otpVerification:
         final screen = BlocProvider(
-          create: (context) => OtpVerificationCubit(),
+          create: (context) => getIt<OtpVerificationCubit>(),
           child: const OtpVerificationScreen(),
         );
         if (useMorphingTransition) {
           return _buildMorphingRoute(settings: settings, child: screen);
         }
         return MaterialPageRoute(settings: settings, builder: (_) => screen);
+      case AppRoutes.successSetup:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const SuccessSetupScreen(),
+        );
+
+      case AppRoutes.mainNavigation:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const MainNavigationScreen(),
+        );
+      case AppRoutes.hostProfileScreen:
+        final user = settings.arguments as HomeUserEntity;
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => HostProfileScreen(user: user),
+        );
+      case AppRoutes.settingsScreen:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const SettingsScreen(),
+        );
+      case AppRoutes.callScreen:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => BlocProvider(
+            create: (_) => getIt<CallScreenCubit>(),
+            child: const CallScreen(),
+          ),
+        );
 
       case AppRoutes.success:
         if (useMorphingTransition) {
@@ -86,11 +126,19 @@ class AppRouter {
           settings: settings,
           builder: (_) => const PrivacyPolicyScreen(),
         );
+      case AppRoutes.profileScreen:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const ProfileScreen(),
+        );
 
       case AppRoutes.setupProfile:
         return MaterialPageRoute(
           settings: settings,
-          builder: (_) => const ProfileSetupScreen(),
+          builder: (_) => BlocProvider(
+            create: (_) => getIt<ProfileSetupCubit>(),
+            child: const ProfileSetupScreen(),
+          ),
         );
     }
 

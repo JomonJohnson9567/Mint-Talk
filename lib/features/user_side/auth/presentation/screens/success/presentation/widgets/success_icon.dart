@@ -77,7 +77,7 @@ class _WaveEffect extends StatelessWidget {
         height: 100.w,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.green.withOpacity(opacity),
+          color: AppColors.green.withAlpha((opacity * 255).round()),
         ),
       ),
     );

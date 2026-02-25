@@ -34,7 +34,7 @@ class OtpHeader extends StatelessWidget {
               '+91 9876543210',
               style: TextStyle(
                 fontSize: 14.sp,
-                color: AppColors.primaryPurple,
+                color: AppColors.primaryColor,
                 fontWeight: FontWeight.w500,
               ),
             ),

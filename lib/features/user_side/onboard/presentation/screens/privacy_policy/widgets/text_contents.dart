@@ -24,7 +24,7 @@ class TextContents extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   AppTexts.introductionContent,
                   style: TextStyle(
@@ -33,58 +33,58 @@ class TextContents extends StatelessWidget {
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 Text(
                   AppTexts.termsofUse,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   AppTexts.termsofUseContent,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textGrey,
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 Text(
                   AppTexts.privacyPolicy,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   AppTexts.privacyPolicyContent,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textGrey,
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 Text(
                   AppTexts.userResponsibilities,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   AppTexts.userResponsibilitiesContent,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textGrey,
                     height: 1.5,
                   ),
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 Text(
                   AppTexts.intellectualProperty,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   AppTexts.intellectualPropertyContent,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textGrey,
                     height: 1.5,
                   ),

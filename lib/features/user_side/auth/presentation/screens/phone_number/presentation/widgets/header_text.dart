@@ -14,7 +14,7 @@ class HeaderText extends StatelessWidget {
         Text(
           AppTexts.welcome,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 24.sp,
             fontWeight: FontWeight.bold,
             color: AppColors.black,
           ),
@@ -23,7 +23,7 @@ class HeaderText extends StatelessWidget {
         Text(
           AppTexts.signInToJoinTheConversation,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             color: AppColors.textGrey,
             fontWeight: FontWeight.w500,
           ),

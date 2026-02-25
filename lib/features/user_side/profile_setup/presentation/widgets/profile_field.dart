@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +12,10 @@ class ProfileField extends StatelessWidget {
   final TextEditingController? controller;
   final bool readOnly;
   final VoidCallback? onTap;
+  final String? Function(String?)? validator;
+  final Function(String)? onChanged;
+  final String? errorText;
+  final String? initialValue;
 
   const ProfileField({
     super.key,
@@ -19,6 +25,10 @@ class ProfileField extends StatelessWidget {
     this.controller,
     this.readOnly = false,
     this.onTap,
+    this.validator,
+    this.onChanged,
+    this.errorText,
+    this.initialValue,
   });
 
   @override
@@ -31,16 +41,20 @@ class ProfileField extends StatelessWidget {
           style: GoogleFonts.manrope(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.textGrey,
+            color: AppColors.black,
             letterSpacing: 1.2,
           ),
         ),
         SizedBox(height: 8.h),
         TextFormField(
+          initialValue: initialValue,
+          validator: validator,
+          onChanged: onChanged,
           controller: controller,
           readOnly: readOnly,
           onTap: onTap,
           decoration: InputDecoration(
+            errorText: errorText,
             hintText: hintText,
             hintStyle: GoogleFonts.manrope(
               fontSize: 14.sp,
@@ -54,15 +68,15 @@ class ProfileField extends StatelessWidget {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
-              borderSide: BorderSide(color: AppColors.grey.withOpacity(0.2)),
+              borderSide: BorderSide(color: AppColors.grey.withAlpha(204)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
-              borderSide: BorderSide(color: AppColors.grey.withOpacity(0.2)),
+              borderSide: BorderSide(color: AppColors.grey.withAlpha(204)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
-              borderSide: const BorderSide(color: AppColors.primaryPurple),
+              borderSide: const BorderSide(color: AppColors.primaryColor),
             ),
             suffixIcon: suffixIcon,
           ),

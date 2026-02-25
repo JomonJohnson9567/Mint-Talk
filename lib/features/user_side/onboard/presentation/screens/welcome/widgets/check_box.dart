@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,23 +23,28 @@ class AgreeCheckboxRow extends StatelessWidget {
               width: 24.w,
               child: Checkbox(
                 value: isAgreed,
-                activeColor: AppColors.primaryPurple,
+                activeColor: AppColors.primaryColor,
                 onChanged: (value) {
                   context.read<WelcomeCubit>().toggleAgreement(value);
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4.r),
                 ),
-                side: BorderSide(color: AppColors.primaryPurple, width: 2.w),
+                side: BorderSide(color: AppColors.primaryColor, width: 2.w),
               ),
             ),
             SizedBox(width: 8.w),
-            Text(
-              AppTexts.agreeTermsAndConditions,
-              style: TextStyle(
-                color: AppColors.black,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.privacyPolicy);
+              },
+              child: Text(
+                AppTexts.agreeTermsAndConditions,
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

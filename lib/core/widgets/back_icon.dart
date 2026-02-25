@@ -15,7 +15,7 @@ class PopBackIcon extends StatelessWidget {
         padding: EdgeInsets.all(8.r),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.grey.withOpacity(0.6),
+          color: AppColors.grey.withAlpha(153),
         ),
         child: Icon(Icons.arrow_back, color: AppColors.black, size: 24.sp),
       ),

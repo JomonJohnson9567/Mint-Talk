@@ -29,7 +29,7 @@ class TermsText extends StatelessWidget {
             style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.bold,
-              color: AppColors.primaryPurple,
+              color: AppColors.black,
             ),
             recognizer: TapGestureRecognizer()
               ..onTap = () {

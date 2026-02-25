@@ -1,7 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class GenderCard extends StatelessWidget {
@@ -29,15 +30,15 @@ class GenderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
             color: isSelected
-                ? AppColors.primaryPurple
-                : AppColors.grey.withOpacity(0.8),
+                ? AppColors.primaryColor
+                : AppColors.grey.withAlpha(204),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? AppColors.primaryPurple.withOpacity(0.5)
-                  : AppColors.grey.withOpacity(0.5),
+                  ? AppColors.primaryColor.withAlpha(128)
+                  : AppColors.grey.withAlpha(128),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -54,13 +55,8 @@ class GenderCard extends StatelessWidget {
                     child: Container(
                       height: 80.h,
                       width: 80.h,
-                      color: AppColors.grey.withOpacity(0.1),
-                      child: Image.asset(
-                        label == 'Male'
-                            ? AppAssets.maleIcon
-                            : AppAssets.femaleIcon,
-                        fit: BoxFit.cover,
-                      ),
+                      color: AppColors.grey.withAlpha(26),
+                      child: Image.asset(iconPath, fit: BoxFit.cover),
                     ),
                   ),
                 ),
@@ -68,7 +64,7 @@ class GenderCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(4.sp),
                     decoration: const BoxDecoration(
-                      color: AppColors.primaryPurple,
+                      color: AppColors.primaryColor,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(

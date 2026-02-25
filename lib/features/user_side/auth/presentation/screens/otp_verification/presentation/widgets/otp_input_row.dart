@@ -25,7 +25,7 @@ class OtpInputRow extends StatelessWidget {
                 border: Border.all(
                   color: hasError
                       ? Colors.red
-                      : AppColors.primaryPurple.withValues(alpha: 0.5),
+                      : AppColors.primaryColor.withValues(alpha: 0.5),
                 ),
               ),
               child: TextField(

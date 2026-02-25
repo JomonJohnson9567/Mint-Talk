@@ -51,12 +51,16 @@ class AppTexts {
   static const String verified = 'Verified!';
   static const String yourNumberHasBeenVerifiedSuccessfully =
       'Your number has been verified successfully.';
+  static const String congratulations = "Congratulations!";
+  static const String setupVerifiedMessage =
+      'Your profile has been successfully set up. Welcome to the community!';
+  static const String continueText = 'Continue';
 
   //Profile Setup Screen
   static const String setupProfile = 'Set up your profile';
   static const String fillDetails = 'Fill in your details to get started';
   static const String fullName = 'FULL NAME';
-  static const String alexJohnson = 'Alex Johnson';
+  static const String enteryourName = 'Enter your name';
   static const String dateOfBirth = 'DATE OF BIRTH';
   static const String dobFormat = 'DD/MM/YYYY';
   static const String referralCodeOptional = 'REFERRAL CODE (OPTIONAL)';
@@ -66,4 +70,58 @@ class AppTexts {
   static const String female = 'Female';
   static const String wrongGenderBan = '*WRONG GENDER = LIFE BAN';
   static const String submit = 'Submit';
+
+  //ProfileScreen
+  static const String profile = 'Profile';
+  static const String settings = 'Settings';
+  static const String editProfile = 'Edit Profile';
+  static const String favorites = 'Favorites';
+  static const String referralCode = 'Referral Code';
+  static const String blockedUsers = 'Blocked Users';
+  static const String termsConditions = 'Terms & Conditions';
+  static const String contactUs = 'Contact US';
+
+  //Call Log Screen
+  static const String callLog = 'Call Log';
+
+  //Home Screen
+  static const String mintTalk = 'MintTalk';
+  static const String whereConversationsHaveValue =
+      'Where Conversations Have Value';
+  static const String makeYourCall = 'Make Your Call';
+  static const String videoCall = 'Video Call';
+  static const String audioCall = 'Audio Call';
+  static const String coinsPerMin = 'coins/min';
+  static const String active = 'Active';
+  static const String online = 'Online';
+  static const String offline = 'Offline';
+  static const String onCall = 'On Call';
+  static const String notifyMe = 'Notify Me';
+  static const String becomeAHost = 'Become a host';
+  static const String callNow = 'Call Now';
+
+  //Settings Screen
+  static const String logout = 'Logout';
+  static const String logoutMessage = 'Are you sure you want to logout?';
+  static const String yes = 'Yes';
+  static const String no = 'No';
+  static const String deleteAccount = 'Delete Account';
+  static const String deleteAccountMessage =
+      'Are you sure you want to delete your account?';
+
+  //Host Profile Screen
+  static const String profileDetails = 'Profile Details';
+  static const String warning = 'Warning';
+  static const String warningMessage =
+      'Any form of indecent talk or improper conduct will not be tolerated and will result in a block.';
+  static const String specialCategories = 'Special Categories';
+  static const String empathy = 'Empathy';
+  static const String compassion = 'Compassion';
+  static const String loneliness = 'Loneliness';
+  static const String problemSolving =
+      'Problem solving Mental Health and wellness';
+  static const String call = 'Call';
+  static const String message = 'Message';
+  static const String favorite = 'Favorite';
+  static const String block = 'Block';
 }

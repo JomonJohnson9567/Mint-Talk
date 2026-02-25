@@ -23,7 +23,7 @@ class SuccessContent extends StatelessWidget {
               tag: 'morphing_bottom_container',
               flightShuttleBuilder: morphingContainerFlightShuttleBuilder,
               child: Material(
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 child: Container(
                   decoration: BoxDecoration(
                     color: AppColors.white,

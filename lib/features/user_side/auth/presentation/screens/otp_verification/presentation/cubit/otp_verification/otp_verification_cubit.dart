@@ -1,9 +1,11 @@
 import 'package:bloc/bloc.dart';
 
 import 'package:mint_talk/core/utils/validators.dart';
+import 'package:injectable/injectable.dart';
 
 part 'otp_verification_state.dart';
 
+@injectable
 class OtpVerificationCubit extends Cubit<OtpVerificationState> {
   OtpVerificationCubit() : super(OtpVerificationState());
 

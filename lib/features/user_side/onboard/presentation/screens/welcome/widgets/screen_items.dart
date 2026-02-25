@@ -47,7 +47,7 @@ class ScreenItems extends StatelessWidget {
                   width: 80.w,
                   height: 4.h,
                   decoration: BoxDecoration(
-                    color: AppColors.black.withOpacity(0.5),
+                    color: AppColors.black.withAlpha(128),
                     borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),

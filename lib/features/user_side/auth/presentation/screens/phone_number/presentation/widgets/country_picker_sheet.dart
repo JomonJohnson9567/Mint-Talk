@@ -46,7 +46,7 @@ class CountryPickerSheet extends StatelessWidget {
               hintText: 'Search',
               prefixIcon: const Icon(Icons.search, color: AppColors.textGrey),
               filled: true,
-              fillColor: AppColors.grey.withOpacity(0.2),
+              fillColor: AppColors.grey.withAlpha(51),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.r),
                 borderSide: BorderSide.none,
@@ -72,7 +72,7 @@ class CountryPickerSheet extends StatelessWidget {
                 return ListView.separated(
                   itemCount: state.filteredCountries.length,
                   separatorBuilder: (_, __) =>
-                      Divider(color: AppColors.grey.withOpacity(0.2)),
+                      Divider(color: AppColors.grey.withAlpha(51)),
                   itemBuilder: (context, index) {
                     final country = state.filteredCountries[index];
                     return ListTile(

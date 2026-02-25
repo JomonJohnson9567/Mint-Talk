@@ -38,7 +38,7 @@ class PhoneInputSection extends StatelessWidget {
           height: 50.h,
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: AppColors.grey.withOpacity(0.6),
+            color: AppColors.grey.withAlpha(153),
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: Row(
@@ -73,7 +73,7 @@ class PhoneInputSection extends StatelessWidget {
               Container(
                 width: 1.w,
                 height: 24.h,
-                color: AppColors.grey.withOpacity(0.3),
+                color: AppColors.grey.withAlpha(77),
                 margin: EdgeInsets.symmetric(horizontal: 12.w),
               ),
               Expanded(
