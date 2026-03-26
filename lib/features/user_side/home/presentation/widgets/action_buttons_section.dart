@@ -12,7 +12,7 @@ class ActionButtonsSection extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 15.h),
         decoration: BoxDecoration(
           color: AppColors.primaryColor,
           borderRadius: BorderRadius.circular(20.r),
@@ -76,7 +76,7 @@ class _CallCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 20.h),
+      padding: EdgeInsets.symmetric(vertical: 16.h),
       decoration: BoxDecoration(
         color: AppColors.white.withAlpha(38),
         borderRadius: BorderRadius.circular(15.r),
@@ -85,27 +85,27 @@ class _CallCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.all(12.w),
+            padding: EdgeInsets.all(10.w),
             decoration: BoxDecoration(
               color: AppColors.white.withAlpha(51),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.white, size: 28.sp),
+            child: Icon(icon, color: AppColors.white, size: 24.sp),
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 8.h),
           Text(
             title,
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.white,
             ),
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 4.h),
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: 9.sp,
               color: AppColors.white.withAlpha(179),
             ),
           ),

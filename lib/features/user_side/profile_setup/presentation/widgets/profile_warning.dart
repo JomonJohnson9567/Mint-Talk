@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mint_talk/core/constants/app_icons.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
@@ -12,7 +13,7 @@ class ProfileWarning extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.error_outline, color: AppColors.red, size: 16.sp),
+        Icon(AppIcons.error, color: AppColors.red, size: 16.sp),
         SizedBox(width: 6.w),
         Text(
           AppTexts.wrongGenderBan,

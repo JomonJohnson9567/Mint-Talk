@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/widgets/contact_us_bottom_sheet.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_action_bottom_sheet.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/widgets/profile_tile.dart';
-import 'package:mint_talk/core/widgets/confirmation_dialog.dart';
 
 class SettingsContents extends StatelessWidget {
   const SettingsContents({super.key});
@@ -20,7 +21,7 @@ class SettingsContents extends StatelessWidget {
             iconColor: AppColors.contactIcon,
             iconBackgroundColor: AppColors.contactIcon.withValues(alpha: 0.2),
             title: AppTexts.contactUs,
-            onTap: () {},
+            onTap: () => ContactUsBottomSheetPresenter.show(context),
           ),
           //terms and conditions
           ProfileTile(
@@ -30,27 +31,24 @@ class SettingsContents extends StatelessWidget {
             title: AppTexts.termsConditions,
             onTap: () {},
           ),
-
+          //About us
+          ProfileTile(
+            icon: Icons.info,
+            iconColor: AppColors.aboutIcon,
+            iconBackgroundColor: AppColors.aboutIcon.withValues(alpha: 0.2),
+            title: AppTexts.aboutUs,
+            onTap: () {},
+          ),
+          //logout
           ProfileTile(
             icon: Icons.logout,
             iconColor: AppColors.favIcon,
             iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
             title: AppTexts.logout,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return ConfirmationDialog(
-                    title: AppTexts.logout,
-                    content: AppTexts.logoutMessage,
-                    confirmButtonText: AppTexts.logout,
-                    onConfirm: () {
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              );
-            },
+            onTap: () => SettingsActionBottomSheetPresenter.showLogout(
+              context,
+              onConfirm: () {},
+            ),
           ),
           //delete account
           ProfileTile(
@@ -58,21 +56,10 @@ class SettingsContents extends StatelessWidget {
             iconColor: AppColors.favIcon,
             iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
             title: AppTexts.deleteAccount,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return ConfirmationDialog(
-                    title: AppTexts.deleteAccount,
-                    content: AppTexts.deleteAccountMessage,
-                    confirmButtonText: "Delete",
-                    onConfirm: () {
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              );
-            },
+            onTap: () => SettingsActionBottomSheetPresenter.showDeleteAccount(
+              context,
+              onConfirm: () {},
+            ),
           ),
         ],
       ),

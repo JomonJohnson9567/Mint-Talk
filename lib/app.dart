@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/navigations/app_router.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
-
+ 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Mint Talk',
           theme: ThemeData(),
+          // home: HomePage(),
           initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRouter.onGenerateRoute,
         );

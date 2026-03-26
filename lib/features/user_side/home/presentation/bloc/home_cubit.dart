@@ -47,15 +47,52 @@ class HomeCubit extends Cubit<HomeState> {
         status: UserStatus.online,
       ),
       const HomeUserEntity(
+        name: 'Meera',
+        imageUrl: '',
+        status: UserStatus.online,
+        isFavorite: true,
+      ),
+      const HomeUserEntity(
+        name: 'Kavin',
+        imageUrl: '',
+        status: UserStatus.onCall,
+      ),
+      const HomeUserEntity(
+        name: 'Anjana',
+        imageUrl: '',
+        status: UserStatus.online,
+      ),
+      const HomeUserEntity(
+        name: 'Rithik',
+        imageUrl: '',
+        status: UserStatus.online,
+      ),
+      const HomeUserEntity(
+        name: 'Nila',
+        imageUrl: '',
+        status: UserStatus.onCall,
+        isFavorite: true,
+      ),
+      const HomeUserEntity(
+        name: 'Arun',
+        imageUrl: '',
+        status: UserStatus.online,
+      ),
+      const HomeUserEntity(
+        name: 'Devi',
+        imageUrl: '',
+        status: UserStatus.online,
+      ),
+      const HomeUserEntity(
         name: 'Offline User',
         imageUrl: '',
-        status: UserStatus.offline,
+        status: UserStatus.online,
         isFavorite: true,
       ),
       const HomeUserEntity(
         name: 'John Doe',
         imageUrl: '',
-        status: UserStatus.offline,
+        status: UserStatus.online,
       ),
     ];
 

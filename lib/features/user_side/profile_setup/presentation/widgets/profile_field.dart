@@ -16,6 +16,7 @@ class ProfileField extends StatelessWidget {
   final Function(String)? onChanged;
   final String? errorText;
   final String? initialValue;
+  final Color? labelColor;
 
   const ProfileField({
     super.key,
@@ -29,6 +30,7 @@ class ProfileField extends StatelessWidget {
     this.onChanged,
     this.errorText,
     this.initialValue,
+    this.labelColor,
   });
 
   @override
@@ -41,7 +43,7 @@ class ProfileField extends StatelessWidget {
           style: GoogleFonts.manrope(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.black,
+            color: labelColor ?? AppColors.black,
             letterSpacing: 1.2,
           ),
         ),

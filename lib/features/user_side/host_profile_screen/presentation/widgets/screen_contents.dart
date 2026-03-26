@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
-import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_action_buttons.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_profile_header.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_special_categories.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_warning_banner.dart';
-
+import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_action_buttons.dart';
+ 
 class ScreenContents extends StatelessWidget {
   final HomeUserEntity user;
 

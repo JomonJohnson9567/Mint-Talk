@@ -12,12 +12,14 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
-import '../../features/user_side/auth/presentation/screens/otp_verification/presentation/cubit/otp_verification/otp_verification_cubit.dart'
-    as _i215;
-import '../../features/user_side/auth/presentation/screens/phone_number/presentation/cubit/country_selector_cubit.dart'
-    as _i390;
-import '../../features/user_side/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart'
-    as _i827;
+import '../../features/auth/presentation/screens/otp_verification/presentation/cubit/otp_verification/otp_verification_cubit.dart'
+    as _i91;
+import '../../features/auth/presentation/screens/phone_number/presentation/cubit/country_selector_cubit.dart'
+    as _i951;
+import '../../features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart'
+    as _i991;
+import '../../features/host_side/host_profile_setup/presentation/cubit/host_profile_setup_cubit.dart'
+    as _i453;
 import '../../features/user_side/call/presentation/bloc/call_screen_cubit.dart'
     as _i559;
 import '../../features/user_side/home/presentation/bloc/home_cubit.dart'
@@ -34,9 +36,12 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     gh.factory<_i358.SnackBarCubit>(() => _i358.SnackBarCubit());
-    gh.factory<_i215.OtpVerificationCubit>(() => _i215.OtpVerificationCubit());
-    gh.factory<_i390.CountrySelectorCubit>(() => _i390.CountrySelectorCubit());
-    gh.factory<_i827.PhoneFormCubit>(() => _i827.PhoneFormCubit());
+    gh.factory<_i91.OtpVerificationCubit>(() => _i91.OtpVerificationCubit());
+    gh.factory<_i951.CountrySelectorCubit>(() => _i951.CountrySelectorCubit());
+    gh.factory<_i991.PhoneFormCubit>(() => _i991.PhoneFormCubit());
+    gh.factory<_i453.HostProfileSetupCubit>(
+      () => _i453.HostProfileSetupCubit(),
+    );
     gh.factory<_i559.CallScreenCubit>(() => _i559.CallScreenCubit());
     gh.factory<_i129.HomeCubit>(() => _i129.HomeCubit());
     gh.factory<_i575.ProfileSetupCubit>(() => _i575.ProfileSetupCubit());

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_icons.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:country_picker/country_picker.dart';
@@ -63,7 +64,7 @@ class PhoneInputSection extends StatelessWidget {
                     ),
                     SizedBox(width: 4.w),
                     Icon(
-                      Icons.keyboard_arrow_down,
+                      AppIcons.arrowDown,
                       size: 16.sp,
                       color: AppColors.textGrey,
                     ),

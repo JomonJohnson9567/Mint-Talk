@@ -61,7 +61,10 @@ class AppTexts {
   static const String fillDetails = 'Fill in your details to get started';
   static const String fullName = 'FULL NAME';
   static const String enteryourName = 'Enter your name';
+  static const String enterName = 'Enter Name';
   static const String dateOfBirth = 'DATE OF BIRTH';
+  static const String dateOfBirthText = 'Date of birth';
+  static const String setYourBirthday = 'Set your Birthday';
   static const String dobFormat = 'DD/MM/YYYY';
   static const String referralCodeOptional = 'REFERRAL CODE (OPTIONAL)';
   static const String enterCode = 'Enter code';
@@ -80,6 +83,11 @@ class AppTexts {
   static const String blockedUsers = 'Blocked Users';
   static const String termsConditions = 'Terms & Conditions';
   static const String contactUs = 'Contact US';
+  static const String contactUsTitle = 'Contact us on WhatsApp';
+  static const String contactUsDescription =
+      'Have a question or need support? Reach out to our team on WhatsApp and we will be happy to assist you.';
+  static const String contactUsButton = 'Contact Us via WhatsApp';
+  static const String close = 'Close';
 
   //Call Log Screen
   static const String callLog = 'Call Log';
@@ -99,15 +107,51 @@ class AppTexts {
   static const String notifyMe = 'Notify Me';
   static const String becomeAHost = 'Become a host';
   static const String callNow = 'Call Now';
+  static const String rechargePlans = 'Recharge Plans';
+  static const String standardPackages = 'Standard Packages';
+  static const String dhamakkaOffer = 'Dhamakka Offer';
+  static const String specialOffer = 'Special Offer';
+  static const String mostPopular = 'Most Popular';
+  static const String bestValue = 'Best Value';
+  static const String saverPack = 'Saver Pack';
+  static const String coinsSuffix = 'Coins';
+  static const String rupeeSymbol = '\u20B9';
+  static const String coins10000 = '10,000';
+  static const String coins17500 = '17,500';
+  static const String coins35000 = '35,000';
+  static const String coins70000 = '70,000';
+  static const String coins125000 = '1,25,000';
+  static const String coins250000 = '2,50,000';
+  static const String coins375000 = '3,75,000';
+  static const String coins500000 = '5,00,000';
+  static const String coins1000000 = '10,00,000';
+  static const String price120 = '120';
+  static const String price210 = '210';
+  static const String price420 = '420';
+  static const String price840 = '840';
+  static const String price999 = '999';
+  static const String price1498 = '1498';
+  static const String price2996 = '2996';
+  static const String price4494 = '4494';
+  static const String price4949 = '4949';
+  static const String price11898 = '11898';
 
   //Settings Screen
   static const String logout = 'Logout';
   static const String logoutMessage = 'Are you sure you want to logout?';
+  static const String logoutDescription =
+      'You will be signed out of your current session and can sign back in anytime with your registered mobile number.';
   static const String yes = 'Yes';
   static const String no = 'No';
   static const String deleteAccount = 'Delete Account';
+  static const String delete = 'Delete';
+  static const String aboutUs = 'About Us';
   static const String deleteAccountMessage =
       'Are you sure you want to delete your account?';
+  static const String deleteAccountDescription =
+      'Deleting your account will permanently remove your MintTalk profile and access details. This action cannot be undone.';
+  static const String keepAccount = 'Keep Account';
+  static const String stayLoggedIn = 'Stay Logged In';
 
   //Host Profile Screen
   static const String profileDetails = 'Profile Details';
@@ -124,4 +168,31 @@ class AppTexts {
   static const String message = 'Message';
   static const String favorite = 'Favorite';
   static const String block = 'Block';
+
+  //Host Profile Setup Screen
+  static const String preferredCategories = 'Preferred Categories';
+  static const String understanding = 'Understanding';
+  static const String emotionalSupport = 'Emotional Support';
+  static const String emotionalHealing = 'Emotional Healing';
+  static const String lifeDirection = 'Life Direction';
+  static const String resilience = 'Resilience';
+  static const String activeListening = 'Active Listening';
+  static const String innerPeace = 'Inner Peace';
+  static const String motivation = 'Motivation';
+  static const String stressManagement = 'Stress Management';
+
+  static const List<String> hostCategories = [
+    understanding,
+    loneliness,
+    empathy,
+    emotionalSupport,
+    compassion,
+    emotionalHealing,
+    lifeDirection,
+    resilience,
+    activeListening,
+    innerPeace,
+    motivation,
+    stressManagement,
+  ];
 }

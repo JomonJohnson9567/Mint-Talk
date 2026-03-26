@@ -20,98 +20,122 @@ class UserGridItem extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withAlpha(26),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: AppColors.grey.withValues(alpha: 0.1),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: EdgeInsets.all(15.w),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.hostProfileScreen,
-                arguments: user,
-              );
-            },
-            child: ClipOval(
-              child: user.imageUrl.isNotEmpty
-                  ? (user.imageUrl.startsWith('http')
-                        ? Image.network(
-                            user.imageUrl,
-                            width: 70.w,
-                            height: 70.h,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildPlaceholderAvatar(),
-                          )
-                        : Image.asset(
-                            user.imageUrl,
-                            width: 70.w,
-                            height: 70.h,
-                            fit: BoxFit.cover,
-                          ))
-                  : _buildPlaceholderAvatar(),
-            ),
-          ),
-          SizedBox(height: 10.h),
-          Text(
-            user.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black,
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.hostProfileScreen,
+                      arguments: user,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: user.status == UserStatus.online
+                            ? AppColors.green
+                            : AppColors.transparent,
+                        width: 2.w,
+                      ),
+                    ),
+                    padding: EdgeInsets.all(2.w),
+                    child: ClipOval(
+                      child: user.imageUrl.isNotEmpty
+                          ? (user.imageUrl.startsWith('http')
+                                ? Image.network(
+                                    user.imageUrl,
+                                    width: 60.w,
+                                    height: 60.w,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            _buildPlaceholderAvatar(60.w),
+                                  )
+                                : Image.asset(
+                                    user.imageUrl,
+                                    width: 60.w,
+                                    height: 60.w,
+                                    fit: BoxFit.cover,
+                                  ))
+                          : _buildPlaceholderAvatar(60.w),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  user.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.black,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 6.w,
+                      height: 6.w,
+                      decoration: BoxDecoration(
+                        color: user.status == UserStatus.online
+                            ? AppColors.green
+                            : user.status == UserStatus.offline
+                            ? AppColors.favIcon
+                            : AppColors.termsIcon,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      user.status == UserStatus.online
+                          ? AppTexts.online
+                          : user.status == UserStatus.offline
+                          ? AppTexts.offline
+                          : AppTexts.onCall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                        color: user.status == UserStatus.online
+                            ? AppColors.green
+                            : user.status == UserStatus.offline
+                            ? AppColors.favIcon
+                            : AppColors.termsIcon,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SizedBox(height: 5.h),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: BoxDecoration(
-                  color: user.status == UserStatus.online
-                      ? AppColors.green
-                      : user.status == UserStatus.offline
-                      ? AppColors.favIcon
-                      : AppColors.termsIcon,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 5.w),
-              Text(
-                user.status == UserStatus.online
-                    ? AppTexts.online
-                    : user.status == UserStatus.offline
-                    ? AppTexts.offline
-                    : AppTexts.onCall,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: user.status == UserStatus.online
-                      ? AppColors.green
-                      : user.status == UserStatus.offline
-                      ? AppColors.red
-                      : AppColors.onCall,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 15.h),
           SizedBox(
             width: double.infinity,
-            height: 40.h,
+            height: 32.h,
             child: ElevatedButton(
               onPressed: () {
                 if (user.status == UserStatus.online) {
@@ -121,26 +145,30 @@ class UserGridItem extends StatelessWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
                 backgroundColor: user.status == UserStatus.online
-                    ? AppColors.primaryColor.withValues(alpha: 0.2)
-                    : user.status == UserStatus.offline
-                    ? AppColors.favIcon.withValues(alpha: 0.2)
-                    : AppColors.termsIcon.withValues(alpha: 0.2),
-                foregroundColor: user.status == UserStatus.online
                     ? AppColors.primaryColor
-                    : user.status == UserStatus.offline
-                    ? AppColors.favIcon
-                    : AppColors.termsIcon.withValues(alpha: 0.8),
+                    : AppColors.white,
+                foregroundColor: user.status == UserStatus.online
+                    ? AppColors.white
+                    : AppColors.primaryColor,
+                side: user.status != UserStatus.online
+                    ? BorderSide(color: AppColors.primaryColor, width: 1.w)
+                    : null,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.r),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
               ),
               child: Text(
                 user.status == UserStatus.online
                     ? AppTexts.callNow
                     : AppTexts.notifyMe,
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ),
@@ -149,10 +177,10 @@ class UserGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholderAvatar() {
+  Widget _buildPlaceholderAvatar([double? size]) {
     return Container(
-      width: 70.w,
-      height: 70.h,
+      width: size ?? 70.w,
+      height: size ?? 70.h,
       color: AppColors.lightGrey,
       child: Image.asset(AppAssets.femaleIcon, fit: BoxFit.cover),
     );

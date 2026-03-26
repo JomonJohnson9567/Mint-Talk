@@ -37,7 +37,7 @@ class HomeContents extends StatelessWidget {
       },
       child: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
+        child: Padding(
           padding: EdgeInsets.only(bottom: 100.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +45,7 @@ class HomeContents extends StatelessWidget {
               HomeHeader(),
               ActionButtonsSection(),
               UserStatusTabs(),
-              UserGrid(),
+              Expanded(child: UserGrid()),
             ],
           ),
         ),

@@ -21,20 +21,33 @@ class UserGrid extends StatelessWidget {
           return const Center(child: Text("No users found"));
         }
 
-        return GridView.builder(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 15.w,
-            mainAxisSpacing: 15.h,
-            childAspectRatio: 0.70, // Adjusted to prevent overflow
-          ),
-          itemCount: state.users.length,
-          itemBuilder: (context, index) {
-            final user = state.users[index];
-            return UserGridItem(user: user);
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            int crossAxisCount = 3;
+            if (constraints.maxWidth >= 1200) {
+              crossAxisCount = 6;
+            } else if (constraints.maxWidth >= 900) {
+              crossAxisCount = 5;
+            } else if (constraints.maxWidth >= 600) {
+              crossAxisCount = 4;
+            } else if (constraints.maxWidth < 350) {
+              crossAxisCount = 3;
+            }
+
+            return GridView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 10.w,
+                mainAxisSpacing: 15.h,
+                mainAxisExtent: 190.h,
+              ),
+              itemCount: state.users.length,
+              itemBuilder: (context, index) {
+                final user = state.users[index];
+                return UserGridItem(user: user);
+              },
+            );
           },
         );
       },

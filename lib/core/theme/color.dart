@@ -18,6 +18,7 @@ class AppColors {
   static const Color profileIcon = Color(0xFFFFB74D);
   static const Color red = Colors.red;
   static const Color actionBlue = Color(0xFF1E88E5);
+  static const Color aboutIcon = Color(0xFF2196F3);
   static const Color onCall = Color(0xFFFFB74D);
   static const Color callBackground = Color(0xFFFFEBEB);
   static const Color callStatusText = Color(0xFF9C27B0);
@@ -27,3 +28,5 @@ class AppColors {
   static const Color amber = Colors.amber;
   static const Color warningBackground = Color(0xFFFFF8E1);
 }
+
+ 

@@ -7,7 +7,7 @@ import 'package:mint_talk/features/user_side/call_log/presentation/bloc/call_log
 import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
 
 // Import your existing screens here
-import 'package:mint_talk/features/user_side/home/presentation/pages/home.dart';
+import 'package:mint_talk/features/user_side/home/presentation/screen/home.dart';
 import 'package:mint_talk/features/user_side/call_log/presentation/screen/call_log.dart';
 
 class MainNavigationScreen extends StatelessWidget {

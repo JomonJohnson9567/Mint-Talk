@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:mint_talk/core/constants/app_icons.dart';
 import '../transitions/cubit/snack_bar_cubit.dart';
 import '../transitions/cubit/snack_bar_state.dart';
 import '../transitions/widgets/sliding_snackbar_wrapper.dart';
@@ -60,7 +60,7 @@ class TopSnackbar extends StatelessWidget {
             if (onDismiss != null)
               GestureDetector(
                 onTap: onDismiss,
-                child: Icon(Icons.close, color: AppColors.white, size: 20.sp),
+                child: Icon(AppIcons.close, color: AppColors.white, size: 20.sp),
               ),
           ],
         ),

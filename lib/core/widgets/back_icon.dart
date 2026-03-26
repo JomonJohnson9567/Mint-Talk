@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_icons.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class PopBackIcon extends StatelessWidget {
@@ -17,7 +18,7 @@ class PopBackIcon extends StatelessWidget {
           shape: BoxShape.circle,
           color: AppColors.grey.withAlpha(153),
         ),
-        child: Icon(Icons.arrow_back, color: AppColors.black, size: 24.sp),
+        child: Icon(AppIcons.back, color: AppColors.black, size: 24.sp),
       ),
     );
   }

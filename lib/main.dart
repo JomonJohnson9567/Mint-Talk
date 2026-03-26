@@ -4,5 +4,6 @@ import 'package:mint_talk/core/di/injection.dart';
 
 void main() {
   configureDependencies();
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }

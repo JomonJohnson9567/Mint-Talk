@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -48,20 +49,25 @@ class HomeHeader extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                Image.asset(AppAssets.moneyBag, width: 25.w, height: 25.h),
-                SizedBox(width: 5.w),
-                Text(
-                  '10,000',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.termsIcon,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.rechargePlansScreen);
+              },
+              child: Row(
+                children: [
+                  Image.asset(AppAssets.moneyBag, width: 25.w, height: 25.h),
+                  SizedBox(width: 5.w),
+                  Text(
+                    '10,000',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.termsIcon,
+                    ),
                   ),
-                ),
-                SizedBox(width: 5.w),
-              ],
+                  SizedBox(width: 5.w),
+                ],
+              ),
             ),
           ),
         ],

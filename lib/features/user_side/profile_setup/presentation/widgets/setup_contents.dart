@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_icons.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
+import 'package:mint_talk/core/widgets/dob_picker_bottom_sheet.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/gender_selection_section.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/profile_field.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/profile_header.dart';
@@ -39,7 +41,7 @@ class SetupContents extends StatelessWidget {
                   label: AppTexts.fullName,
                   hintText: AppTexts.enteryourName,
                   suffixIcon: state.name.isNotEmpty
-                      ? const Icon(Icons.check_circle, color: AppColors.green)
+                      ? Icon(AppIcons.checkCircle, color: AppColors.green)
                       : null,
                   onChanged: cubit.nameChanged,
                   validator: Validators.name,
@@ -56,32 +58,19 @@ class SetupContents extends StatelessWidget {
                   key: ValueKey(state.dob),
                   label: AppTexts.dateOfBirth,
                   hintText: AppTexts.dobFormat,
-                  suffixIcon: const Icon(
-                    Icons.calendar_today_outlined,
+                  suffixIcon: Icon(
+                    AppIcons.calendar,
                     color: AppColors.textGrey,
                   ),
                   readOnly: true,
                   initialValue: state.dob,
                   validator: Validators.dob,
-                  onTap: () async {
-                    final now = DateTime.now();
-                    final eighteenYearsAgo = DateTime(
-                      now.year - 18,
-                      now.month,
-                      now.day,
-                    );
-                    final picked = await showDatePicker(
+                  onTap: () {
+                    DobPickerBottomSheet.show(
                       context: context,
-                      initialDate: eighteenYearsAgo,
-                      firstDate: DateTime(1900),
-                      lastDate:
-                          now,  
+                      currentDob: state.dob,
+                      onDateSelected: cubit.dobChanged,
                     );
-                    if (picked != null) {
-                      final formatted =
-                          "${picked.day}/${picked.month}/${picked.year}";
-                      cubit.dobChanged(formatted);
-                    }
                   },
                 );
               },

@@ -18,4 +18,7 @@ class AppRoutes {
   static const String settingsScreen = '/settingsScreen';
   static const String hostProfileScreen = '/hostProfileScreen';
   static const String callScreen = '/callScreen';
+  static const String chatScreen = '/chatScreen';
+  static const String hostProfileSetupScreen = '/hostProfileSetupScreen';
+  static const String rechargePlansScreen = '/rechargePlansScreen';
 }

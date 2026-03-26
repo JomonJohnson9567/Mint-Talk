@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_icons.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -15,6 +16,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      automaticallyImplyLeading: automaticallyImplyLeading,
       title: Text(
         title,
         style: TextStyle(
@@ -28,14 +30,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: automaticallyImplyLeading
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new),
+              icon: Icon(AppIcons.back, size: 24.sp),
               onPressed: () => Navigator.pop(context),
             )
           : null,
-      automaticallyImplyLeading: automaticallyImplyLeading,
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(60.h);
 }
