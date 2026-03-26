@@ -21,12 +21,15 @@ class AppColors {
   static const Color aboutIcon = Color(0xFF2196F3);
   static const Color onCall = Color(0xFFFFB74D);
   static const Color callBackground = Color(0xFFFFEBEB);
-  static const Color callStatusText = Color(0xFF9C27B0);
+  static const Color callStatusText = Color(0xFF16884F);
+  static const Color callEndedStatus = Color(0xFFE53935);
+  static const Color callBreathingGlow = Color(0xFF20B15A);
+  static const Color callBreathingGlowSoft = Color(0xFFC7F6D9);
+  static const Color callControlSurface = Color(0xCCFFFFFF);
+  static const Color callMutedIcon = Color(0xB3000000);
   static const Color lightGrey = Color(0xFFEEEEEE);
   static const Color transparent = Colors.transparent;
   static const Color orange = Colors.orange;
   static const Color amber = Colors.amber;
   static const Color warningBackground = Color(0xFFFFF8E1);
 }
-
- 

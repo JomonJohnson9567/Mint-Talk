@@ -9,7 +9,7 @@ class CallScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.callBackground,
-      body: CallScreenContents(),
+      body: const CallScreenContents(),
     );
   }
 }

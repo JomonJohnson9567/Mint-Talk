@@ -35,7 +35,14 @@ class UserGrid extends StatelessWidget {
             }
 
             return GridView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              padding: EdgeInsets.only(
+                left: 20.w,
+                right: 20.w,
+                top: 10.h,
+                bottom:
+                    100.h +
+                    10.h, // Space for bottom nav + original bottom padding
+              ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 10.w,

@@ -1,6 +1,6 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/features/user_side/call/presentation/widgets/call_action_button.dart';
 import '../../../../../core/theme/color.dart';
 
 class CallControls extends StatelessWidget {
@@ -10,17 +10,37 @@ class CallControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actionButtonSize = 50.w;
+    final callButtonSize = 72.w;
+    final preferredGap = 12.w;
+    final totalButtonWidth = (actionButtonSize * 4) + callButtonSize;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildActionButton(icon: Icons.cameraswitch_outlined, onTap: () {}),
-          _buildActionButton(icon: Icons.videocam_outlined, onTap: () {}),
-          _buildCallButton(onTap: onEndCall),
-          _buildActionButton(icon: Icons.mic_off_outlined, onTap: () {}),
-          _buildActionButton(icon: Icons.more_horiz, onTap: () {}),
-        ],
+      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 40.h),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final buttonGap = ((constraints.maxWidth - totalButtonWidth) / 4)
+              .clamp(0.0, preferredGap)
+              .toDouble();
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildActionButton(
+                icon: Icons.cameraswitch_outlined,
+                onTap: () {},
+              ),
+              SizedBox(width: buttonGap),
+              _buildActionButton(icon: Icons.videocam_outlined, onTap: () {}),
+              SizedBox(width: buttonGap),
+              _buildCallButton(onTap: onEndCall),
+              SizedBox(width: buttonGap),
+              _buildActionButton(icon: Icons.mic_off_outlined, onTap: () {}),
+              SizedBox(width: buttonGap),
+              _buildActionButton(icon: Icons.more_horiz, onTap: () {}),
+            ],
+          );
+        },
       ),
     );
   }
@@ -29,39 +49,31 @@ class CallControls extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: AppColors.white.withAlpha(128),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon, color: AppColors.black.withAlpha(179), size: 24),
-      ),
+    return CallActionButton(
+      icon: icon,
+      onTap: onTap,
+      iconColor: AppColors.black.withAlpha(179),
+      backgroundColor: AppColors.white.withAlpha(128),
+      buttonSize: 50,
+      iconSize: 24,
     );
   }
 
   Widget _buildCallButton({required VoidCallback onTap}) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: AppColors.red,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.red.withAlpha(102),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: onTap,
-        icon: const Icon(Icons.call_end, color: AppColors.white, size: 32),
-      ),
+    return CallActionButton(
+      icon: Icons.call_end,
+      onTap: onTap,
+      iconColor: AppColors.white,
+      backgroundColor: AppColors.red,
+      buttonSize: 72,
+      iconSize: 32,
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.red.withAlpha(102),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ],
     );
   }
 }

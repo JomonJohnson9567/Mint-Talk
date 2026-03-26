@@ -1,10 +1,10 @@
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/color.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/widgets/top_snackbar.dart';
 import '../bloc/favorite_cubit.dart';
+import 'call_action_button.dart';
 
 class CallEndedControls extends StatelessWidget {
   final VoidCallback onCancel;
@@ -68,31 +68,19 @@ class CallEndedControls extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: color.withAlpha(51),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            onPressed: onTap,
-            icon: Icon(icon, color: color, size: 32),
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.black,
-          ),
-        ),
-      ],
+    return CallActionButton(
+      icon: icon,
+      onTap: onTap,
+      iconColor: color,
+      backgroundColor: color.withAlpha(51),
+      buttonSize: 72,
+      iconSize: 32,
+      label: label,
+      labelStyle: TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w500,
+        color: AppColors.black,
+      ),
     );
   }
 }
