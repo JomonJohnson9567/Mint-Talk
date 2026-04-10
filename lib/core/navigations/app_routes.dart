@@ -21,4 +21,6 @@ class AppRoutes {
   static const String chatScreen = '/chatScreen';
   static const String hostProfileSetupScreen = '/hostProfileSetupScreen';
   static const String rechargePlansScreen = '/rechargePlansScreen';
+  static const String videocallOnlineScreen = '/videocallOnlineScreen';
+  static const String audioCallOnlineScreen = '/audioCallOnlineScreen'; 
 }

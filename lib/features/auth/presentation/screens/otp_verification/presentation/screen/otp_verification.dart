@@ -7,9 +7,16 @@ class OtpVerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract phone and countryCode from route arguments
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    final phone = args?['phone'] as String? ?? '';
+    final countryCode = args?['countryCode'] as String? ?? '';
+
     return Scaffold(
       backgroundColor: AppColors.tealBackground,
-      body: const OtpContents(),
+      body: OtpContents(phone: phone, countryCode: countryCode),
     );
   }
 }

@@ -9,7 +9,7 @@ class AppAssets {
   static const String profileSetupLogo = "assets/images/profile setup/Logo.png";
   static const String maleIcon = "assets/images/profile setup/male.png";
   static const String femaleIcon = "assets/images/profile setup/female.jpg";
-  static const String moneyBag = "assets/images/home/Moneybag.png";
+  static const String moneyBag = "assets/images/home/money_bag2.png";
   static const String imgVideoCall = "assets/images/home/video_call.png";
   static const String imgAudioCall = "assets/images/home/audio_call.png";
 }

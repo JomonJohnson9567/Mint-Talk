@@ -45,7 +45,7 @@ class AppTexts {
   //OTP Screen
   static const String verifyYourNumber = 'Verify Your number';
   static const String verify = 'Verify';
-  static const String sentCodeToNumber = 'We sent a 5 digit code to your ';
+  static const String sentCodeToNumber = 'We sent a 4 digit code to your ';
 
   //Success Screen
   static const String verified = 'Verified!';
@@ -107,6 +107,17 @@ class AppTexts {
   static const String notifyMe = 'Notify Me';
   static const String becomeAHost = 'Become a host';
   static const String callNow = 'Call Now';
+  static const String videoCallHostsOnline = 'Video Call Hosts Online';
+  static const String videoCallHostsSubtitle =
+      'Choose an available host and start a face-to-face conversation instantly.';
+  static const String availableNow = 'Available now';
+  static const String instantJoin = 'Instant Join';
+  static const String topRated = 'Top Rated';
+  static const String avgResponse = 'Avg response';
+  static const String verifiedHost = 'Verified host';
+  static const String startVideoCall = 'Start Video Call';
+  static const String hostsLiveNow = 'hosts live now';
+  static const String readyToConnect = 'ready to connect';
   static const String rechargePlans = 'Recharge Plans';
   static const String standardPackages = 'Standard Packages';
   static const String dhamakkaOffer = 'Dhamakka Offer';

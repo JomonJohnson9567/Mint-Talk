@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class ActionButtonsSection extends StatelessWidget {
@@ -39,18 +40,34 @@ class ActionButtonsSection extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _CallCard(
-                    icon: Icons.video_call,
-                    title: AppTexts.videoCall,
-                    subtitle: '1500 coins/min',
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.videocallOnlineScreen,
+                      );
+                    },
+                    child: _CallCard(
+                      icon: Icons.video_call,
+                      title: AppTexts.videoCall,
+                      subtitle: '1500 coins/min',
+                    ),
                   ),
                 ),
                 SizedBox(width: 15.w),
                 Expanded(
-                  child: _CallCard(
-                    icon: Icons.call,
-                    title: AppTexts.audioCall,
-                    subtitle: '500 coins/min',
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.audioCallOnlineScreen,
+                      );
+                    },
+                    child: _CallCard(
+                      icon: Icons.call,
+                      title: AppTexts.audioCall,
+                      subtitle: '500 coins/min',
+                    ),
                   ),
                 ),
               ],

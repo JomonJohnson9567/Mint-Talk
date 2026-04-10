@@ -17,143 +17,193 @@ import 'package:mint_talk/features/auth/presentation/screens/phone_number/presen
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart';
 import 'package:mint_talk/core/transitions/utils/morphing_flight_shuttle.dart';
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_state.dart';
+
 class ScreenContents extends StatelessWidget {
   const ScreenContents({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Top Image Section
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 280.h,
-          child: Center(
-            child: Hero(
-              tag: 'morphing_image',
-              flightShuttleBuilder: morphingImageFlightShuttleBuilder,
-              child: Image.asset(AppAssets.phoneEntry, fit: BoxFit.contain),
+    return BlocListener<PhoneFormCubit, PhoneFormState>(
+      listenWhen: (prev, curr) => prev.status != curr.status,
+      listener: (context, state) {
+        if (state.status == PhoneFormStatus.otpSent) {
+          final countryState = context.read<CountrySelectorCubit>().state;
+          Navigator.pushNamed(
+            context,
+            AppRoutes.otpVerification,
+            arguments: {
+              'phone': state.phoneNumber,
+              'countryCode': countryState.country.phoneCode,
+            },
+          );
+          // Reset status so navigating back doesn't re-trigger
+          context.read<PhoneFormCubit>().resetStatus();
+        } else if (state.status == PhoneFormStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.apiErrorMessage ?? 'Something went wrong'),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        } else if (state.status == PhoneFormStatus.rateLimited) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                state.apiErrorMessage ?? 'Too many requests. Please wait.',
+              ),
+              backgroundColor: Colors.orange.shade700,
+            ),
+          );
+        }
+      },
+      child: Stack(
+        children: [
+          // Top Image Section
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 280.h,
+            child: Center(
+              child: Hero(
+                tag: 'morphing_image',
+                flightShuttleBuilder: morphingImageFlightShuttleBuilder,
+                child: Image.asset(AppAssets.phoneEntry, fit: BoxFit.contain),
+              ),
             ),
           ),
-        ),
-        // Bottom Sheet Section
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Stack(
-            children: [
-              // 1. Hero Background (Visual Only)
-              Positioned.fill(
-                child: Hero(
-                  tag: 'morphing_bottom_container',
-                  flightShuttleBuilder: morphingContainerFlightShuttleBuilder,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(30.r),
+          // Bottom Sheet Section
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Stack(
+              children: [
+                // 1. Hero Background (Visual Only)
+                Positioned.fill(
+                  child: Hero(
+                    tag: 'morphing_bottom_container',
+                    flightShuttleBuilder: morphingContainerFlightShuttleBuilder,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(30.r),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // 2. The Content
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.h),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 80.w,
-                          height: 4.h,
-                          decoration: BoxDecoration(
-                            color: AppColors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(2.r),
+                // 2. The Content
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.w,
+                    vertical: 15.h,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 80.w,
+                            height: 4.h,
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(2.r),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 20.h),
-                      const HeaderText(),
-                      SizedBox(height: 20.h),
-                      BlocBuilder<CountrySelectorCubit, CountrySelectorState>(
-                        builder: (context, countryState) {
-                          return BlocBuilder<PhoneFormCubit, PhoneFormState>(
-                            builder: (context, phoneState) {
-                              return PhoneInputSection(
-                                selectedCountry: countryState.country,
-                                errorText: phoneState.error,
-                                onPhoneChanged: (value) {
-                                  context
-                                      .read<PhoneFormCubit>()
-                                      .phoneNumberChanged(
-                                        value,
-                                        countryCode:
-                                            countryState.country.countryCode,
-                                      );
-                                },
-                                onCountryTap: () async {
-                                  final country =
-                                      await showModalBottomSheet<Country>(
-                                        context: context,
-                                        isScrollControlled: true,
-                                        backgroundColor: Colors.transparent,
-                                        builder: (context) => BlocProvider(
-                                          create: (context) =>
-                                              CountrySearchCubit()
-                                                ..loadCountries(),
-                                          child: const CountryPickerSheet(),
-                                        ),
-                                      );
-                                  if (country != null && context.mounted) {
+                        SizedBox(height: 20.h),
+                        const HeaderText(),
+                        SizedBox(height: 20.h),
+                        BlocBuilder<CountrySelectorCubit, CountrySelectorState>(
+                          builder: (context, countryState) {
+                            return BlocBuilder<PhoneFormCubit, PhoneFormState>(
+                              builder: (context, phoneState) {
+                                return PhoneInputSection(
+                                  selectedCountry: countryState.country,
+                                  errorText: phoneState.error,
+                                  onPhoneChanged: (value) {
                                     context
-                                        .read<CountrySelectorCubit>()
-                                        .updateCountry(country);
-                                  }
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      SizedBox(height: 32.h),
-                      BlocBuilder<PhoneFormCubit, PhoneFormState>(
-                        builder: (context, state) {
-                          return PrimaryButton(
-                            text: AppTexts.sendOtp,
-                            onPressed: () {
-                              if (state.isValid) {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.otpVerification,
+                                        .read<PhoneFormCubit>()
+                                        .phoneNumberChanged(
+                                          value,
+                                          countryCode:
+                                              countryState.country.countryCode,
+                                        );
+                                  },
+                                  onCountryTap: () async {
+                                    final country =
+                                        await showModalBottomSheet<Country>(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          backgroundColor: Colors.transparent,
+                                          builder: (context) => BlocProvider(
+                                            create: (context) =>
+                                                CountrySearchCubit()
+                                                  ..loadCountries(),
+                                            child: const CountryPickerSheet(),
+                                          ),
+                                        );
+                                    if (country != null && context.mounted) {
+                                      context
+                                          .read<CountrySelectorCubit>()
+                                          .updateCountry(country);
+                                    }
+                                  },
                                 );
-                              } else {
-                                context.read<PhoneFormCubit>().validate(
-                                  countryCode: context
-                                      .read<CountrySelectorCubit>()
-                                      .state
-                                      .country
-                                      .countryCode,
-                                );
-                              }
-                            },
-                          );
-                        },
-                      ),
-                      SizedBox(height: 20.h),
-                    ],
+                              },
+                            );
+                          },
+                        ),
+                        SizedBox(height: 32.h),
+                        
+                        BlocBuilder<PhoneFormCubit, PhoneFormState>(
+                          builder: (context, state) {
+                            final isLoading =
+                                state.status == PhoneFormStatus.loading;
+
+                            return PrimaryButton(
+                              text: isLoading ? 'Sending...' : AppTexts.sendOtp,
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      if (state.isValid) {
+                                        final countryState = context
+                                            .read<CountrySelectorCubit>()
+                                            .state;
+                                        context.read<PhoneFormCubit>().sendOtp(
+                                              phone: state.phoneNumber,
+                                              countryCode:
+                                                  countryState.country.phoneCode,
+                                            );
+                                      } else {
+                                        context
+                                            .read<PhoneFormCubit>()
+                                            .validate(
+                                              countryCode: context
+                                                  .read<CountrySelectorCubit>()
+                                                  .state
+                                                  .country
+                                                  .countryCode,
+                                            );
+                                      }
+                                    },
+                            );
+                          },
+                        ),
+                        SizedBox(height: 20.h),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

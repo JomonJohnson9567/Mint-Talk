@@ -39,8 +39,8 @@ class Validators {
       return 'OTP is required';
     }
     final otp = value.trim();
-    if (!RegExp(r'^[0-9]{5}$').hasMatch(otp)) {
-      return 'Enter a valid 5-digit OTP';
+    if (!RegExp(r'^[0-9]{4}$').hasMatch(otp)) {
+      return 'Enter a valid 4-digit OTP';
     }
     return null;
   }

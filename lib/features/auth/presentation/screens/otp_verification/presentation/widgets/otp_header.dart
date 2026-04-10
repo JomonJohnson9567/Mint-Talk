@@ -4,7 +4,19 @@ import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class OtpHeader extends StatelessWidget {
-  const OtpHeader({super.key});
+  final String phone;
+  final String countryCode;
+
+  const OtpHeader({super.key, required this.phone, required this.countryCode});
+
+  String get _formattedPhoneNumber {
+    final values = [
+      countryCode.trim(),
+      phone.trim(),
+    ].where((value) => value.isNotEmpty).toList();
+
+    return values.join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +32,7 @@ class OtpHeader extends StatelessWidget {
           ),
         ),
         SizedBox(height: 8.h),
-        Row(
+        Wrap(
           children: [
             Text(
               AppTexts.sentCodeToNumber,
@@ -31,7 +43,7 @@ class OtpHeader extends StatelessWidget {
               ),
             ),
             Text(
-              '+91 9876543210',
+              _formattedPhoneNumber,
               style: TextStyle(
                 fontSize: 14.sp,
                 color: AppColors.primaryColor,

@@ -19,6 +19,8 @@ import 'package:mint_talk/features/user_side/main_navigation/presentation/screen
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/privacy_policy/privacy_policy.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/splash/splash.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/welcome/welcome.dart';
+import 'package:mint_talk/features/user_side/online_users/presentation/screens/audio_call.dart';
+import 'package:mint_talk/features/user_side/online_users/presentation/screens/video_call.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/profile_setup_cubit.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/screen/profile_setup.dart';
@@ -34,7 +36,6 @@ class AppRouter {
       builder: (_) => const HostProfileSetupScreen(),
     ),
 
-    
     // Onboarding
     AppRoutes.splash: RouteConfig(builder: (_) => const SplashScreen()),
     AppRoutes.welcome: RouteConfig(
@@ -58,7 +59,7 @@ class AppRouter {
     ),
     AppRoutes.otpVerification: RouteConfig(
       builder: (_) => BlocProvider(
-        create: (_) => getIt<OtpVerificationCubit>(),
+        create: (_) => getIt<OtpVerificationCubit>()..initialize(),
         child: const OtpVerificationScreen(),
       ),
       useMorphing: true,
@@ -92,6 +93,17 @@ class AppRouter {
     AppRoutes.rechargePlansScreen: RouteConfig(
       builder: (_) => const RechargePlans(),
     ),
+
+    //video call online screen
+    AppRoutes.videocallOnlineScreen: RouteConfig(
+      builder: (_) => const VideoCallOnlineScreen(),
+    ),
+
+    //audio call online screen
+    AppRoutes.audioCallOnlineScreen: RouteConfig(
+      builder: (_) => const AudioCallOnlineScreen(),
+    ),
+
     AppRoutes.hostProfileScreen: RouteConfig(
       builder: (settings) {
         final user = RouteArgs.require<HomeUserEntity>(settings);

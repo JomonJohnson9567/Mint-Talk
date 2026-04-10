@@ -5,6 +5,12 @@ class AppColors {
   static const Color tealBackground = Color(0xFF4FB6AD);
   static const Color primaryColor = Color(0xFF4A52DA);
   static const Color goldColor = Color(0xFFFFD700);
+  static const Color softBlue = Color(0xFFF4F6FF);
+  static const Color softMint = Color(0xFFEAF8F4);
+  static const Color borderSoft = Color(0xFFE7EBF3);
+  static const Color ratingGold = Color(0xFFFFC857);
+  static const Color onlineIndicator = Color(0xFF18A957);
+  static const Color subtitleText = Color(0xFF6E7787);
   static const Color white = Colors.white;
   static const Color black = Colors.black;
   static const Color grey = Colors.grey;
