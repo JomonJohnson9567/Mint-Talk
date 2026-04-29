@@ -7,10 +7,19 @@ import 'package:injectable/injectable.dart';
 class AuthLocalDataSource {
   static const _isOtpVerifiedKey = 'is_otp_verified';
   static const _isProfileCompletedKey = 'is_profile_completed';
+  static const _userIdKey = 'user_id';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   const AuthLocalDataSource();
+
+  Future<void> saveUserId(String userId) async {
+    await _secureStorage.write(key: _userIdKey, value: userId);
+  }
+
+  Future<String?> getUserId() async {
+    return _secureStorage.read(key: _userIdKey);
+  }
 
   Future<void> saveIsOtpVerified(bool isVerified) async {
     await _secureStorage.write(

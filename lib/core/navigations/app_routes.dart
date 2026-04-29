@@ -4,14 +4,14 @@ class AppRoutes {
   static const String privacyPolicy = '/privacy_policy';
   static const String signUp = '/sign_up';
   static const String success = '/success';
-  static const String setupProfile = '/setupprofile';
+  static const String setupProfile = '/profile-setup';
   static const String homepage = '/homepage';
   static const String termsAndcondition = '/termsandconditions';
   static const String locationPermission = '/locationpermission';
   static const String helpAndSupport = '/helpandsupport';
   static const String phoneNumber = '/phonenumber';
   static const String otpVerification = '/otpverification';
-  static const String profileSetup = '/profilesetup';
+  static const String profileSetup = '/profile-setup';
   static const String successSetup = '/successsetup';
   static const String mainNavigation = '/mainNavigation';
   static const String profileScreen = '/profileScreen';
@@ -23,4 +23,6 @@ class AppRoutes {
   static const String rechargePlansScreen = '/rechargePlansScreen';
   static const String videocallOnlineScreen = '/videocallOnlineScreen';
   static const String audioCallOnlineScreen = '/audioCallOnlineScreen'; 
+  static const String planDetail = '/planDetail';
+  static const String rechargeSuccess = '/rechargeSuccess';
 }

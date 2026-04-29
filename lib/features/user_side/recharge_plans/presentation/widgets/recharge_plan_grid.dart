@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../models/recharge_plan_item.dart';
+import '../../data/models/recharge_plan_item.dart';
 import 'recharge_plan_card.dart';
 
 class RechargePlanGrid extends StatelessWidget {

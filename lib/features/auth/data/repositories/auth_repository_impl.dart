@@ -30,10 +30,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String countryCode,
   }) async {
     try {
-      await _remoteDataSource.sendOtp(
-        phone: phone,
-        countryCode: countryCode,
-      );
+      await _remoteDataSource.sendOtp(phone: phone, countryCode: countryCode);
       return const Right(null);
     } on RateLimitException catch (e) {
       return Left(RateLimitFailure(message: e.message));
@@ -60,10 +57,13 @@ class AuthRepositoryImpl implements AuthRepository {
         countryCode: countryCode,
         otp: otp,
       );
-      
+
       // Save status to local data source upon successful OTP verification
+      await _localDataSource.saveUserId(result.user.id);
       await _localDataSource.saveIsOtpVerified(true);
-      await _localDataSource.saveIsProfileCompleted(result.user.profileCompleted);
+      await _localDataSource.saveIsProfileCompleted(
+        result.user.profileCompleted,
+      );
 
       return Right(result);
     } on RateLimitException catch (e) {
@@ -105,8 +105,27 @@ class AuthRepositoryImpl implements AuthRepository {
       final isVerified = await _localDataSource.getIsOtpVerified();
       return Right(isVerified);
     } catch (e) {
-      return Left(CacheFailure(message: 'Failed to check OTP verification status: $e'));
+      return Left(
+        CacheFailure(message: 'Failed to check OTP verification status: $e'),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> logout() async {
+    try {
+      await _remoteDataSource.logout();
+      await _tokenManager.clearAll();
+      await _localDataSource.clearAuthData();
+      return const Right(null);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 }
-

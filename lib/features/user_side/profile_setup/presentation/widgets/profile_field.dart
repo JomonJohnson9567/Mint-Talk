@@ -17,6 +17,7 @@ class ProfileField extends StatelessWidget {
   final String? errorText;
   final String? initialValue;
   final Color? labelColor;
+  final AutovalidateMode? autovalidateMode;
 
   const ProfileField({
     super.key,
@@ -31,6 +32,7 @@ class ProfileField extends StatelessWidget {
     this.errorText,
     this.initialValue,
     this.labelColor,
+    this.autovalidateMode,
   });
 
   @override
@@ -51,6 +53,7 @@ class ProfileField extends StatelessWidget {
         TextFormField(
           initialValue: initialValue,
           validator: validator,
+          autovalidateMode: autovalidateMode,
           onChanged: onChanged,
           controller: controller,
           readOnly: readOnly,

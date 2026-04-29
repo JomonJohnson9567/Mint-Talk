@@ -88,34 +88,48 @@ class CallLogItem extends StatelessWidget {
                       color: _getCallColor(type),
                     ),
                     SizedBox(width: 6.w),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: AppColors.grey,
-                        fontWeight: FontWeight.w400,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              time,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: AppColors.grey,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          if (duration != null) ...[
+                            SizedBox(width: 8.w),
+                            Container(
+                              width: 4.w,
+                              height: 4.w,
+                              decoration: const BoxDecoration(
+                                color: AppColors.grey,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Flexible(
+                              child: Text(
+                                duration!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.grey,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (duration != null) ...[
-                      SizedBox(width: 8.w),
-                      Container(
-                        width: 4.w,
-                        height: 4.w,
-                        decoration: const BoxDecoration(
-                          color: AppColors.grey,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        duration!,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppColors.grey,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],

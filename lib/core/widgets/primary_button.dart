@@ -8,6 +8,7 @@ class PrimaryButton extends StatelessWidget {
   final double width;
   final Color backgroundColor;
   final Color foregroundColor;
+  final bool isLoading;
 
   const PrimaryButton({
     super.key,
@@ -16,6 +17,7 @@ class PrimaryButton extends StatelessWidget {
     this.width = double.infinity,
     this.backgroundColor = AppColors.primaryColor,
     this.foregroundColor = AppColors.white,
+    this.isLoading = false,
   });
 
   @override
@@ -36,10 +38,19 @@ class PrimaryButton extends StatelessWidget {
               ? const BorderSide(color: AppColors.grey)
               : null,
         ),
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
-        ),
+        child: isLoading
+            ? SizedBox(
+                height: 20.h,
+                width: 20.h,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: foregroundColor,
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+              ),
       ),
     );
   }

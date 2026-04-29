@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
-import '../models/recharge_plan_section.dart';
+import '../../data/models/recharge_plan_section.dart';
 import 'recharge_plan_grid.dart';
 
 class RechargePlanSectionWidget extends StatelessWidget {

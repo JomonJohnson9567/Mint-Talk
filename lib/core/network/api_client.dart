@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
+import 'package:mint_talk/core/network/network_error_handler.dart';
+import 'package:mint_talk/core/network/network_logger.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 
 /// Centralized HTTP client used by **all** remote data sources.
@@ -15,7 +16,6 @@ import 'package:mint_talk/core/utils/token_manager.dart';
 /// - Attach `Authorization: Bearer <accessToken>` on protected requests.
 /// - On 401/403: auto-call refresh-token, retry **once**.
 /// - On refresh failure: clear tokens, throw [UnauthorizedException].
-/// - Normalize both API response formats.
 /// - Exponential backoff for 429 / 500+.
 @lazySingleton
 class ApiClient {
@@ -31,7 +31,6 @@ class ApiClient {
   // ── Public API ──────────────────────────────────────────────────────
 
   /// Send a GET request to the given [endpoint].
-  /// Set [requiresAuth] to `true` for protected endpoints.
   Future<Map<String, dynamic>> get(
     String endpoint, {
     bool requiresAuth = false,
@@ -94,11 +93,12 @@ class ApiClient {
     final uri = _buildUri(endpoint);
     final headers = await _buildHeaders(requiresAuth: requiresAuth);
 
-    log('================= API REQUEST ==================\n'
-        '➡️ URL: POST $uri\n'
-        '➡️ Auth: ${requiresAuth ? "Yes" : "No"}\n'
-        '➡️ Body: ${body != null ? jsonEncode(body) : "none"}\n'
-        '================================================');
+    NetworkLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      requiresAuth: requiresAuth,
+      body: body,
+    );
 
     final response = await _httpClient
         .post(
@@ -108,11 +108,12 @@ class ApiClient {
         )
         .timeout(_requestTimeout);
 
-    log('================= API RESPONSE =================\n'
-        '⬅️ URL: POST $uri\n'
-        '⬅️ Status: ${response.statusCode}\n'
-        '⬅️ Body: ${response.body}\n'
-        '================================================');
+    NetworkLogger.logResponse(
+      method: 'POST',
+      uri: uri,
+      statusCode: response.statusCode,
+      body: response.body,
+    );
 
     return response;
   }
@@ -126,50 +127,46 @@ class ApiClient {
     Map<String, dynamic>? body,
     Map<String, String>? queryParams,
     bool isRetry = false,
+    int retryCount = 0,
   }) async {
     try {
       final uri = _buildUri(endpoint, queryParams: queryParams);
       final headers = await _buildHeaders(requiresAuth: requiresAuth);
       final encodedBody = body != null ? jsonEncode(body) : null;
 
-      log('================= API REQUEST ==================\n'
-          '➡️ URL: $method $uri\n'
-          '➡️ Auth: ${requiresAuth ? "Yes" : "No"} (Retry: $isRetry)\n'
-          '➡️ Body: ${encodedBody ?? "none"}\n'
-          '================================================');
+      NetworkLogger.logRequest(
+        method: method,
+        uri: uri,
+        requiresAuth: requiresAuth,
+        body: body,
+        isRetry: isRetry,
+      );
 
       late http.Response response;
 
       switch (method) {
         case 'GET':
-          response = await _httpClient
-              .get(uri, headers: headers)
-              .timeout(_requestTimeout);
+          response = await _httpClient.get(uri, headers: headers).timeout(_requestTimeout);
           break;
         case 'POST':
-          response = await _httpClient
-              .post(uri, headers: headers, body: encodedBody)
-              .timeout(_requestTimeout);
+          response = await _httpClient.post(uri, headers: headers, body: encodedBody).timeout(_requestTimeout);
           break;
         case 'PATCH':
-          response = await _httpClient
-              .patch(uri, headers: headers, body: encodedBody)
-              .timeout(_requestTimeout);
+          response = await _httpClient.patch(uri, headers: headers, body: encodedBody).timeout(_requestTimeout);
           break;
         case 'DELETE':
-          response = await _httpClient
-              .delete(uri, headers: headers)
-              .timeout(_requestTimeout);
+          response = await _httpClient.delete(uri, headers: headers).timeout(_requestTimeout);
           break;
         default:
           throw const ServerException(message: 'Unsupported HTTP method');
       }
 
-      log('================= API RESPONSE =================\n'
-          '⬅️ URL: $method $uri\n'
-          '⬅️ Status: ${response.statusCode}\n'
-          '⬅️ Body: ${response.body}\n'
-          '================================================');
+      NetworkLogger.logResponse(
+        method: method,
+        uri: uri,
+        statusCode: response.statusCode,
+        body: response.body,
+      );
 
       return _handleResponse(
         response,
@@ -181,15 +178,35 @@ class ApiClient {
         isRetry: isRetry,
       );
     } on SocketException {
-      log('❌ API ERROR SocketException on $method $endpoint');
+      if (retryCount < 3) {
+        return _sendRequest(
+          method: method,
+          endpoint: endpoint,
+          requiresAuth: requiresAuth,
+          body: body,
+          queryParams: queryParams,
+          isRetry: isRetry,
+          retryCount: retryCount + 1,
+        );
+      }
+      NetworkLogger.logError('SocketException', method, endpoint);
       throw const NetworkException();
     } on TimeoutException {
-      log('❌ API ERROR TimeoutException on $method $endpoint');
-      throw const NetworkException(
-        message: 'Request timed out. Please try again.',
-      );
+      if (retryCount < 3) {
+        return _sendRequest(
+          method: method,
+          endpoint: endpoint,
+          requiresAuth: requiresAuth,
+          body: body,
+          queryParams: queryParams,
+          isRetry: isRetry,
+          retryCount: retryCount + 1,
+        );
+      }
+      NetworkLogger.logError('TimeoutException', method, endpoint);
+      throw const NetworkException(message: 'Request timed out. Please try again.');
     } on http.ClientException catch (e) {
-      log('❌ API ERROR ClientException ($e) on $method $endpoint');
+      NetworkLogger.logError('ClientException', method, endpoint, e);
       throw const NetworkException(message: 'Connection failed');
     }
   }
@@ -204,7 +221,7 @@ class ApiClient {
     required bool isRetry,
   }) async {
     final statusCode = response.statusCode;
-    final responseBody = _decodeBody(response);
+    final responseBody = NetworkErrorHandler.decodeBody(response);
 
     // ── Success ─────────────────────────────────────────
     if (statusCode >= 200 && statusCode < 300) {
@@ -228,34 +245,9 @@ class ApiClient {
       throw const UnauthorizedException();
     }
 
-    // ── 429 — Rate Limited ──────────────────────────────
-    if (statusCode == 429) {
-      throw RateLimitException(
-        message: responseBody['message'] ?? 'Too many requests',
-      );
-    }
-
     // ── Other errors ────────────────────────────────────
-    throw ServerException(
-      message: responseBody['message'] ?? 'Something went wrong',
-      statusCode: statusCode,
-    );
-  }
-
-  /// Handles BOTH API response formats:
-  /// Format 1: `{ "success": true/false, ... }`
-  /// Format 2: `{ "status": "success" | "error", ... }`
-  Map<String, dynamic> _decodeBody(http.Response response) {
-    try {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (_) {
-      final bodyStr = response.body.trim();
-      // If the backend crashes and returns an HTML page (like a 500 error), return a clean fallback
-      if (bodyStr.startsWith('<') || bodyStr.length > 200) {
-        return {'message': 'Server is experiencing issues. Please try again later.'};
-      }
-      return {'message': bodyStr};
-    }
+    NetworkErrorHandler.handleError(statusCode, responseBody);
+    return responseBody; // Should not reach here as handleError throws
   }
 
   /// Attempts to refresh the access token using the stored refresh token.
@@ -265,20 +257,17 @@ class ApiClient {
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
       final uri = _buildUri(ApiEndpoints.refreshToken);
-      final response = await _httpClient
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': 'refreshToken=$refreshToken',
-            },
-          )
-          .timeout(_requestTimeout);
+      final response = await _httpClient.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': 'refreshToken=$refreshToken',
+        },
+      ).timeout(_requestTimeout);
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final isSuccess =
-            body['success'] == true || body['status'] == 'success';
+        final isSuccess = body['success'] == true || body['status'] == 'success';
 
         if (isSuccess && body['accessToken'] != null) {
           _tokenManager.saveAccessToken(body['accessToken'] as String);
@@ -294,7 +283,6 @@ class ApiClient {
   // ── Helpers ──────────────────────────────────────────────────────────
 
   Uri _buildUri(String endpoint, {Map<String, String>? queryParams}) {
-    // Health endpoint is outside /api/v1
     if (endpoint.startsWith('http')) {
       return Uri.parse(endpoint);
     }
@@ -319,7 +307,6 @@ class ApiClient {
       }
     }
 
-    // Attach refresh token cookie for requests that need it
     final refreshToken = await _tokenManager.getRefreshToken();
     if (refreshToken != null && refreshToken.isNotEmpty) {
       headers['Cookie'] = 'refreshToken=$refreshToken';
@@ -328,3 +315,4 @@ class ApiClient {
     return headers;
   }
 }
+

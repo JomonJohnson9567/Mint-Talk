@@ -10,6 +10,9 @@ import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.d
 import 'package:mint_talk/features/user_side/home/presentation/screen/home.dart';
 import 'package:mint_talk/features/user_side/call_log/presentation/screen/call_log.dart';
 
+import 'package:mint_talk/core/di/injection.dart';
+import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
+
 class MainNavigationScreen extends StatelessWidget {
   const MainNavigationScreen({super.key});
 

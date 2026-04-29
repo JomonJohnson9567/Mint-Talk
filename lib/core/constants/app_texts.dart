@@ -146,6 +146,18 @@ class AppTexts {
   static const String price4494 = '4494';
   static const String price4949 = '4949';
   static const String price11898 = '11898';
+  static const String planDetails = 'Plan Details';
+  static const String rechargeNow = 'Recharge Now';
+  static const String confirmRecharge = 'Confirm Recharge';
+  static const String planBenefits = 'Plan Benefits';
+  static const String instantActivation = 'Instant Activation';
+  static const String securePayment = 'Secure Payment';
+  static const String selectPaymentMethod = 'Select Payment Method';
+  static const String paymentSummary = 'Payment Summary';
+  static const String subtotal = 'Subtotal';
+  static const String gst = 'GST (18%)';
+  static const String totalAmount = 'Total Amount';
+
 
   //Settings Screen
   static const String logout = 'Logout';

@@ -95,6 +95,26 @@ class AuthRemoteDataSource {
     return AuthResponseEntity(user: user, accessToken: accessToken);
   }
 
+  /// POST /auth/logout
+  ///
+  /// Invalidates current session on backend.
+  /// Success is accepted for 200 / 204 paths handled by [ApiClient].
+  Future<void> logout() async {
+    final response = await _apiClient.post(
+      ApiEndpoints.logout,
+      requiresAuth: true,
+    );
+
+    // For 204, body may be empty and still valid. Only reject explicit failure payloads.
+    final isExplicitFailure =
+        response['success'] == false || response['status'] == 'error';
+    if (isExplicitFailure) {
+      throw ServerException(
+        message: response['message'] as String? ?? 'Failed to logout',
+      );
+    }
+  }
+
   /// Extracts the `refreshToken` value from a `Set-Cookie` header string.
   String? _extractRefreshToken(String setCookieHeader) {
     // Cookie format: refreshToken=<value>; Path=/; HttpOnly; ...

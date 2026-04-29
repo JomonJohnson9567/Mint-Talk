@@ -8,8 +8,24 @@ class Validators {
       return 'Name is required';
     }
 
-    if (value.trim().length < 2) {
-      return 'Name must be at least 2 characters';
+    final trimmed = value.trim();
+    if (trimmed.length < 5) {
+      return 'Name must be at least 5 characters';
+    }
+    if (trimmed.length > 50) {
+      return 'Name must not exceed 50 characters';
+    }
+    return null;
+  }
+
+  static String? referralCode(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // Optional
+    }
+    final code = value.trim();
+    final regex = RegExp(r'^[A-Z0-9-]{4,15}$');
+    if (!regex.hasMatch(code)) {
+      return 'Invalid referral code format';
     }
     return null;
   }

@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/presentation/models/recharge_plan_data.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_section.dart';
+import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
+import 'package:mint_talk/features/wallet/presentation/cubit/wallet_state.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_data.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/recharge_plan_section_widget.dart';
 
 class ScreenContents extends StatelessWidget {
@@ -15,6 +20,9 @@ class ScreenContents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Trigger plan fetch on build
+    context.read<WalletCubit>().fetchPlans();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final horizontalPadding = constraints.maxWidth >= 720 ? 24.0 : 16.0;
@@ -29,27 +37,91 @@ class ScreenContents extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: contentWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _RechargeOverviewCard(),
-                  SizedBox(height: 18.h),
-                  for (var index = 0;
-                      index < RechargePlanData.sections.length;
-                      index++) ...[
-                    RechargePlanSectionWidget(
-                      section: RechargePlanData.sections[index],
-                    ),
-                    if (index != RechargePlanData.sections.length - 1)
+              child: BlocBuilder<WalletCubit, WalletState>(
+                buildWhen: (previous, current) =>
+                    current.status == WalletStatus.plansLoading ||
+                    current.status == WalletStatus.plansLoaded ||
+                    current.status == WalletStatus.plansError,
+                builder: (context, state) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _RechargeOverviewCard(),
                       SizedBox(height: 18.h),
-                  ],
-                ],
+                      if (state.status == WalletStatus.plansLoading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                        )
+                      else if (state.status == WalletStatus.plansLoaded)
+                        ..._buildPlanSections(state.plans)
+                      else
+                        // Fallback to dummy data if not loaded or error
+                        ..._buildPlanSections([]),
+                    ],
+                  );
+                },
               ),
             ),
           ),
         );
       },
     );
+  }
+
+  List<Widget> _buildPlanSections(List<RechargePlanItem> mergedPlans) {
+    // If no plans loaded yet, just show dummy sections
+    if (mergedPlans.isEmpty) {
+      return RechargePlanData.sections.map((section) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: 18.h),
+          child: RechargePlanSectionWidget(section: section),
+        );
+      }).toList();
+    }
+
+    // Identify API plans (those not in dummy data)
+    // For simplicity, we'll group API plans into "Verified Packages"
+    // and then show the standard dummy sections.
+    final dummyIds = RechargePlanData.sections
+        .expand((s) => s.plans)
+        .map((p) => p.id)
+        .toSet();
+
+    final apiPlans = mergedPlans.where((p) => !dummyIds.contains(p.id)).toList();
+
+    final List<Widget> sections = [];
+
+    // 1. Add API Plans Section if available
+    if (apiPlans.isNotEmpty) {
+      sections.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: 18.h),
+          child: RechargePlanSectionWidget(
+            section: RechargePlanSection(
+              title: "Verified Packages",
+              plans: apiPlans,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. Add Original Dummy Sections
+    for (var dummySection in RechargePlanData.sections) {
+      sections.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: 18.h),
+          child: RechargePlanSectionWidget(section: dummySection),
+        ),
+      );
+    }
+
+    return sections;
   }
 }
 
@@ -114,21 +186,53 @@ class _OverviewContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
-          decoration: BoxDecoration(
-            color: AppColors.white.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(999.r),
-          ),
-          child: Text(
-            'Wallet Top-Up',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(999.r),
+              ),
+              child: Text(
+                'Wallet Top-Up',
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ),
-          ),
+            BlocBuilder<WalletCubit, WalletState>(
+              builder: (context, state) {
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.account_balance_wallet,
+                          color: AppColors.white, size: 14.sp),
+                      SizedBox(width: 6.w),
+                      Text(
+                        '${state.balance}',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         SizedBox(height: 14.h),
         Text(

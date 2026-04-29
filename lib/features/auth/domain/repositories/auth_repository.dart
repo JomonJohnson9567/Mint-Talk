@@ -27,4 +27,7 @@ abstract class AuthRepository {
 
   /// Checks if the user has successfully completed OTP verification.
   Future<Either<Failure, bool>> checkIsOtpVerified();
+
+  /// Logs out the current user and clears local auth session on success.
+  Future<Either<Failure, void>> logout();
 }

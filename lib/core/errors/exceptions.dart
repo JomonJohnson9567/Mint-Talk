@@ -37,3 +37,12 @@ class RateLimitException implements Exception {
   @override
   String toString() => 'RateLimitException(message: $message)';
 }
+
+class ValidationException implements Exception {
+  final Map<String, String> errors;
+
+  const ValidationException(this.errors);
+
+  @override
+  String toString() => 'ValidationException(errors: $errors)';
+}

@@ -13,6 +13,7 @@ import 'package:mint_talk/features/auth/presentation/screens/success/presentatio
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/screen/host_profile_setup.dart';
 import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/screen/host_profile_screen.dart';
 import 'package:mint_talk/features/user_side/main_navigation/presentation/screen/main_navigation_screen.dart';
@@ -21,16 +22,28 @@ import 'package:mint_talk/features/user_side/onboard/presentation/screens/splash
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/welcome/welcome.dart';
 import 'package:mint_talk/features/user_side/online_users/presentation/screens/audio_call.dart';
 import 'package:mint_talk/features/user_side/online_users/presentation/screens/video_call.dart';
-import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
-import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/profile_setup_cubit.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/screen/profile_setup.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/success_setup_screen.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/plan_detail_screen.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/recharge_plans.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/screen/settings_screen.dart';
+
+import 'package:mint_talk/features/wallet/presentation/pages/recharge_success_screen.dart';
 
 class AppRouter {
   // ── Route definitions ──────────────────────────────────────────────
   static final Map<String, RouteConfig> _routes = {
+    // ... other routes ...
+    AppRoutes.rechargeSuccess: RouteConfig(
+      builder: (settings) {
+        final args = settings.arguments as Map<String, dynamic>;
+        return RechargeSuccessScreen(
+          addedPoints: args['addedPoints'] as int,
+          totalBalance: args['totalBalance'] as int,
+        );
+      },
+    ),
+    // ...
     // host profile setup
     AppRoutes.hostProfileSetupScreen: RouteConfig(
       builder: (_) => const HostProfileSetupScreen(),
@@ -71,10 +84,7 @@ class AppRouter {
 
     // Profile setup
     AppRoutes.setupProfile: RouteConfig(
-      builder: (_) => BlocProvider(
-        create: (_) => getIt<ProfileSetupCubit>(),
-        child: const ProfileSetupScreen(),
-      ),
+      builder: (_) => const ProfileSetupScreen(),
     ),
     AppRoutes.successSetup: RouteConfig(
       builder: (_) => const SuccessSetupScreen(),
@@ -92,6 +102,12 @@ class AppRouter {
     // recharge plans
     AppRoutes.rechargePlansScreen: RouteConfig(
       builder: (_) => const RechargePlans(),
+    ),
+    AppRoutes.planDetail: RouteConfig(
+      builder: (settings) {
+        final args = RouteArgs.require<PlanDetailArgs>(settings);
+        return PlanDetailScreen(args: args);
+      },
     ),
 
     //video call online screen

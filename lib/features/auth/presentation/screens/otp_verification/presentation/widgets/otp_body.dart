@@ -24,20 +24,11 @@ class OtpBody extends StatelessWidget {
       listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) {
         if (state.status == OtpStatus.success) {
-          final authResponse = state.authResponse;
-          if (authResponse != null && authResponse.user.profileCompleted) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.mainNavigation,
-              (route) => false,
-            );
-          } else {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.setupProfile,
-              (route) => false,
-            );
-          }
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.success,
+            (route) => false,
+          );
         } else if (state.status == OtpStatus.failure) {
           _showSnackBar(
             context,

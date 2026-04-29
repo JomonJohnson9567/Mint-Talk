@@ -29,7 +29,11 @@ class UnauthorizedFailure extends Failure {
 
 /// Client-side validation failure (invalid phone, OTP format, etc.)
 class ValidationFailure extends Failure {
-  const ValidationFailure({required super.message});
+  final Map<String, String>? errors;
+  const ValidationFailure({required super.message, this.errors});
+
+  @override
+  List<Object?> get props => [...super.props, errors];
 }
 
 /// 429 Too Many Requests — the user is rate-limited.
@@ -40,4 +44,14 @@ class RateLimitFailure extends Failure {
 /// Cache failure (Failed to read/write local storage).
 class CacheFailure extends Failure {
   const CacheFailure({required super.message});
+}
+
+/// Payment related failures (Razorpay, verification, etc.)
+class PaymentFailure extends Failure {
+  const PaymentFailure({required super.message});
+}
+
+/// Catch-all for unexpected errors
+class UnknownFailure extends Failure {
+  const UnknownFailure({super.message = 'An unexpected error occurred'});
 }
