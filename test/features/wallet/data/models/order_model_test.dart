@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mint_talk/features/wallet/data/models/order_model.dart';
+import 'package:mint_talk/features/user_side/wallet/data/models/order_model.dart';
 
 void main() {
   group('OrderModel.fromJson', () {

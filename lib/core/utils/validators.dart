@@ -103,4 +103,18 @@ class Validators {
     }
     return null;
   }
+
+  static String? bio(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Bio is required';
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 10) {
+      return 'Bio must be at least 10 characters';
+    }
+    if (trimmed.length > 200) {
+      return 'Bio must not exceed 200 characters';
+    }
+    return null;
+  }
 }

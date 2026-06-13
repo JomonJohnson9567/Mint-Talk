@@ -1,5 +1,6 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/utils/app_logger.dart';
 
 @lazySingleton
 class RazorpayService {
@@ -30,7 +31,7 @@ class RazorpayService {
 
     _isInitialized = true;
 
-    print("✅ Razorpay initialized");
+    appLogger.d("Razorpay initialized");
   }
 
   /// Open checkout
@@ -39,44 +40,44 @@ class RazorpayService {
       throw Exception("RazorpayService not initialized. Call init() first.");
     }
 
-    print("🚀 Opening Razorpay Checkout");
+    appLogger.i("Opening Razorpay Checkout");
     _razorpay.open(options);
 
     // Debug helper
     Future.delayed(const Duration(seconds: 5), () {
-      print("⏳ Waiting for Razorpay callback...");
+      appLogger.d("Waiting for Razorpay callback...");
     });
   }
 
   /// Success handler
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    print("✅ PAYMENT SUCCESS");
-    print("PaymentId: ${response.paymentId}");
-    print("OrderId: ${response.orderId}");
-    print("Signature: ${response.signature}");
+    appLogger.i("PAYMENT SUCCESS\n"
+        "PaymentId: ${response.paymentId}\n"
+        "OrderId: ${response.orderId}\n"
+        "Signature: ${response.signature}");
 
     _onSuccess?.call(response);
   }
 
   /// Error handler
   void _handlePaymentError(PaymentFailureResponse response) {
-    print("❌ PAYMENT ERROR");
-    print("Code: ${response.code}");
-    print("Message: ${response.message}");
+    appLogger.e("PAYMENT ERROR\n"
+        "Code: ${response.code}\n"
+        "Message: ${response.message}");
 
     _onError?.call(response);
   }
 
   /// External wallet handler
   void _handleExternalWallet(ExternalWalletResponse response) {
-    print("💳 EXTERNAL WALLET: ${response.walletName}");
+    appLogger.i("EXTERNAL WALLET: ${response.walletName}");
 
     _onExternal?.call(response);
   }
 
   /// Dispose listeners
   void dispose() {
-    print("🧹 Clearing Razorpay listeners");
+    appLogger.d("Clearing Razorpay listeners");
     _razorpay.clear();
     _isInitialized = false;
   }

@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/core/constants/api_endpoints.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/network/api_client.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
@@ -52,7 +50,7 @@ class AuthRemoteDataSource {
       body: {'phone': phone, 'countryCode': countryCode, 'otp': otp},
     );
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
 
     // Check response status code
     if (response.statusCode == 429) {
@@ -76,7 +74,7 @@ class AuthRemoteDataSource {
     }
 
     // ── Extract refresh token from Set-Cookie header ──────────────────
-    final setCookieHeader = response.headers['set-cookie'];
+    final setCookieHeader = response.headers.value('set-cookie');
     if (setCookieHeader != null) {
       final refreshToken = _extractRefreshToken(setCookieHeader);
       if (refreshToken != null) {

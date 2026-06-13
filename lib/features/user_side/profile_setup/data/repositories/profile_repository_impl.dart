@@ -21,6 +21,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return Right(result);
     } on ValidationException catch (e) {
       return Left(ValidationFailure(message: 'Validation failed', errors: e.errors));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
     } on ServerException catch (e) {
       // In a real production app, we would parse field-level errors from the API response here
       // if the ApiClient didn't already do it, or if we want to add more context.
@@ -37,6 +39,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       final result = await remoteDataSource.verifyReferralCode(referralCode);
       return Right(result);
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {

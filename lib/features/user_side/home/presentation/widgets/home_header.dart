@@ -8,8 +8,8 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_state.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -45,16 +45,6 @@ class HomeHeader extends StatelessWidget {
           SizedBox(width: 10.w),
           BlocBuilder<WalletCubit, WalletState>(
             builder: (context, state) {
-              // Trigger fetch if not already loading, loaded, or successfully fetched before
-              if (state.status == WalletStatus.initial ||
-                  state.status == WalletStatus.error) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted) {
-                    context.read<WalletCubit>().fetchBalance();
-                  }
-                });
-              }
-
               String balance = state.balance.toString();
               if (state.status == WalletStatus.loading && state.balance == 0) {
                 balance = '...';

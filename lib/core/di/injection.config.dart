@@ -9,9 +9,11 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:dio/dio.dart' as _i361;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
+import '../../config/env/env_config.dart' as _i145;
 import '../../features/app_start/presentation/cubit/app_start_cubit.dart'
     as _i57;
 import '../../features/auth/data/datasources/auth_local_data_source.dart'
@@ -32,10 +34,22 @@ import '../../features/auth/presentation/screens/phone_number/presentation/cubit
     as _i991;
 import '../../features/host_side/host_profile_setup/presentation/cubit/host_profile_setup_cubit.dart'
     as _i453;
+import '../../features/user_side/apply_for_host/data/datasources/host_application_remote_datasource.dart'
+    as _i199;
+import '../../features/user_side/apply_for_host/data/repositories/host_application_repository_impl.dart'
+    as _i234;
+import '../../features/user_side/apply_for_host/domain/repositories/host_application_repository.dart'
+    as _i456;
+import '../../features/user_side/apply_for_host/domain/usecases/submit_host_application_usecase.dart'
+    as _i211;
+import '../../features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart'
+    as _i891;
 import '../../features/user_side/call/presentation/bloc/call_screen_cubit.dart'
     as _i559;
 import '../../features/user_side/home/presentation/bloc/home_cubit.dart'
     as _i129;
+import '../../features/user_side/online_users/presentation/cubit/online_users_cubit.dart'
+    as _i964;
 import '../../features/user_side/profile_setup/data/datasources/profile_remote_data_source.dart'
     as _i1000;
 import '../../features/user_side/profile_setup/data/repositories/profile_repository_impl.dart'
@@ -52,26 +66,34 @@ import '../../features/user_side/profile_setup/presentation/cubit/referral_cubit
     as _i199;
 import '../../features/user_side/settings/presentation/cubit/logout/logout_cubit.dart'
     as _i117;
-import '../../features/wallet/data/datasources/wallet_remote_datasource.dart'
-    as _i684;
-import '../../features/wallet/data/repositories/wallet_repository_impl.dart'
-    as _i690;
-import '../../features/wallet/domain/repositories/wallet_repository.dart'
-    as _i571;
-import '../../features/wallet/domain/usecases/create_order_usecase.dart'
-    as _i473;
-import '../../features/wallet/domain/usecases/get_plans_usecase.dart' as _i549;
-import '../../features/wallet/domain/usecases/get_wallet_balance_usecase.dart'
-    as _i820;
-import '../../features/wallet/domain/usecases/initialize_wallet_usecase.dart'
-    as _i745;
-import '../../features/wallet/domain/usecases/verify_payment_usecase.dart'
-    as _i305;
-import '../../features/wallet/presentation/cubit/wallet_cubit.dart' as _i101;
+import '../../features/user_side/wallet/data/datasources/wallet_remote_datasource.dart'
+    as _i1043;
+import '../../features/user_side/wallet/data/repositories/wallet_repository_impl.dart'
+    as _i1050;
+import '../../features/user_side/wallet/domain/repositories/wallet_repository.dart'
+    as _i261;
+import '../../features/user_side/wallet/domain/usecases/create_order_usecase.dart'
+    as _i961;
+import '../../features/user_side/wallet/domain/usecases/get_plans_usecase.dart'
+    as _i284;
+import '../../features/user_side/wallet/domain/usecases/get_wallet_balance_usecase.dart'
+    as _i98;
+import '../../features/user_side/wallet/domain/usecases/initialize_wallet_usecase.dart'
+    as _i601;
+import '../../features/user_side/wallet/domain/usecases/verify_payment_usecase.dart'
+    as _i821;
+import '../../features/user_side/wallet/presentation/cubit/wallet_cubit.dart'
+    as _i285;
+import '../navigations/navigation_service.dart' as _i173;
 import '../network/api_client.dart' as _i557;
+import '../network/dio_provider.dart' as _i651;
 import '../services/razorpay_service.dart' as _i976;
 import '../transitions/cubit/snack_bar_cubit.dart' as _i358;
 import '../utils/token_manager.dart' as _i833;
+
+const String _staging = 'staging';
+const String _dev = 'dev';
+const String _prod = 'prod';
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -80,6 +102,7 @@ extension GetItInjectableX on _i174.GetIt {
     _i526.EnvironmentFilter? environmentFilter,
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
+    final dioModule = _$DioModule();
     gh.factory<_i358.SnackBarCubit>(() => _i358.SnackBarCubit());
     gh.factory<_i951.CountrySelectorCubit>(() => _i951.CountrySelectorCubit());
     gh.factory<_i453.HostProfileSetupCubit>(
@@ -87,19 +110,22 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i559.CallScreenCubit>(() => _i559.CallScreenCubit());
     gh.factory<_i129.HomeCubit>(() => _i129.HomeCubit());
+    gh.factory<_i964.OnlineUsersCubit>(() => _i964.OnlineUsersCubit());
+    gh.lazySingleton<_i173.NavigationService>(() => _i173.NavigationService());
+    gh.lazySingleton<_i361.Dio>(() => dioModule.dio);
     gh.lazySingleton<_i976.RazorpayService>(() => _i976.RazorpayService());
     gh.lazySingleton<_i833.TokenManager>(() => _i833.TokenManager());
     gh.lazySingleton<_i852.AuthLocalDataSource>(
       () => const _i852.AuthLocalDataSource(),
     );
-    gh.lazySingleton<_i557.ApiClient>(
-      () => _i557.ApiClient(tokenManager: gh<_i833.TokenManager>()),
+    gh.lazySingleton<_i145.EnvConfig>(
+      () => _i145.StagingEnvConfig(),
+      registerFor: {_staging},
     );
-    gh.lazySingleton<_i684.WalletRemoteDataSource>(
-      () => _i684.WalletRemoteDataSourceImpl(gh<_i557.ApiClient>()),
-    );
-    gh.lazySingleton<_i1000.ProfileRemoteDataSource>(
-      () => _i1000.ProfileRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    gh.lazySingleton<_i557.ApiClient>(() => _i557.ApiClient(gh<_i361.Dio>()));
+    gh.lazySingleton<_i145.EnvConfig>(
+      () => _i145.DevEnvConfig(),
+      registerFor: {_dev},
     );
     gh.lazySingleton<_i107.AuthRemoteDataSource>(
       () => _i107.AuthRemoteDataSource(
@@ -114,38 +140,28 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i833.TokenManager>(),
       ),
     );
-    gh.lazySingleton<_i581.ProfileRepository>(
-      () => _i388.ProfileRepositoryImpl(gh<_i1000.ProfileRemoteDataSource>()),
+    gh.lazySingleton<_i145.EnvConfig>(
+      () => _i145.ProdEnvConfig(),
+      registerFor: {_prod},
     );
-    gh.factory<_i55.CreateUserProfile>(
-      () => _i55.CreateUserProfile(gh<_i581.ProfileRepository>()),
+    gh.lazySingleton<_i1043.WalletRemoteDataSource>(
+      () => _i1043.WalletRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
-    gh.factory<_i141.VerifyReferralCode>(
-      () => _i141.VerifyReferralCode(gh<_i581.ProfileRepository>()),
+    gh.lazySingleton<_i199.HostApplicationRemoteDataSource>(
+      () => _i199.HostApplicationRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
-    gh.lazySingleton<_i571.WalletRepository>(
-      () => _i690.WalletRepositoryImpl(gh<_i684.WalletRemoteDataSource>()),
-    );
-    gh.factory<_i473.CreateOrderUseCase>(
-      () => _i473.CreateOrderUseCase(gh<_i571.WalletRepository>()),
-    );
-    gh.factory<_i549.GetPlansUseCase>(
-      () => _i549.GetPlansUseCase(gh<_i571.WalletRepository>()),
-    );
-    gh.factory<_i820.GetWalletBalanceUseCase>(
-      () => _i820.GetWalletBalanceUseCase(gh<_i571.WalletRepository>()),
-    );
-    gh.factory<_i745.InitializeWalletUseCase>(
-      () => _i745.InitializeWalletUseCase(gh<_i571.WalletRepository>()),
-    );
-    gh.factory<_i305.VerifyPaymentUseCase>(
-      () => _i305.VerifyPaymentUseCase(gh<_i571.WalletRepository>()),
-    );
-    gh.factory<_i199.ReferralCubit>(
-      () => _i199.ReferralCubit(gh<_i141.VerifyReferralCode>()),
+    gh.lazySingleton<_i456.HostApplicationRepository>(
+      () => _i234.HostApplicationRepositoryImpl(
+        gh<_i199.HostApplicationRemoteDataSource>(),
+      ),
     );
     gh.factory<_i57.AppStartCubit>(
       () => _i57.AppStartCubit(gh<_i787.AuthRepository>()),
+    );
+    gh.factory<_i211.SubmitHostApplicationUseCase>(
+      () => _i211.SubmitHostApplicationUseCase(
+        gh<_i456.HostApplicationRepository>(),
+      ),
     );
     gh.factory<_i663.SendOtpUseCase>(
       () => _i663.SendOtpUseCase(gh<_i787.AuthRepository>()),
@@ -156,22 +172,35 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i48.LogoutUseCase>(
       () => _i48.LogoutUseCase(gh<_i787.AuthRepository>()),
     );
-    gh.factory<_i101.WalletCubit>(
-      () => _i101.WalletCubit(
-        initializeWalletUseCase: gh<_i745.InitializeWalletUseCase>(),
-        getWalletBalanceUseCase: gh<_i820.GetWalletBalanceUseCase>(),
-        createOrderUseCase: gh<_i473.CreateOrderUseCase>(),
-        verifyPaymentUseCase: gh<_i305.VerifyPaymentUseCase>(),
-        getPlansUseCase: gh<_i549.GetPlansUseCase>(),
-        authLocalDataSource: gh<_i852.AuthLocalDataSource>(),
-        razorpayService: gh<_i976.RazorpayService>(),
-      ),
+    gh.lazySingleton<_i1000.ProfileRemoteDataSource>(
+      () => _i1000.ProfileRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
-    gh.factory<_i253.ProfileCubit>(
-      () => _i253.ProfileCubit(
-        gh<_i55.CreateUserProfile>(),
-        gh<_i852.AuthLocalDataSource>(),
-      ),
+    gh.lazySingleton<_i261.WalletRepository>(
+      () => _i1050.WalletRepositoryImpl(gh<_i1043.WalletRemoteDataSource>()),
+    );
+    gh.factory<_i961.CreateOrderUseCase>(
+      () => _i961.CreateOrderUseCase(gh<_i261.WalletRepository>()),
+    );
+    gh.factory<_i284.GetPlansUseCase>(
+      () => _i284.GetPlansUseCase(gh<_i261.WalletRepository>()),
+    );
+    gh.factory<_i98.GetWalletBalanceUseCase>(
+      () => _i98.GetWalletBalanceUseCase(gh<_i261.WalletRepository>()),
+    );
+    gh.factory<_i601.InitializeWalletUseCase>(
+      () => _i601.InitializeWalletUseCase(gh<_i261.WalletRepository>()),
+    );
+    gh.factory<_i821.VerifyPaymentUseCase>(
+      () => _i821.VerifyPaymentUseCase(gh<_i261.WalletRepository>()),
+    );
+    gh.lazySingleton<_i581.ProfileRepository>(
+      () => _i388.ProfileRepositoryImpl(gh<_i1000.ProfileRemoteDataSource>()),
+    );
+    gh.factory<_i55.CreateUserProfile>(
+      () => _i55.CreateUserProfile(gh<_i581.ProfileRepository>()),
+    );
+    gh.factory<_i141.VerifyReferralCode>(
+      () => _i141.VerifyReferralCode(gh<_i581.ProfileRepository>()),
     );
     gh.factory<_i117.LogoutCubit>(
       () => _i117.LogoutCubit(gh<_i48.LogoutUseCase>()),
@@ -185,6 +214,31 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i991.PhoneFormCubit>(
       () => _i991.PhoneFormCubit(gh<_i663.SendOtpUseCase>()),
     );
+    gh.factory<_i891.ApplyForHostCubit>(
+      () => _i891.ApplyForHostCubit(gh<_i211.SubmitHostApplicationUseCase>()),
+    );
+    gh.factory<_i199.ReferralCubit>(
+      () => _i199.ReferralCubit(gh<_i141.VerifyReferralCode>()),
+    );
+    gh.factory<_i285.WalletCubit>(
+      () => _i285.WalletCubit(
+        initializeWalletUseCase: gh<_i601.InitializeWalletUseCase>(),
+        getWalletBalanceUseCase: gh<_i98.GetWalletBalanceUseCase>(),
+        createOrderUseCase: gh<_i961.CreateOrderUseCase>(),
+        verifyPaymentUseCase: gh<_i821.VerifyPaymentUseCase>(),
+        getPlansUseCase: gh<_i284.GetPlansUseCase>(),
+        authLocalDataSource: gh<_i852.AuthLocalDataSource>(),
+        razorpayService: gh<_i976.RazorpayService>(),
+      ),
+    );
+    gh.factory<_i253.ProfileCubit>(
+      () => _i253.ProfileCubit(
+        gh<_i55.CreateUserProfile>(),
+        gh<_i852.AuthLocalDataSource>(),
+      ),
+    );
     return this;
   }
 }
+
+class _$DioModule extends _i651.DioModule {}

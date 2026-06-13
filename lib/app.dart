@@ -5,7 +5,9 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
  
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/di/injection.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
+import 'package:mint_talk/core/theme/theme.dart';
+import 'package:mint_talk/core/navigations/navigation_service.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -23,9 +25,10 @@ class MyApp extends StatelessWidget {
                 create: (context) => getIt<WalletCubit>()..fetchBalance()),
           ],
           child: MaterialApp(
+            navigatorKey: getIt<NavigationService>().navigatorKey,
             debugShowCheckedModeBanner: false,
             title: 'Mint Talk',
-            theme: ThemeData(),
+            theme: AppTheme.lightTheme,
             // home: HomePage(),
             initialRoute: AppRoutes.splash,
             onGenerateRoute: AppRouter.onGenerateRoute,

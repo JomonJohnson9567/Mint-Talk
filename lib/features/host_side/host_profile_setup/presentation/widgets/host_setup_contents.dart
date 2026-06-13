@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/dob_picker_bottom_sheet.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
@@ -21,10 +22,10 @@ class HostSetupContents extends StatelessWidget {
     return BlocConsumer<HostProfileSetupCubit, HostProfileSetupState>(
       listener: (context, state) {
         if (state.status == HostProfileSetupStatus.success) {
-          // Navigate to next screen or show success
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Setup Successful!')),
           );
+          Navigator.pushNamed(context, AppRoutes.hostDashScreen);
         }
       },
       builder: (context, state) {
@@ -110,7 +111,7 @@ class HostSetupContents extends StatelessWidget {
                     : AppTexts.submit.toUpperCase(),
                 onPressed: state.status == HostProfileSetupStatus.submitting
                     ? null
-                    : () => cubit.submit(),
+                    : cubit.submit,
               ),
               SizedBox(height: 40.h),
             ],

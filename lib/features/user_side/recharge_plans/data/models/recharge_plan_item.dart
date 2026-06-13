@@ -35,7 +35,7 @@ class RechargePlanItem {
     if (rawPrice != null) return rawPrice!.toDouble();
     if (_staticPrice != null) {
       // Strips non-numeric characters (like currency symbols) and parses
-      return double.tryParse(_staticPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ??
+      return double.tryParse(_staticPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ??
           0.0;
     }
     return 0.0;

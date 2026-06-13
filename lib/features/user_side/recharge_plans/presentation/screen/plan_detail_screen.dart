@@ -6,8 +6,11 @@ import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_state.dart';
+import 'package:mint_talk/core/di/injection.dart';
+import 'package:mint_talk/core/navigations/navigation_service.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/pages/recharge_success_screen.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 import '../../data/models/recharge_plan_item.dart';
 
 class PlanDetailArgs {
@@ -35,13 +38,12 @@ class PlanDetailScreen extends StatelessWidget {
         if (state.status == WalletStatus.paymentSuccess) {
           final coinsValue = int.tryParse(plan.coins.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
           
-          Navigator.pushReplacementNamed(
-            context,
+          getIt<NavigationService>().replaceWith(
             AppRoutes.rechargeSuccess,
-            arguments: {
-              'addedPoints': coinsValue,
-              'totalBalance': state.balance,
-            },
+            arguments: RechargeSuccessArgs(
+              addedPoints: coinsValue,
+              totalBalance: state.balance,
+            ),
           );
         } else if (state.status == WalletStatus.error) {
           _showSnackBar(context, state.errorMessage ?? "An error occurred");

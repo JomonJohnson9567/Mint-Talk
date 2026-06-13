@@ -10,7 +10,11 @@ import 'package:mint_talk/features/auth/presentation/screens/phone_number/presen
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart';
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/screen/phone_number.dart';
 import 'package:mint_talk/features/auth/presentation/screens/success/presentation/screen/success_screen.dart';
+import 'package:mint_talk/features/host_side/host_dash/presentation/screens/host_dash.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/screen/host_profile_setup.dart';
+import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart';
+import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/apply_for_host.dart';
+import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/terms_and_conditions_for_host.dart';
 import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
@@ -28,7 +32,7 @@ import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/recharge_plans.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/screen/settings_screen.dart';
 
-import 'package:mint_talk/features/wallet/presentation/pages/recharge_success_screen.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/pages/recharge_success_screen.dart';
 
 class AppRouter {
   // ── Route definitions ──────────────────────────────────────────────
@@ -36,11 +40,8 @@ class AppRouter {
     // ... other routes ...
     AppRoutes.rechargeSuccess: RouteConfig(
       builder: (settings) {
-        final args = settings.arguments as Map<String, dynamic>;
-        return RechargeSuccessScreen(
-          addedPoints: args['addedPoints'] as int,
-          totalBalance: args['totalBalance'] as int,
-        );
+        final args = RouteArgs.require<RechargeSuccessArgs>(settings);
+        return RechargeSuccessScreen(args: args);
       },
     ),
     // ...
@@ -131,6 +132,18 @@ class AppRouter {
         create: (_) => getIt<CallScreenCubit>(),
         child: const CallScreen(),
       ),
+    ),
+    AppRoutes.hostDashScreen: RouteConfig(
+      builder: (_) => const HostDashScreen(),
+    ),  
+    AppRoutes.applyForHost: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<ApplyForHostCubit>(),
+        child: const ApplyForHost(),
+      ),
+    ),  
+    AppRoutes.termsAndConditionsForHost: RouteConfig(
+      builder: (_) => const TermsAndConditionsForHost(),
     ),
   };
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/di/injection.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
+import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class ProfileAvatar extends StatelessWidget {
@@ -44,7 +47,7 @@ class _UserAvatarSection extends StatelessWidget {
           ),
         ),
         Positioned(
-          bottom: 15.h, 
+          bottom: 15.h,
           right: 15.w,
           child: Container(
             height: 16.h,
@@ -112,7 +115,13 @@ class _ApplyHostButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () async {
+            final accepted = await getIt<NavigationService>()
+                .navigateTo(AppRoutes.termsAndConditionsForHost);
+            if (accepted == true) {
+              getIt<NavigationService>().navigateTo(AppRoutes.applyForHost);
+            }
+          },
           borderRadius: BorderRadius.circular(16.r),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),

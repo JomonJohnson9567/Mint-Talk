@@ -19,10 +19,15 @@ class AppRoutes {
   static const String hostProfileScreen = '/hostProfileScreen';
   static const String callScreen = '/callScreen';
   static const String chatScreen = '/chatScreen';
-  static const String hostProfileSetupScreen = '/hostProfileSetupScreen';
   static const String rechargePlansScreen = '/rechargePlansScreen';
   static const String videocallOnlineScreen = '/videocallOnlineScreen';
   static const String audioCallOnlineScreen = '/audioCallOnlineScreen'; 
   static const String planDetail = '/planDetail';
   static const String rechargeSuccess = '/rechargeSuccess';
+
+  // host side
+  static const String hostDashScreen = '/hostDashScreen';
+  static const String hostProfileSetupScreen = '/hostProfileSetupScreen';
+  static const String applyForHost = '/applyForHost';
+  static const String termsAndConditionsForHost = '/termsAndConditionsForHost';
 }

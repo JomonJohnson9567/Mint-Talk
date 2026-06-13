@@ -1,5 +1,5 @@
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/core/constants/api_endpoints.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/network/api_client.dart';
 import 'package:mint_talk/features/user_side/profile_setup/data/models/user_profile_model.dart';
 

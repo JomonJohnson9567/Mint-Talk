@@ -13,12 +13,30 @@ class PhoneInputSection extends StatelessWidget {
   final ValueChanged<String> onPhoneChanged;
   final String? errorText;
 
+  // Customization fields
+  final String? label;
+  final TextStyle? labelStyle;
+  final Color? backgroundColor;
+  final Border? border;
+  final double? borderRadius;
+  final double? height;
+  final TextStyle? textStyle;
+  final TextStyle? hintStyle;
+
   const PhoneInputSection({
     super.key,
     required this.selectedCountry,
     required this.onCountryTap,
     required this.onPhoneChanged,
     this.errorText,
+    this.label,
+    this.labelStyle,
+    this.backgroundColor,
+    this.border,
+    this.borderRadius,
+    this.height,
+    this.textStyle,
+    this.hintStyle,
   });
 
   @override
@@ -27,8 +45,8 @@ class PhoneInputSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppTexts.mobileNumber,
-          style: TextStyle(
+          label ?? AppTexts.mobileNumber,
+          style: labelStyle ?? TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w500,
             color: AppColors.black,
@@ -36,11 +54,12 @@ class PhoneInputSection extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
         Container(
-          height: 50.h,
+          height: height ?? 50.h,
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: AppColors.grey.withAlpha(153),
-            borderRadius: BorderRadius.circular(12.r),
+            color: backgroundColor ?? AppColors.grey.withAlpha(153),
+            border: border,
+            borderRadius: BorderRadius.circular(borderRadius ?? 12.r),
           ),
           child: Row(
             children: [
@@ -81,13 +100,13 @@ class PhoneInputSection extends StatelessWidget {
                 child: TextFormField(
                   keyboardType: TextInputType.phone,
                   onChanged: onPhoneChanged,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: AppTexts.enterYourPhoneNumber,
-                    hintStyle: TextStyle(color: AppColors.textGrey),
+                    hintStyle: hintStyle ?? const TextStyle(color: AppColors.textGrey),
                     isDense: true,
                   ),
-                  style: TextStyle(
+                  style: textStyle ?? TextStyle(
                     fontSize: 16.sp,
                     color: AppColors.black,
                     fontWeight: FontWeight.w500,

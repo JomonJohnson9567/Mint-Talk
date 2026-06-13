@@ -1,0 +1,32 @@
+import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
+import 'package:mint_talk/core/errors/failures.dart';
+import '../../domain/entities/host_application_entity.dart';
+import '../../domain/repositories/host_application_repository.dart';
+import '../datasources/host_application_remote_datasource.dart';
+import '../models/host_application_model.dart';
+
+@LazySingleton(as: HostApplicationRepository)
+class HostApplicationRepositoryImpl implements HostApplicationRepository {
+  final HostApplicationRemoteDataSource remoteDataSource;
+
+  HostApplicationRepositoryImpl(this.remoteDataSource);
+
+  @override
+  Future<Either<Failure, bool>> submitApplication(HostApplicationEntity application) async {
+    try {
+      final model = HostApplicationModel.fromEntity(application);
+      final result = await remoteDataSource.submitApplication(model);
+      return Right(result);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+}

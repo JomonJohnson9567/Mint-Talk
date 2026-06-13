@@ -1,3 +1,4 @@
+import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 
 class VideoCallOnlineUser {
@@ -8,6 +9,8 @@ class VideoCallOnlineUser {
   final int ratePerMinute;
   final int responseMinutes;
   final bool isVerified;
+  final UserStatus status;
+  final bool isFavorite;
 
   const VideoCallOnlineUser({
     required this.name,
@@ -17,6 +20,8 @@ class VideoCallOnlineUser {
     required this.ratePerMinute,
     required this.responseMinutes,
     this.isVerified = true,
+    this.status = UserStatus.online,
+    this.isFavorite = false,
   });
 
   static const List<VideoCallOnlineUser> sampleUsers = [
@@ -27,6 +32,8 @@ class VideoCallOnlineUser {
       rating: 4.9,
       ratePerMinute: 1500,
       responseMinutes: 2,
+      status: UserStatus.online,
+      isFavorite: true,
     ),
     VideoCallOnlineUser(
       name: 'Rahul',
@@ -35,6 +42,8 @@ class VideoCallOnlineUser {
       rating: 4.8,
       ratePerMinute: 1400,
       responseMinutes: 3,
+      status: UserStatus.onCall,
+      isFavorite: false,
     ),
     VideoCallOnlineUser(
       name: 'Meera',
@@ -43,6 +52,8 @@ class VideoCallOnlineUser {
       rating: 5.0,
       ratePerMinute: 1600,
       responseMinutes: 1,
+      status: UserStatus.offline,
+      isFavorite: true,
     ),
     VideoCallOnlineUser(
       name: 'Arjun',
@@ -51,6 +62,8 @@ class VideoCallOnlineUser {
       rating: 4.7,
       ratePerMinute: 1300,
       responseMinutes: 4,
+      status: UserStatus.online,
+      isFavorite: false,
     ),
   ];
 }

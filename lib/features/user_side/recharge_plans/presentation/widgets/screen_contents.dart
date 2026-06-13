@@ -5,8 +5,8 @@ import 'package:mint_talk/core/theme/color.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_section.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_cubit.dart';
-import 'package:mint_talk/features/wallet/presentation/cubit/wallet_state.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
+import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_data.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/recharge_plan_section_widget.dart';
 
