@@ -28,3 +28,5 @@ class CallLogEntry {
     this.duration,
   });
 }
+
+enum CallType { missed, outgoing }

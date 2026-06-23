@@ -117,4 +117,15 @@ class Validators {
     }
     return null;
   }
+
+  static String? aadhaar(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Aadhaar card number is required';
+    }
+    final cleanValue = value.replaceAll(RegExp(r'\s+'), '');
+    if (!RegExp(r'^\d{12}$').hasMatch(cleanValue)) {
+      return 'Aadhaar number must be exactly 12 digits';
+    }
+    return null;
+  }
 }

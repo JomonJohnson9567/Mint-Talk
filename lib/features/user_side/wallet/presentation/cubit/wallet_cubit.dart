@@ -96,12 +96,30 @@ class WalletCubit extends Cubit<WalletState> {
 
     emit(state.copyWith(status: WalletStatus.loading));
     final result = await getWalletBalanceUseCase(userId);
-    result.fold(
-      (failure) => emit(state.copyWith(
-        status: WalletStatus.error,
-        errorMessage: failure.message,
-      )),
-      (wallet) => emit(state.copyWith(
+    await result.fold(
+      (failure) async {
+        if (failure.statusCode == 404 ||
+            failure.message.contains('Wallet not found')) {
+          appLogger.i('WalletCubit: Wallet not found for user $userId. Initializing...');
+          final initResult = await initializeWalletUseCase();
+          initResult.fold(
+            (initFailure) => emit(state.copyWith(
+              status: WalletStatus.error,
+              errorMessage: initFailure.message,
+            )),
+            (wallet) => emit(state.copyWith(
+              status: WalletStatus.loaded,
+              balance: wallet.balance,
+            )),
+          );
+        } else {
+          emit(state.copyWith(
+            status: WalletStatus.error,
+            errorMessage: failure.message,
+          ));
+        }
+      },
+      (wallet) async => emit(state.copyWith(
         status: WalletStatus.loaded,
         balance: wallet.balance,
       )),

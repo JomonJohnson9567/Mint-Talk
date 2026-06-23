@@ -24,7 +24,23 @@ class HostApplicationRepositoryImpl implements HostApplicationRepository {
     } on UnauthorizedException catch (e) {
       return Left(UnauthorizedFailure(message: e.message));
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadImage(String imagePath, String key) async {
+    try {
+      final result = await remoteDataSource.uploadImage(imagePath, key);
+      return Right(result);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

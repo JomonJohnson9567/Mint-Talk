@@ -25,6 +25,12 @@ class AuthInterceptor extends Interceptor {
       options.headers['Cookie'] = 'refreshToken=$refreshToken';
     }
 
+    // 3. Remove Content-Type header for multipart/form-data to let Dio generate boundaries
+    if (options.data is FormData) {
+      options.headers.remove('Content-Type');
+      options.headers.remove('content-type');
+    }
+
     return handler.next(options);
   }
 
@@ -91,8 +97,8 @@ class AuthInterceptor extends Interceptor {
 
       final refreshDio = Dio(BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
       ));
 
       final response = await refreshDio.post(

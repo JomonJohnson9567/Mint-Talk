@@ -34,6 +34,7 @@ class ApiEndpoints {
   // ── Payments ──────────────────────────────────────────────────────────
   static const String createOrder = '/payments/create-order';
   static const String verifyPayment = '/payments/verify';
-// POst------
+  // POst------
   static const String applyForHost = '/host-applications/apply';
+  static const String verifyKYC = '/host-applications/kyc';
 }

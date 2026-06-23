@@ -85,5 +85,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires photo library access to upload Aadhaar card and selfie images for host verification.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to take a selfie and Aadhaar card pictures for host verification.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access for verification calls.</string>
 </dict>
 </plist>

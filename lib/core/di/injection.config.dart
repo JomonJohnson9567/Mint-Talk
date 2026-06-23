@@ -44,6 +44,8 @@ import '../../features/user_side/apply_for_host/domain/usecases/submit_host_appl
     as _i211;
 import '../../features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart'
     as _i891;
+import '../../features/user_side/apply_for_host/domain/usecases/upload_image_usecase.dart'
+    as _i999;
 import '../../features/user_side/call/presentation/bloc/call_screen_cubit.dart'
     as _i559;
 import '../../features/user_side/home/presentation/bloc/home_cubit.dart'
@@ -214,8 +216,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i991.PhoneFormCubit>(
       () => _i991.PhoneFormCubit(gh<_i663.SendOtpUseCase>()),
     );
+    gh.factory<_i999.UploadImageUseCase>(
+      () => _i999.UploadImageUseCase(gh<_i456.HostApplicationRepository>()),
+    );
     gh.factory<_i891.ApplyForHostCubit>(
-      () => _i891.ApplyForHostCubit(gh<_i211.SubmitHostApplicationUseCase>()),
+      () => _i891.ApplyForHostCubit(
+        gh<_i211.SubmitHostApplicationUseCase>(),
+        gh<_i999.UploadImageUseCase>(),
+      ),
     );
     gh.factory<_i199.ReferralCubit>(
       () => _i199.ReferralCubit(gh<_i141.VerifyReferralCode>()),

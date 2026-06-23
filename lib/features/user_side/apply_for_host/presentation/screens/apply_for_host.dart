@@ -12,6 +12,9 @@ import '../widgets/apply_dob_input.dart';
 import '../widgets/apply_name_input.dart';
 import '../widgets/apply_phone_input.dart';
 import '../widgets/apply_submit_button.dart';
+import '../widgets/apply_aadhaar_input.dart';
+import '../widgets/apply_aadhaar_upload.dart';
+import '../widgets/apply_selfie_upload.dart';
 
 class ApplyForHost extends StatelessWidget {
   const ApplyForHost({super.key});
@@ -74,6 +77,12 @@ class ApplyForHost extends StatelessWidget {
                           const ApplyPhoneInput(),
                           SizedBox(height: 20.h),
                           const ApplyDobInput(),
+                          SizedBox(height: 20.h),
+                          const ApplyAadhaarInput(),
+                          SizedBox(height: 20.h),
+                          const ApplyAadhaarUpload(),
+                          SizedBox(height: 20.h),
+                          const ApplySelfieUpload(),
                           SizedBox(height: 32.h),
                         ],
                       ),

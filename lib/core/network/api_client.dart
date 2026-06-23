@@ -33,6 +33,20 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Send a POST request with multipart form data (for file uploads).
+  Future<Map<String, dynamic>> postMultipart(
+    String endpoint, {
+    bool requiresAuth = false,
+    required Map<String, dynamic> body,
+  }) async {
+    final formData = FormData.fromMap(body);
+    final response = await _dio.post(
+      endpoint,
+      data: formData,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   /// Send a PATCH request with a JSON [body].
   Future<Map<String, dynamic>> patch(
     String endpoint, {

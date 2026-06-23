@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
-import 'package:mint_talk/features/user_side/call_log/presentation/widgets/call_log_item.dart';
 
 part 'call_log_state.dart';
 

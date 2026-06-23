@@ -1,6 +1,5 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/theme/color.dart';
@@ -18,6 +17,8 @@ class ProfileField extends StatelessWidget {
   final String? initialValue;
   final Color? labelColor;
   final AutovalidateMode? autovalidateMode;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
 
   const ProfileField({
     super.key,
@@ -33,6 +34,8 @@ class ProfileField extends StatelessWidget {
     this.initialValue,
     this.labelColor,
     this.autovalidateMode,
+    this.keyboardType,
+    this.inputFormatters,
   });
 
   @override
@@ -58,6 +61,8 @@ class ProfileField extends StatelessWidget {
           controller: controller,
           readOnly: readOnly,
           onTap: onTap,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             errorText: errorText,
             hintText: hintText,

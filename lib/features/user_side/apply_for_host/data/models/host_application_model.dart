@@ -6,6 +6,10 @@ class HostApplicationModel extends HostApplicationEntity {
     required super.bio,
     required super.phone,
     required super.dob,
+    required super.aadhaarNumber,
+    required super.aadhaarFront,
+    required super.aadhaarBack,
+    required super.selfie,
   });
 
   factory HostApplicationModel.fromEntity(HostApplicationEntity entity) {
@@ -14,6 +18,10 @@ class HostApplicationModel extends HostApplicationEntity {
       bio: entity.bio,
       phone: entity.phone,
       dob: entity.dob,
+      aadhaarNumber: entity.aadhaarNumber,
+      aadhaarFront: entity.aadhaarFront,
+      aadhaarBack: entity.aadhaarBack,
+      selfie: entity.selfie,
     );
   }
 
@@ -23,6 +31,10 @@ class HostApplicationModel extends HostApplicationEntity {
       bio: json['bio'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       dob: json['dob'] as String? ?? '',
+      aadhaarNumber: json['aadhaar_number'] as String? ?? '',
+      aadhaarFront: json['aadhaar_front'] as String? ?? '',
+      aadhaarBack: json['aadhaar_back'] as String? ?? '',
+      selfie: json['selfie'] as String? ?? '',
     );
   }
 
@@ -32,6 +44,10 @@ class HostApplicationModel extends HostApplicationEntity {
       'bio': bio,
       'phone': phone,
       'dob': dob,
+      'aadhaar_number': aadhaarNumber,
+      'aadhaar_front': aadhaarFront,
+      'aadhaar_back': aadhaarBack,
+      'selfie': selfie,
     };
   }
 }
