@@ -10,6 +10,12 @@ class UserEntity extends Equatable {
   final String? fullName;
   final String? gender;
   final String? dob;
+  final String? referralCode;
+  final int? audioRate;
+  final int? videoRate;
+  final bool? isAudioAllowed;
+  final bool? isVideoAllowed;
+  final String? termsAcceptedAt;
 
   const UserEntity({
     required this.id,
@@ -19,16 +25,28 @@ class UserEntity extends Equatable {
     this.fullName,
     this.gender,
     this.dob,
+    this.referralCode,
+    this.audioRate,
+    this.videoRate,
+    this.isAudioAllowed,
+    this.isVideoAllowed,
+    this.termsAcceptedAt,
   });
 
   @override
   List<Object?> get props => [
-        id,
-        phone,
-        role,
-        profileCompleted,
-        fullName,
-        gender,
-        dob,
-      ];
+    id,
+    phone,
+    role,
+    profileCompleted,
+    fullName,
+    gender,
+    dob,
+    referralCode,
+    audioRate,
+    videoRate,
+    isAudioAllowed,
+    isVideoAllowed,
+    termsAcceptedAt,
+  ];
 }

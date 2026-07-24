@@ -12,6 +12,8 @@ class HomeState extends Equatable {
   final String? notificationMessage;
   final NotificationType? notificationType;
   final int? notificationId;
+  final int? audioRate;
+  final int? videoRate;
 
   const HomeState({
     this.selectedTab = HomeTab.active,
@@ -20,6 +22,8 @@ class HomeState extends Equatable {
     this.notificationMessage,
     this.notificationType,
     this.notificationId = 0,
+    this.audioRate,
+    this.videoRate,
   });
 
   HomeState copyWith({
@@ -29,6 +33,8 @@ class HomeState extends Equatable {
     String? notificationMessage,
     NotificationType? notificationType,
     int? notificationId,
+    int? audioRate,
+    int? videoRate,
   }) {
     return HomeState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -37,6 +43,8 @@ class HomeState extends Equatable {
       notificationMessage: notificationMessage ?? this.notificationMessage,
       notificationType: notificationType ?? this.notificationType,
       notificationId: notificationId ?? this.notificationId,
+      audioRate: audioRate ?? this.audioRate,
+      videoRate: videoRate ?? this.videoRate,
     );
   }
 
@@ -48,5 +56,7 @@ class HomeState extends Equatable {
     notificationMessage,
     notificationType,
     notificationId,
+    audioRate,
+    videoRate,
   ];
 }

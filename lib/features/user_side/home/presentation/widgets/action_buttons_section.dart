@@ -1,82 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
+import 'package:mint_talk/features/user_side/home/presentation/bloc/home_state.dart';
 
 class ActionButtonsSection extends StatelessWidget {
   const ActionButtonsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 15.h),
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(20.r),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryColor.withAlpha(77),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppTexts.makeYourCall,
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.white,
+    return BlocBuilder<HomeCubit, HomeState>(
+      buildWhen: (previous, current) =>
+          previous.audioRate != current.audioRate ||
+          previous.videoRate != current.videoRate,
+      builder: (context, state) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 15.h),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryColor.withAlpha(77),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
               ),
-            ),
-            SizedBox(height: 20.h),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.videocallOnlineScreen,
-                      );
-                    },
-                    child: _CallCard(
-                      icon: Icons.video_call,
-                      title: AppTexts.videoCall,
-                      subtitle: '1500 coins/min',
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppTexts.makeYourCall,
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.white,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.videocallOnlineScreen,
+                        );
+                      },
+                      child: _CallCard(
+                        icon: Icons.video_call,
+                        title: AppTexts.videoCall,
+                        subtitle: _rateLabel(state.videoRate),
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 15.w),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.audioCallOnlineScreen,
-                      );
-                    },
-                    child: _CallCard(
-                      icon: Icons.call,
-                      title: AppTexts.audioCall,
-                      subtitle: '500 coins/min',
+                  SizedBox(width: 15.w),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.audioCallOnlineScreen,
+                        );
+                      },
+                      child: _CallCard(
+                        icon: Icons.call,
+                        title: AppTexts.audioCall,
+                        subtitle: _rateLabel(state.audioRate),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  String _rateLabel(int? rate) => rate == null
+      ? '-- ${AppTexts.coinsPerMin}'
+      : '$rate ${AppTexts.coinsPerMin}';
 }
 
 class _CallCard extends StatelessWidget {

@@ -24,9 +24,17 @@ class OtpBody extends StatelessWidget {
       listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) {
         if (state.status == OtpStatus.success) {
+          final isProfileComplete =
+              state.authResponse?.user.profileCompleted ?? false;
+          final isStaff = state.authResponse?.user.role == 'staff';
+
           Navigator.pushNamedAndRemoveUntil(
             context,
-            AppRoutes.success,
+            isProfileComplete
+                ? isStaff
+                      ? AppRoutes.hostMainNavigation
+                      : AppRoutes.mainNavigation
+                : AppRoutes.setupProfile,
             (route) => false,
           );
         } else if (state.status == OtpStatus.failure) {

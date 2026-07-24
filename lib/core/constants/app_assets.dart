@@ -12,4 +12,5 @@ class AppAssets {
   static const String moneyBag = "assets/images/home/money_bag2.png";
   static const String imgVideoCall = "assets/images/home/video_call.png";
   static const String imgAudioCall = "assets/images/home/audio_call.png";
+  static const String target = "assets/images/target.png";
 }

@@ -7,7 +7,7 @@ import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/re
 @injectable
 class ReferralCubit extends Cubit<ReferralState> {
   final VerifyReferralCode _verifyReferralCode;
-  
+
   // Clean handling of debouncing logic
   Timer? _debounceTimer;
 
@@ -16,7 +16,7 @@ class ReferralCubit extends Cubit<ReferralState> {
   /// Handles incoming referral code changes with a 500ms debounce.
   void onReferralCodeChanged(String code) {
     _debounceTimer?.cancel();
-    
+
     if (code.trim().isEmpty) {
       emit(ReferralInitial());
       return;
@@ -29,13 +29,13 @@ class ReferralCubit extends Cubit<ReferralState> {
 
   Future<void> _verifyCode(String code) async {
     emit(ReferralLoading());
-    
+
     final result = await _verifyReferralCode(code);
 
     result.fold(
       (failure) => emit(ReferralInvalid(message: failure.message)),
-      (isValid) => isValid 
-          ? emit(const ReferralValid()) 
+      (isValid) => isValid
+          ? emit(const ReferralValid())
           : emit(const ReferralInvalid(message: 'Invalid referral code')),
     );
   }

@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
-import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/dob_picker_bottom_sheet.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
+import 'package:mint_talk/features/host_side/host_navigation/presentation/screen/host_navigation_screen.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/cubit/host_profile_setup_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/cubit/host_profile_setup_state.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/widgets/host_profile_avatar.dart';
@@ -25,7 +25,11 @@ class HostSetupContents extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Setup Successful!')),
           );
-          Navigator.pushNamed(context, AppRoutes.hostDashScreen);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const HostMainNavigationScreen(),
+            ),
+          );
         }
       },
       builder: (context, state) {

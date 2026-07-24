@@ -50,13 +50,13 @@ class ProfileState extends Equatable {
 
   @override
   List<Object?> get props => [
-        name,
-        dob,
-        gender,
-        referralCode,
-        fieldErrors,
-        formStatus,
-        submissionStatus,
-        errorMessage,
-      ];
+    name,
+    dob,
+    gender,
+    referralCode,
+    fieldErrors,
+    formStatus,
+    submissionStatus,
+    errorMessage,
+  ];
 }

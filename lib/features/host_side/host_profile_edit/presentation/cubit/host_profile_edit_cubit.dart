@@ -1,0 +1,150 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
+import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/shared/profile/domain/usecases/upload_profile_image_usecase.dart';
+import '../../../../../core/usecases/usecase.dart';
+import '../../domain/entities/host_profile_entity.dart';
+import '../../domain/usecases/get_host_profile_usecase.dart';
+import '../../domain/usecases/update_host_profile_usecase.dart';
+import 'host_profile_edit_state.dart';
+
+@injectable
+class HostProfileEditCubit extends Cubit<HostProfileEditState> {
+  final GetHostProfileUseCase getProfileUseCase;
+  final UpdateHostProfileUseCase updateProfileUseCase;
+  final UploadProfileImageUseCase uploadProfileImageUseCase;
+  final AuthLocalDataSource localDataSource;
+
+  HostProfileEditCubit({
+    required this.getProfileUseCase,
+    required this.updateProfileUseCase,
+    required this.uploadProfileImageUseCase,
+    required this.localDataSource,
+  }) : super(const HostProfileEditState());
+
+  Future<void> loadProfile() async {
+    emit(state.copyWith(status: HostProfileEditStatus.loading));
+    final cachedValues = await Future.wait<String?>([
+      localDataSource.getFullName(),
+      localDataSource.getPhone(),
+      localDataSource.getUserId(),
+      localDataSource.getDob(),
+      localDataSource.getProfileImagePath(),
+    ]);
+    final result = await getProfileUseCase(NoParams());
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: HostProfileEditStatus.failure,
+          errorMessage: failure.message,
+        ),
+      ),
+      (profile) => emit(
+        state.copyWith(
+          status: HostProfileEditStatus.loaded,
+          name: _cachedOrFallback(cachedValues[0], profile.fullName),
+          email: profile.email,
+          phone: _cachedOrFallback(cachedValues[1], profile.phone),
+          idNumber: _cachedOrFallback(cachedValues[2], profile.idNumber),
+          dob: _cachedOrFallback(cachedValues[3], profile.dob),
+          selectedCategories: profile.selectedCategories,
+          avatarAsset: _cachedOrFallback(cachedValues[4], profile.avatarAsset),
+        ),
+      ),
+    );
+  }
+
+  void nameChanged(String name) {
+    emit(state.copyWith(name: name));
+  }
+
+  void emailChanged(String email) {
+    emit(state.copyWith(email: email));
+  }
+
+  void dobChanged(String dob) {
+    emit(state.copyWith(dob: dob));
+  }
+
+  void avatarChanged(String avatarAsset) {
+    emit(state.copyWith(avatarAsset: avatarAsset));
+  }
+
+  void toggleCategory(String category) {
+    final List<String> updatedCategories = List.from(state.selectedCategories);
+    if (updatedCategories.contains(category)) {
+      updatedCategories.remove(category);
+    } else {
+      if (updatedCategories.length < 4) {
+        updatedCategories.add(category);
+      }
+    }
+    emit(state.copyWith(selectedCategories: updatedCategories));
+  }
+
+  Future<void> submit() async {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final isEmailValid = emailRegex.hasMatch(state.email.trim());
+
+    if (state.name.trim().isEmpty ||
+        state.email.trim().isEmpty ||
+        !isEmailValid ||
+        state.dob.isEmpty ||
+        state.selectedCategories.isEmpty) {
+      emit(state.copyWith(showErrors: true));
+      return;
+    }
+
+    emit(state.copyWith(status: HostProfileEditStatus.saving));
+
+    String finalAvatarAsset = state.avatarAsset;
+    if (state.avatarAsset.isNotEmpty && !state.avatarAsset.startsWith('http')) {
+      final uploadResult = await uploadProfileImageUseCase(
+        UploadProfileImageParams(imagePath: state.avatarAsset),
+      );
+      uploadResult.fold(
+        (_) {},
+        (entity) {
+          finalAvatarAsset = entity.avatarUrl;
+        },
+      );
+    }
+
+    final profile = HostProfileEntity(
+      id: state.idNumber,
+      fullName: state.name.trim(),
+      email: state.email.trim(),
+      phone: state.phone,
+      idNumber: state.idNumber,
+      dob: state.dob,
+      selectedCategories: state.selectedCategories,
+      avatarAsset: finalAvatarAsset,
+    );
+
+    final result = await updateProfileUseCase(profile);
+    await result.fold<Future<void>>(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: HostProfileEditStatus.failure,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (_) async {
+        await Future.wait([
+          localDataSource.saveFullName(profile.fullName),
+          localDataSource.saveDob(profile.dob),
+          localDataSource.saveProfileImagePath(profile.avatarAsset),
+        ]);
+        if (isClosed) return;
+        emit(state.copyWith(status: HostProfileEditStatus.success));
+      },
+    );
+  }
+
+  String _cachedOrFallback(String? cached, String fallback) {
+    final value = cached?.trim() ?? '';
+    return value.isEmpty ? fallback : value;
+  }
+}

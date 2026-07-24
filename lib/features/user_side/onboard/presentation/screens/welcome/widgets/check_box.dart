@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
-import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +35,7 @@ class AgreeCheckboxRow extends StatelessWidget {
             SizedBox(width: 8.w),
             GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, AppRoutes.privacyPolicy);
+                context.read<WelcomeCubit>().toggleAgreement(!isAgreed);
               },
               child: Text(
                 AppTexts.agreeTermsAndConditions,

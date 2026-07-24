@@ -5,16 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
 import '../cubit/apply_for_host_cubit.dart';
 import '../cubit/apply_for_host_state.dart';
-import '../widgets/apply_bio_input.dart';
 import '../widgets/apply_dob_input.dart';
 import '../widgets/apply_name_input.dart';
-import '../widgets/apply_phone_input.dart';
-import '../widgets/apply_submit_button.dart';
-import '../widgets/apply_aadhaar_input.dart';
-import '../widgets/apply_aadhaar_upload.dart';
 import '../widgets/apply_selfie_upload.dart';
+import '../widgets/apply_submit_button.dart';
 
 class ApplyForHost extends StatelessWidget {
   const ApplyForHost({super.key});
@@ -72,16 +69,8 @@ class ApplyForHost extends StatelessWidget {
                         children: [
                           const ApplyNameInput(),
                           SizedBox(height: 20.h),
-                          const ApplyBioInput(),
-                          SizedBox(height: 20.h),
-                          const ApplyPhoneInput(),
-                          SizedBox(height: 20.h),
                           const ApplyDobInput(),
-                          SizedBox(height: 20.h),
-                          const ApplyAadhaarInput(),
-                          SizedBox(height: 20.h),
-                          const ApplyAadhaarUpload(),
-                          SizedBox(height: 20.h),
+                          SizedBox(height: 24.h),
                           const ApplySelfieUpload(),
                           SizedBox(height: 32.h),
                         ],
@@ -154,7 +143,9 @@ class ApplyForHost extends StatelessWidget {
                   text: 'OK',
                   onPressed: () {
                     Navigator.of(dialogContext).pop(); // dismiss dialog
-                    Navigator.of(context).pop(); // go back to profile screen
+                    Navigator.of(
+                      context,
+                    ).pushReplacementNamed(AppRoutes.hostApplicationStatus);
                   },
                 ),
               ],

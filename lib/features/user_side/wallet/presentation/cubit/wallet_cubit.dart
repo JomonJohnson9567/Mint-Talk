@@ -54,15 +54,17 @@ class WalletCubit extends Cubit<WalletState> {
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     appLogger.i('WalletCubit: Success - Payment ID: ${response.paymentId}');
-    
+
     final transactionId = _lastTransactionId;
     final orderId = response.orderId;
 
     if (transactionId == null || orderId == null) {
-      emit(state.copyWith(
-        status: WalletStatus.paymentFailure,
-        errorMessage: 'Payment data mismatch. Please contact support.',
-      ));
+      emit(
+        state.copyWith(
+          status: WalletStatus.paymentFailure,
+          errorMessage: 'Payment data mismatch. Please contact support.',
+        ),
+      );
       return;
     }
 
@@ -75,22 +77,33 @@ class WalletCubit extends Cubit<WalletState> {
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    appLogger.e('WalletCubit: Error - Code: ${response.code}, Message: ${response.message}');
-    emit(state.copyWith(
-      status: WalletStatus.paymentFailure,
-      errorMessage: response.message ?? 'Payment failed',
-    ));
+    appLogger.e(
+      'WalletCubit: Error - Code: ${response.code}, Message: ${response.message}',
+    );
+    emit(
+      state.copyWith(
+        status: WalletStatus.paymentFailure,
+        errorMessage: response.message ?? 'Payment failed',
+      ),
+    );
   }
 
   Future<void> fetchBalance() async {
     if (state.status == WalletStatus.loading) return;
-    
+
+    final role = await authLocalDataSource.getRole();
+    if (role == 'staff') {
+      return;
+    }
+
     final userId = await authLocalDataSource.getUserId();
     if (userId == null) {
-      emit(state.copyWith(
-        status: WalletStatus.error,
-        errorMessage: 'User not logged in',
-      ));
+      emit(
+        state.copyWith(
+          status: WalletStatus.error,
+          errorMessage: 'User not logged in',
+        ),
+      );
       return;
     }
 
@@ -100,29 +113,36 @@ class WalletCubit extends Cubit<WalletState> {
       (failure) async {
         if (failure.statusCode == 404 ||
             failure.message.contains('Wallet not found')) {
-          appLogger.i('WalletCubit: Wallet not found for user $userId. Initializing...');
+          appLogger.i(
+            'WalletCubit: Wallet not found for user $userId. Initializing...',
+          );
           final initResult = await initializeWalletUseCase();
           initResult.fold(
-            (initFailure) => emit(state.copyWith(
-              status: WalletStatus.error,
-              errorMessage: initFailure.message,
-            )),
-            (wallet) => emit(state.copyWith(
-              status: WalletStatus.loaded,
-              balance: wallet.balance,
-            )),
+            (initFailure) => emit(
+              state.copyWith(
+                status: WalletStatus.error,
+                errorMessage: initFailure.message,
+              ),
+            ),
+            (wallet) => emit(
+              state.copyWith(
+                status: WalletStatus.loaded,
+                balance: wallet.balance,
+              ),
+            ),
           );
         } else {
-          emit(state.copyWith(
-            status: WalletStatus.error,
-            errorMessage: failure.message,
-          ));
+          emit(
+            state.copyWith(
+              status: WalletStatus.error,
+              errorMessage: failure.message,
+            ),
+          );
         }
       },
-      (wallet) async => emit(state.copyWith(
-        status: WalletStatus.loaded,
-        balance: wallet.balance,
-      )),
+      (wallet) async => emit(
+        state.copyWith(status: WalletStatus.loaded, balance: wallet.balance),
+      ),
     );
   }
 
@@ -140,10 +160,9 @@ class WalletCubit extends Cubit<WalletState> {
     result.fold(
       (failure) {
         // If API fails, show at least the dummy plans
-        emit(state.copyWith(
-          status: WalletStatus.plansLoaded,
-          plans: dummyPlans,
-        ));
+        emit(
+          state.copyWith(status: WalletStatus.plansLoaded, plans: dummyPlans),
+        );
       },
       (apiPlans) {
         // Merge API plans with dummy plans.
@@ -156,10 +175,12 @@ class WalletCubit extends Cubit<WalletState> {
           uniqueMap[plan.id] = plan;
         }
 
-        emit(state.copyWith(
-          status: WalletStatus.plansLoaded,
-          plans: uniqueMap.values.toList(),
-        ));
+        emit(
+          state.copyWith(
+            status: WalletStatus.plansLoaded,
+            plans: uniqueMap.values.toList(),
+          ),
+        );
       },
     );
   }
@@ -167,24 +188,28 @@ class WalletCubit extends Cubit<WalletState> {
   Future<void> startRecharge(String planId) async {
     emit(state.copyWith(status: WalletStatus.paymentProcessing));
     final result = await createOrderUseCase(planId);
-    
+
     result.fold(
-      (failure) => emit(state.copyWith(
-        status: WalletStatus.paymentFailure,
-        errorMessage: failure.message,
-      )),
+      (failure) => emit(
+        state.copyWith(
+          status: WalletStatus.paymentFailure,
+          errorMessage: failure.message,
+        ),
+      ),
       (order) {
         _lastTransactionId = order.transactionId;
-        
+
         // Emit specific state to trigger UI to open Razorpay
-        emit(state.copyWith(
-          status: WalletStatus.orderCreated,
-          orderId: order.orderId,
-          amount: order.amount,
-          key: order.key,
-          transactionId: order.transactionId,
-        ));
-        
+        emit(
+          state.copyWith(
+            status: WalletStatus.orderCreated,
+            orderId: order.orderId,
+            amount: order.amount,
+            key: order.key,
+            transactionId: order.transactionId,
+          ),
+        );
+
         // Now open the checkout using the service
         final options = {
           'key': order.key,
@@ -194,11 +219,12 @@ class WalletCubit extends Cubit<WalletState> {
           'description': 'Recharge',
           'timeout': 300,
           'prefill': {
-            'contact': '', // To be filled if user details are available centrally
+            'contact':
+                '', // To be filled if user details are available centrally
             'email': '',
-          }
+          },
         };
-        
+
         razorpayService.open(options);
       },
     );
@@ -219,20 +245,21 @@ class WalletCubit extends Cubit<WalletState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        status: WalletStatus.paymentFailure,
-        errorMessage: failure.message,
-      )),
+      (failure) => emit(
+        state.copyWith(
+          status: WalletStatus.paymentFailure,
+          errorMessage: failure.message,
+        ),
+      ),
       (newBalance) {
-        emit(state.copyWith(
-          status: WalletStatus.paymentSuccess,
-          balance: newBalance,
-        ));
+        emit(
+          state.copyWith(
+            status: WalletStatus.paymentSuccess,
+            balance: newBalance,
+          ),
+        );
         // Also emit loaded state to update UI
-        emit(state.copyWith(
-          status: WalletStatus.loaded,
-          balance: newBalance,
-        ));
+        emit(state.copyWith(status: WalletStatus.loaded, balance: newBalance));
       },
     );
   }

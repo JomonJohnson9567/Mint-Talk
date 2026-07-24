@@ -20,12 +20,35 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final result = await remoteDataSource.createProfile(model);
       return Right(result);
     } on ValidationException catch (e) {
-      return Left(ValidationFailure(message: 'Validation failed', errors: e.errors));
+      return Left(
+        ValidationFailure(message: 'Validation failed', errors: e.errors),
+      );
     } on UnauthorizedException catch (e) {
       return Left(UnauthorizedFailure(message: e.message));
     } on ServerException catch (e) {
       // In a real production app, we would parse field-level errors from the API response here
       // if the ApiClient didn't already do it, or if we want to add more context.
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateProfile(UserProfile profile) async {
+    try {
+      final model = UserProfileModel.fromEntity(profile);
+      final result = await remoteDataSource.updateProfile(model);
+      return Right(result);
+    } on ValidationException catch (e) {
+      return Left(
+        ValidationFailure(message: 'Validation failed', errors: e.errors),
+      );
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {
       return Left(NetworkFailure(message: e.message));

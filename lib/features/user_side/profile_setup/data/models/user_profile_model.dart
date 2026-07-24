@@ -24,6 +24,17 @@ class UserProfileModel extends UserProfile {
     return data;
   }
 
+  /// Payload for editing an already-completed profile.
+  /// Completion-only fields such as termsAcceptedAt are intentionally omitted.
+  Map<String, dynamic> toUpdateJson() {
+    return <String, dynamic>{
+      'fullName': fullName.value,
+      'dob': dob.date.toIso8601String().split('T')[0],
+      'gender': gender.value.name,
+      'termsAcceptedAt': termsAcceptedAt,
+    };
+  }
+
   factory UserProfileModel.fromEntity(UserProfile entity) {
     return UserProfileModel(
       fullName: entity.fullName,

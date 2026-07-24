@@ -24,7 +24,14 @@ class AppStartNeedsProfile extends AppStartState {
 }
 
 class AppStartAuthenticated extends AppStartState {
-  const AppStartAuthenticated();
+  final String? role;
+
+  const AppStartAuthenticated({this.role});
+
+  bool get isStaff => role == 'staff';
+
+  @override
+  List<Object?> get props => [role];
 }
 
 class AppStartError extends AppStartState {

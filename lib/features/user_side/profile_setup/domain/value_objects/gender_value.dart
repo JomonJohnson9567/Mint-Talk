@@ -11,7 +11,7 @@ class GenderValue {
     if (input.isEmpty) {
       throw const ValidationException({'gender': 'Please select a gender'});
     }
-    
+
     try {
       return Gender.values.byName(input.toLowerCase());
     } catch (_) {

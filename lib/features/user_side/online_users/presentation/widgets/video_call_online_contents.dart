@@ -89,7 +89,9 @@ class _VideoCallOnlineView extends StatelessWidget {
                     final users = state.users;
                     final selectedTab = state.selectedTab;
 
-                    return CustomScrollView(
+                    return RefreshIndicator(
+                      onRefresh: () => context.read<OnlineUsersCubit>().loadHosts(),
+                      child: CustomScrollView(
                       slivers: [
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 0),
@@ -175,7 +177,8 @@ class _VideoCallOnlineView extends StatelessWidget {
                             ),
                           ),
                       ],
-                    );
+                    ),
+                  );
                   },
                 );
               },

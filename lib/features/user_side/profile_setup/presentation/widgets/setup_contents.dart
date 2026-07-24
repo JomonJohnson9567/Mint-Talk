@@ -36,10 +36,12 @@ class SetupContents extends StatelessWidget {
             SizedBox(height: 30.h),
             const ProfileHeader(),
             SizedBox(height: 32.h),
-            
+
             // Full Name
             BlocBuilder<ProfileCubit, ProfileState>(
-              buildWhen: (p, c) => p.name != c.name || p.fieldErrors['fullName'] != c.fieldErrors['fullName'],
+              buildWhen: (p, c) =>
+                  p.name != c.name ||
+                  p.fieldErrors['fullName'] != c.fieldErrors['fullName'],
               builder: (context, state) {
                 return ProfileField(
                   label: AppTexts.fullName,
@@ -54,10 +56,12 @@ class SetupContents extends StatelessWidget {
               },
             ),
             SizedBox(height: 20.h),
-            
+
             // Date of Birth
             BlocBuilder<ProfileCubit, ProfileState>(
-              buildWhen: (p, c) => p.dob != c.dob || p.fieldErrors['dob'] != c.fieldErrors['dob'],
+              buildWhen: (p, c) =>
+                  p.dob != c.dob ||
+                  p.fieldErrors['dob'] != c.fieldErrors['dob'],
               builder: (context, state) {
                 return ProfileField(
                   key: ValueKey(state.dob),
@@ -81,17 +85,18 @@ class SetupContents extends StatelessWidget {
               },
             ),
             SizedBox(height: 20.h),
-            
+
             // Referral Code
             BlocBuilder<ReferralCubit, ReferralState>(
               builder: (context, state) {
                 Widget? suffix;
                 String? apiError;
-                
+
                 if (state is ReferralLoading) {
                   suffix = const SizedBox(
-                    width: 20, height: 20, 
-                    child: CircularProgressIndicator(strokeWidth: 2)
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   );
                 } else if (state is ReferralValid) {
                   suffix = Icon(AppIcons.checkCircle, color: AppColors.green);
@@ -101,12 +106,14 @@ class SetupContents extends StatelessWidget {
                 }
 
                 return BlocBuilder<ProfileCubit, ProfileState>(
-                  buildWhen: (p, c) => 
+                  buildWhen: (p, c) =>
                       p.referralCode != c.referralCode ||
-                      p.fieldErrors['referralCode'] != c.fieldErrors['referralCode'],
+                      p.fieldErrors['referralCode'] !=
+                          c.fieldErrors['referralCode'],
                   builder: (context, pState) {
-                    final error = pState.fieldErrors['referralCode'] ?? apiError;
-                    
+                    final error =
+                        pState.fieldErrors['referralCode'] ?? apiError;
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -128,8 +135,11 @@ class SetupContents extends StatelessWidget {
                           Padding(
                             padding: EdgeInsets.only(top: 8.h, left: 16.w),
                             child: Text(
-                              state.message, 
-                              style: const TextStyle(color: AppColors.green, fontSize: 12)
+                              state.message,
+                              style: const TextStyle(
+                                color: AppColors.green,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                       ],
@@ -138,12 +148,14 @@ class SetupContents extends StatelessWidget {
                 );
               },
             ),
-            
+
             SizedBox(height: 32.h),
-            
+
             // Gender Selection
             BlocBuilder<ProfileCubit, ProfileState>(
-              buildWhen: (p, c) => p.gender != c.gender || p.fieldErrors['gender'] != c.fieldErrors['gender'],
+              buildWhen: (p, c) =>
+                  p.gender != c.gender ||
+                  p.fieldErrors['gender'] != c.fieldErrors['gender'],
               builder: (context, state) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,9 +186,13 @@ class SetupContents extends StatelessWidget {
               builder: (context, state) {
                 return PrimaryButton(
                   text: AppTexts.submit,
-                  isLoading: state.submissionStatus == ProfileSubmissionStatus.submitting,
-                  onPressed: state.submissionStatus == ProfileSubmissionStatus.submitting 
-                      ? null 
+                  isLoading:
+                      state.submissionStatus ==
+                      ProfileSubmissionStatus.submitting,
+                  onPressed:
+                      state.submissionStatus ==
+                          ProfileSubmissionStatus.submitting
+                      ? null
                       : profileCubit.submit,
                 );
               },

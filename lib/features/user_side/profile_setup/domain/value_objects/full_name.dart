@@ -5,7 +5,7 @@ class FullName {
 
   FullName(String input) : value = input.trim() {
     final Map<String, String> errors = {};
-    
+
     if (value.isEmpty) {
       errors['fullName'] = 'Name is required';
     } else if (value.length < 5) {

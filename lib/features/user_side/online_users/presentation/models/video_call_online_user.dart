@@ -1,5 +1,6 @@
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 
 class VideoCallOnlineUser {
   final String name;
@@ -23,6 +24,28 @@ class VideoCallOnlineUser {
     this.status = UserStatus.online,
     this.isFavorite = false,
   });
+
+  factory VideoCallOnlineUser.fromHostEntity(HostEntity host) {
+    UserStatus status = UserStatus.offline;
+    if (host.presence != null) {
+      if (host.presence!.busy) {
+        status = UserStatus.onCall;
+      } else if (host.presence!.status == 'online') {
+        status = UserStatus.online;
+      }
+    }
+    return VideoCallOnlineUser(
+      name: host.fullName.isNotEmpty ? host.fullName : 'Host',
+      imagePath: host.avatarUrl.isNotEmpty ? host.avatarUrl : AppAssets.femaleIcon,
+      focusArea: host.gender.isNotEmpty ? 'Gender: ${host.gender}' : 'Host Companion',
+      rating: 4.9,
+      ratePerMinute: host.videoRate.toInt(),
+      responseMinutes: 1,
+      isVerified: true,
+      status: status,
+      isFavorite: false,
+    );
+  }
 
   static const List<VideoCallOnlineUser> sampleUsers = [
     VideoCallOnlineUser(

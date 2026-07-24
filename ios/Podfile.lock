@@ -13,6 +13,8 @@ PODS:
     - razorpay-pod
   - sms_autofill (0.0.1):
     - Flutter
+  - url_launcher_ios (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -20,6 +22,7 @@ DEPENDENCIES:
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - razorpay_flutter (from `.symlinks/plugins/razorpay_flutter/ios`)
   - sms_autofill (from `.symlinks/plugins/sms_autofill/ios`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -37,6 +40,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/razorpay_flutter/ios"
   sms_autofill:
     :path: ".symlinks/plugins/sms_autofill/ios"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
@@ -46,6 +51,7 @@ SPEC CHECKSUMS:
   razorpay-pod: 4385cf844aa29389313b741e20c72fe668970d49
   razorpay_flutter: 0e98e4fcaae27ad50e011d85f66d85e0a008754a
   sms_autofill: b36b2147535657fea83d7f3898d7831de70bd8e4
+  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 

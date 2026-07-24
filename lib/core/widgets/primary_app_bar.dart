@@ -6,11 +6,13 @@ import 'package:mint_talk/core/theme/color.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool automaticallyImplyLeading;
+  final List<Widget>? actions;
 
   const CustomAppBar({
     super.key,
     required this.title,
     this.automaticallyImplyLeading = true,
+    this.actions,
   });
 
   @override
@@ -28,6 +30,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      actions: actions,
       leading: automaticallyImplyLeading
           ? IconButton(
               icon: Icon(AppIcons.back, size: 24.sp),

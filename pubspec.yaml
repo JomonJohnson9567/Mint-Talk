@@ -37,6 +37,8 @@ dependencies:
   flutter_dotenv: ^5.2.1
   razorpay_flutter: ^1.3.5
   image_picker: ^1.1.2
+  url_launcher: ^6.3.0
+  loading_animation_widget: ^1.3.0
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +72,9 @@ flutter:
       - assets/images/success/     
       - assets/images/profile setup/
       - assets/images/home/
+      - assets/host_profile_img/
+      - assets/images/target.png
+      - assets/wallet.png
   #   - images/a_dot_ham.jpeg
    
   # fonts:

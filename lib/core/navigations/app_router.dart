@@ -11,12 +11,24 @@ import 'package:mint_talk/features/auth/presentation/screens/phone_number/presen
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/screen/phone_number.dart';
 import 'package:mint_talk/features/auth/presentation/screens/success/presentation/screen/success_screen.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/screens/host_dash.dart';
+import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/host_dash_cubit.dart';
+import 'package:mint_talk/features/host_side/host_navigation/presentation/screen/host_navigation_screen.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/screen/host_profile_setup.dart';
+import 'package:mint_talk/features/host_side/host_profile_edit/presentation/cubit/host_profile_edit_cubit.dart';
+import 'package:mint_talk/features/host_side/host_profile_edit/presentation/screen/host_profile_edit.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/cubit/host_analytics_cubit.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/screen/host_analytics.dart';
+import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_cubit.dart';
+import 'package:mint_talk/features/host_side/apply_for_leave/presentation/screen/apply_for_leave.dart';
+import 'package:mint_talk/features/shared/block_users/presentation/screen/blocked_users_screen.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/apply_for_host.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/terms_and_conditions_for_host.dart';
+import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/host_application_status.dart';
+import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/host_application_status_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/screen/host_profile_screen.dart';
@@ -30,7 +42,11 @@ import 'package:mint_talk/features/user_side/profile_setup/presentation/screen/p
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/success_setup_screen.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/plan_detail_screen.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/recharge_plans.dart';
+import 'package:mint_talk/features/user_side/user_recharge_history/presentation/screen/user_recharge_history.dart';
+import 'package:mint_talk/features/user_side/user_referral_status/presentation/screen/referral_status_screen.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/screen/settings_screen.dart';
+import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_cubit.dart';
+import 'package:mint_talk/features/user_side/user_profile_edit/presentation/screen/user_profile_edit.dart';
 
 import 'package:mint_talk/features/user_side/wallet/presentation/pages/recharge_success_screen.dart';
 
@@ -48,6 +64,18 @@ class AppRouter {
     // host profile setup
     AppRoutes.hostProfileSetupScreen: RouteConfig(
       builder: (_) => const HostProfileSetupScreen(),
+    ),
+    AppRoutes.hostProfileEditScreen: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<HostProfileEditCubit>()..loadProfile(),
+        child: const HostProfileEdit(),
+      ),
+    ),
+    AppRoutes.hostAnalytics: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<HostAnalyticsCubit>()..loadAnalytics(),
+        child: const HostAnalytics(),
+      ),
     ),
 
     // Onboarding
@@ -96,6 +124,12 @@ class AppRouter {
       builder: (_) => const MainNavigationScreen(),
     ),
     AppRoutes.profileScreen: RouteConfig(builder: (_) => const ProfileScreen()),
+    AppRoutes.userProfileEditScreen: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<UserProfileEditCubit>()..loadProfile(),
+        child: const UserProfileEdit(),
+      ),
+    ),
     AppRoutes.settingsScreen: RouteConfig(
       builder: (_) => const SettingsScreen(),
     ),
@@ -103,6 +137,12 @@ class AppRouter {
     // recharge plans
     AppRoutes.rechargePlansScreen: RouteConfig(
       builder: (_) => const RechargePlans(),
+    ),
+    AppRoutes.userRechargeHistory: RouteConfig(
+      builder: (_) => const UserRechargeHistory(),
+    ),
+    AppRoutes.referralStatusScreen: RouteConfig(
+      builder: (_) => const ReferralStatusScreen(),
     ),
     AppRoutes.planDetail: RouteConfig(
       builder: (settings) {
@@ -114,6 +154,22 @@ class AppRouter {
     //video call online screen
     AppRoutes.videocallOnlineScreen: RouteConfig(
       builder: (_) => const VideoCallOnlineScreen(),
+    ),
+    AppRoutes.chatScreen: RouteConfig(
+      builder: (settings) {
+        final args =
+            RouteArgs.of<UserChatArgs>(settings) ??
+            const UserChatArgs(hostName: 'Host');
+        return UserChatScreen(args: args);
+      },
+    ),
+    AppRoutes.userChatScreen: RouteConfig(
+      builder: (settings) {
+        final args =
+            RouteArgs.of<UserChatArgs>(settings) ??
+            const UserChatArgs(hostName: 'Host');
+        return UserChatScreen(args: args);
+      },
     ),
 
     //audio call online screen
@@ -134,16 +190,39 @@ class AppRouter {
       ),
     ),
     AppRoutes.hostDashScreen: RouteConfig(
-      builder: (_) => const HostDashScreen(),
-    ),  
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<HostDashCubit>()..loadDashboardData(),
+        child: const HostDashScreen(),
+      ),
+    ),
+    AppRoutes.hostMainNavigation: RouteConfig(
+      builder: (_) => const HostMainNavigationScreen(),
+    ),
     AppRoutes.applyForHost: RouteConfig(
       builder: (_) => BlocProvider(
-        create: (_) => getIt<ApplyForHostCubit>(),
+        create: (_) => getIt<ApplyForHostCubit>()..loadProfileData(),
         child: const ApplyForHost(),
       ),
-    ),  
+    ),
     AppRoutes.termsAndConditionsForHost: RouteConfig(
-      builder: (_) => const TermsAndConditionsForHost(),
+      builder: (settings) => TermsAndConditionsForHost(
+        readOnly: RouteArgs.of<bool>(settings) ?? false,
+      ),
+    ),
+    AppRoutes.hostApplicationStatus: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<HostApplicationStatusCubit>()..loadStatus(),
+        child: const HostApplicationStatus(),
+      ),
+    ),
+    AppRoutes.applyForLeave: RouteConfig(
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<ApplyForLeaveCubit>(),
+        child: const ApplyForLeave(),
+      ),
+    ),
+    AppRoutes.blockedUsersScreen: RouteConfig(
+      builder: (_) => const BlockedUsersScreen(),
     ),
   };
 

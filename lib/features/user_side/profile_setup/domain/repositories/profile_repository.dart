@@ -4,5 +4,6 @@ import 'package:mint_talk/features/user_side/profile_setup/domain/entities/user_
 
 abstract class ProfileRepository {
   Future<Either<Failure, bool>> createProfile(UserProfile profile);
+  Future<Either<Failure, bool>> updateProfile(UserProfile profile);
   Future<Either<Failure, bool>> verifyReferralCode(String referralCode);
 }

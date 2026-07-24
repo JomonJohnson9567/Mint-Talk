@@ -3,10 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
+import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class HostActionButtons extends StatelessWidget {
-  const HostActionButtons({super.key});
+  final String hostName;
+
+  const HostActionButtons({super.key, required this.hostName});
 
   @override
   Widget build(BuildContext context) {
@@ -31,27 +35,33 @@ class HostActionButtons extends StatelessWidget {
           _ActionButton(
             icon: Icons.call,
             label: AppTexts.call,
-            color: AppColors.actionBlue, // Blue
+            color: AppColors.actionBlue,
             onTap: () {},
           ),
           _ActionButton(
             icon: Icons.message,
             label: AppTexts.message,
-            color: AppColors.actionBlue, // Blue
-            onTap: () {},
+            color: AppColors.actionBlue,
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.userChatScreen,
+                arguments: UserChatArgs(hostName: hostName),
+              );
+            },
           ),
           _ActionButton(
             icon: Icons.favorite,
             label: AppTexts.favorite,
-            color: AppColors.actionBlue, // Blue
+            color: AppColors.actionBlue,
             onTap: () {},
           ),
           _ActionButton(
-            icon: Icons.person_off, // or block
+            icon: Icons.person_off,
             label: AppTexts.block,
-            color: AppColors.actionBlue, // Blue
+            color: AppColors.actionBlue,
             onTap: () {},
-            isBlocked: true, // Special icon decoration if needed?
+            isBlocked: true,
           ),
         ],
       ),

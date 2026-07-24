@@ -5,7 +5,9 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/widgets/profile_avatar.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/widgets/profile_tile.dart';
- 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/features/user_side/profile_screen/presentation/cubit/profile_info_cubit.dart';
+
 class ProfileContents extends StatelessWidget {
   const ProfileContents({super.key});
 
@@ -23,7 +25,15 @@ class ProfileContents extends StatelessWidget {
             iconColor: AppColors.primaryColor,
             iconBackgroundColor: AppColors.primaryColor.withValues(alpha: 0.2),
             title: AppTexts.editProfile,
-            onTap: () {},
+            onTap: () async {
+              final updated = await Navigator.pushNamed(
+                context,
+                AppRoutes.userProfileEditScreen,
+              );
+              if (updated == true && context.mounted) {
+                context.read<ProfileInfoCubit>().loadProfileInfo();
+              }
+            },
           ),
 
           //blocked users
@@ -32,7 +42,9 @@ class ProfileContents extends StatelessWidget {
             iconColor: AppColors.favIcon,
             iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
             title: AppTexts.blockedUsers,
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.blockedUsersScreen);
+            },
           ),
           //referral code
           ProfileTile(
@@ -40,7 +52,9 @@ class ProfileContents extends StatelessWidget {
             iconColor: AppColors.favIcon,
             iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
             title: AppTexts.referralCode,
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.referralStatusScreen);
+            },
           ),
           ProfileTile(
             icon: Icons.settings,

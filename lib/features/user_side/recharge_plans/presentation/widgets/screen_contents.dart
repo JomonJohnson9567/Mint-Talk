@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/navigations/app_routes.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
@@ -11,10 +13,7 @@ import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/recharge_plan_section_widget.dart';
 
 class ScreenContents extends StatelessWidget {
-  const ScreenContents({
-    super.key,
-    required this.contentWidth,
-  });
+  const ScreenContents({super.key, required this.contentWidth});
 
   final double contentWidth;
 
@@ -47,6 +46,8 @@ class ScreenContents extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const _RechargeOverviewCard(),
+                      SizedBox(height: 18.h),
+                      const _ReferralStatusPromptCard(),
                       SizedBox(height: 18.h),
                       if (state.status == WalletStatus.plansLoading)
                         const Padding(
@@ -92,7 +93,9 @@ class ScreenContents extends StatelessWidget {
         .map((p) => p.id)
         .toSet();
 
-    final apiPlans = mergedPlans.where((p) => !dummyIds.contains(p.id)).toList();
+    final apiPlans = mergedPlans
+        .where((p) => !dummyIds.contains(p.id))
+        .toList();
 
     final List<Widget> sections = [];
 
@@ -125,6 +128,85 @@ class ScreenContents extends StatelessWidget {
   }
 }
 
+class _ReferralStatusPromptCard extends StatelessWidget {
+  const _ReferralStatusPromptCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.referralStatusScreen);
+      },
+      borderRadius: BorderRadius.circular(24.r),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(
+            color: AppColors.primaryColor.withValues(alpha: 0.08),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52.w,
+              height: 52.w,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.card_giftcard_rounded,
+                color: AppColors.primaryColor,
+                size: 26.sp,
+              ),
+            ),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppTexts.referralStatus,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Track referral rewards and share your invite code from one place.',
+                    style: TextStyle(
+                      fontSize: 12.5.sp,
+                      color: AppColors.subtitleText,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16.sp,
+              color: AppColors.primaryColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RechargeOverviewCard extends StatelessWidget {
   const _RechargeOverviewCard();
 
@@ -138,10 +220,7 @@ class _RechargeOverviewCard extends StatelessWidget {
           padding: EdgeInsets.all(18.w),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                AppColors.primaryColor,
-                AppColors.tealBackground,
-              ],
+              colors: [AppColors.primaryColor, AppColors.tealBackground],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -208,7 +287,10 @@ class _OverviewContent extends StatelessWidget {
             BlocBuilder<WalletCubit, WalletState>(
               builder: (context, state) {
                 return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 6.h,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(20.r),
@@ -216,8 +298,11 @@ class _OverviewContent extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.account_balance_wallet,
-                          color: AppColors.white, size: 14.sp),
+                      Icon(
+                        Icons.account_balance_wallet,
+                        color: AppColors.white,
+                        size: 14.sp,
+                      ),
                       SizedBox(width: 6.w),
                       Text(
                         '${state.balance}',
@@ -279,16 +364,11 @@ class _OverviewIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: EdgeInsets.all(18.w),
-        child: Image.asset(
-          AppAssets.moneyBag,
-          fit: BoxFit.contain,
-        ),
+        child: Image.asset(AppAssets.moneyBag, fit: BoxFit.contain),
       ),
     );
   }
@@ -306,9 +386,7 @@ class _OverviewChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999.r),
-        border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.16),
-        ),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.16)),
       ),
       child: Text(
         label,

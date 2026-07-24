@@ -17,7 +17,10 @@ class ApiClient {
       endpoint,
       queryParameters: queryParams,
     );
-    return response.data as Map<String, dynamic>;
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
   }
 
   /// Send a POST request with a JSON [body].
@@ -30,7 +33,10 @@ class ApiClient {
       endpoint,
       data: body,
     );
-    return response.data as Map<String, dynamic>;
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
   }
 
   /// Send a POST request with multipart form data (for file uploads).
@@ -44,7 +50,10 @@ class ApiClient {
       endpoint,
       data: formData,
     );
-    return response.data as Map<String, dynamic>;
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
   }
 
   /// Send a PATCH request with a JSON [body].
@@ -57,7 +66,10 @@ class ApiClient {
       endpoint,
       data: body,
     );
-    return response.data as Map<String, dynamic>;
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
   }
 
   /// Send a DELETE request.
@@ -68,7 +80,10 @@ class ApiClient {
     final response = await _dio.delete(
       endpoint,
     );
-    return response.data as Map<String, dynamic>;
+    if (response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return <String, dynamic>{};
   }
 
   /// Access the raw Dio Response (needed for extracting headers, e.g. cookies).

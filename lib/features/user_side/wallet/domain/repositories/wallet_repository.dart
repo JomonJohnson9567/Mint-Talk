@@ -8,6 +8,7 @@ abstract class WalletRepository {
   Future<Either<Failure, WalletEntity>> initializeWallet();
   Future<Either<Failure, WalletEntity>> getWalletBalance(String userId);
   Future<Either<Failure, OrderEntity>> createOrder(String planId);
+  Future<Either<Failure, RechargePlanItem>> getPlanById(String planId);
   Future<Either<Failure, int>> verifyPayment({
     required String razorpayOrderId,
     required String razorpayPaymentId,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
-import 'package:mint_talk/features/user_side/call_log/presentation/bloc/call_log_cubit.dart';
+import 'package:mint_talk/features/user_side/call_log/presentation/bloc/call_log_state.dart';
 
 class CallLogItem extends StatelessWidget {
   final String name;

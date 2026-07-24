@@ -19,6 +19,7 @@ class ProfileField extends StatelessWidget {
   final AutovalidateMode? autovalidateMode;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final TextCapitalization textCapitalization;
 
   const ProfileField({
     super.key,
@@ -36,6 +37,7 @@ class ProfileField extends StatelessWidget {
     this.autovalidateMode,
     this.keyboardType,
     this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -63,6 +65,7 @@ class ProfileField extends StatelessWidget {
           onTap: onTap,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
+          textCapitalization: textCapitalization,
           decoration: InputDecoration(
             errorText: errorText,
             hintText: hintText,

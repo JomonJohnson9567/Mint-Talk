@@ -23,7 +23,8 @@ class ApplySelfieUpload extends StatelessWidget {
       builder: (context, state) {
         final bool hasSelfie = state.selfiePath.isNotEmpty;
         final bool hasError =
-            state.fieldErrors['selfie'] != null && state.fieldErrors['selfie']!.isNotEmpty;
+            state.fieldErrors['selfie'] != null &&
+            state.fieldErrors['selfie']!.isNotEmpty;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,9 +47,9 @@ class ApplySelfieUpload extends StatelessWidget {
                     onTap: hasSelfie || state.isUploadingSelfie
                         ? null
                         : () => _pickImage(context, (path) {
-                              cubit.selfieChanged(path);
-                              cubit.uploadSelfie(path);
-                            }),
+                            cubit.selfieChanged(path);
+                            cubit.uploadSelfie(path);
+                          }),
                     child: Container(
                       width: 130.w,
                       height: 130.w,
@@ -58,7 +59,9 @@ class ApplySelfieUpload extends StatelessWidget {
                         border: Border.all(
                           color: hasError
                               ? AppColors.red
-                              : (hasSelfie ? AppColors.borderSoft : AppColors.grey.withAlpha(51)),
+                              : (hasSelfie
+                                    ? AppColors.borderSoft
+                                    : AppColors.grey.withAlpha(51)),
                           width: 2,
                         ),
                       ),
@@ -77,7 +80,10 @@ class ApplySelfieUpload extends StatelessWidget {
                                       color: AppColors.black.withAlpha(102),
                                       child: const Center(
                                         child: CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.white,
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -85,30 +91,36 @@ class ApplySelfieUpload extends StatelessWidget {
                               ),
                             )
                           : state.isUploadingSelfie
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      AppIcons.camera,
-                                      color: hasError ? AppColors.red : AppColors.primaryColor,
-                                      size: 30.sp,
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    Text(
-                                      'Take Selfie',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w600,
-                                        color: hasError ? AppColors.red : AppColors.subtitleText,
-                                      ),
-                                    ),
-                                  ],
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primaryColor,
                                 ),
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  AppIcons.camera,
+                                  color: hasError
+                                      ? AppColors.red
+                                      : AppColors.primaryColor,
+                                  size: 30.sp,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  'Take Selfie',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: hasError
+                                        ? AppColors.red
+                                        : AppColors.subtitleText,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   if (hasSelfie && !state.isUploadingSelfie)
@@ -184,7 +196,10 @@ class ApplySelfieUpload extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primaryColor),
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.primaryColor,
+                ),
                 title: Text(
                   'Choose from Gallery',
                   style: GoogleFonts.manrope(fontWeight: FontWeight.w600),

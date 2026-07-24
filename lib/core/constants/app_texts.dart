@@ -119,6 +119,15 @@ class AppTexts {
   static const String hostsLiveNow = 'hosts live now';
   static const String readyToConnect = 'ready to connect';
   static const String rechargePlans = 'Recharge Plans';
+  static const String referralStatus = 'Referral Status';
+  static const String referralRewards = 'Referral Rewards';
+  static const String shareReferralCode = 'Share Referral Code';
+  static const String copyReferralCode = 'Copy Referral Code';
+  static const String noReferralRewardsYet = 'No referral rewards yet';
+  static const String referralRewardPoints = 'Reward Points';
+  static const String referralPendingPoints = 'Pending Points';
+  static const String referralCodeLabel = 'Referral Code';
+  static const String referralInvite = 'Invite friends and earn rewards';
   static const String standardPackages = 'Standard Packages';
   static const String dhamakkaOffer = 'Dhamakka Offer';
   static const String specialOffer = 'Special Offer';
@@ -158,7 +167,6 @@ class AppTexts {
   static const String gst = 'GST (18%)';
   static const String totalAmount = 'Total Amount';
 
-
   //Settings Screen
   static const String logout = 'Logout';
   static const String logoutMessage = 'Are you sure you want to logout?';
@@ -191,6 +199,13 @@ class AppTexts {
   static const String message = 'Message';
   static const String favorite = 'Favorite';
   static const String block = 'Block';
+
+  //Chat Screen
+  static const String chat = 'Chat';
+  static const String quickMessages = 'Quick Messages';
+  static const String onlineNow = 'Online now';
+  static const String messageHost = 'Message Host';
+  static const String conversations = 'Conversations';
 
   //Host Profile Setup Screen
   static const String preferredCategories = 'Preferred Categories';

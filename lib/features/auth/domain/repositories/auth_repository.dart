@@ -25,6 +25,9 @@ abstract class AuthRepository {
   /// Checks if the user has completed their profile setup.
   Future<Either<Failure, bool>> checkIsProfileComplete();
 
+  /// Returns the locally cached authenticated user role.
+  Future<Either<Failure, String?>> getCachedUserRole();
+
   /// Checks if the user has successfully completed OTP verification.
   Future<Either<Failure, bool>> checkIsOtpVerified();
 

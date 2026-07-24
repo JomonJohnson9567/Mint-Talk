@@ -15,17 +15,14 @@ class AppStartCubit extends Cubit<AppStartState> {
     // 1. Check if user is logged in (has valid refresh token)
     final loggedInResult = await _authRepository.checkIsLoggedIn();
     bool isLoggedIn = false;
-    
-    loggedInResult.fold(
-      (failure) {
-        emit(AppStartError(message: failure.message));
-        return;
-      },
-      (loggedIn) => isLoggedIn = loggedIn,
-    );
+
+    loggedInResult.fold((failure) {
+      emit(AppStartError(message: failure.message));
+      return;
+    }, (loggedIn) => isLoggedIn = loggedIn);
 
     if (state is AppStartError) return;
-    
+
     if (!isLoggedIn) {
       emit(const AppStartUnauthenticated());
       return;
@@ -35,13 +32,10 @@ class AppStartCubit extends Cubit<AppStartState> {
     final otpResult = await _authRepository.checkIsOtpVerified();
     bool isOtpVerified = false;
 
-    otpResult.fold(
-      (failure) {
-        emit(AppStartError(message: failure.message));
-        return;
-      },
-      (verified) => isOtpVerified = verified,
-    );
+    otpResult.fold((failure) {
+      emit(AppStartError(message: failure.message));
+      return;
+    }, (verified) => isOtpVerified = verified);
 
     if (state is AppStartError) return;
 
@@ -54,18 +48,25 @@ class AppStartCubit extends Cubit<AppStartState> {
     final profileResult = await _authRepository.checkIsProfileComplete();
     bool isProfileComplete = false;
 
-    profileResult.fold(
-      (failure) {
-        emit(AppStartError(message: failure.message));
-        return;
-      },
-      (complete) => isProfileComplete = complete,
-    );
+    profileResult.fold((failure) {
+      emit(AppStartError(message: failure.message));
+      return;
+    }, (complete) => isProfileComplete = complete);
 
     if (state is AppStartError) return;
 
     if (isProfileComplete) {
-      emit(const AppStartAuthenticated());
+      final roleResult = await _authRepository.getCachedUserRole();
+      String? role;
+
+      roleResult.fold((failure) {
+        emit(AppStartError(message: failure.message));
+        return;
+      }, (cachedRole) => role = cachedRole);
+
+      if (state is AppStartError) return;
+
+      emit(AppStartAuthenticated(role: role));
     } else {
       emit(const AppStartNeedsProfile());
     }

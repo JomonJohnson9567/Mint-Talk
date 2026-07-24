@@ -12,7 +12,11 @@ class DateOfBirth {
     try {
       final parts = input.split('/');
       if (parts.length != 3) throw const FormatException();
-      return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      return DateTime(
+        int.parse(parts[2]),
+        int.parse(parts[1]),
+        int.parse(parts[0]),
+      );
     } catch (_) {
       throw const ValidationException({'dob': 'Invalid date format'});
     }
@@ -27,7 +31,9 @@ class DateOfBirth {
     }
 
     if (age < 18) {
-      throw const ValidationException({'dob': 'You must be at least 18 years old'});
+      throw const ValidationException({
+        'dob': 'You must be at least 18 years old',
+      });
     }
   }
 

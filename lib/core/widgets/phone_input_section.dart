@@ -12,6 +12,7 @@ class PhoneInputSection extends StatelessWidget {
   final VoidCallback onCountryTap;
   final ValueChanged<String> onPhoneChanged;
   final String? errorText;
+  final TextEditingController? controller;
 
   // Customization fields
   final String? label;
@@ -29,6 +30,7 @@ class PhoneInputSection extends StatelessWidget {
     required this.onCountryTap,
     required this.onPhoneChanged,
     this.errorText,
+    this.controller,
     this.label,
     this.labelStyle,
     this.backgroundColor,
@@ -46,11 +48,13 @@ class PhoneInputSection extends StatelessWidget {
       children: [
         Text(
           label ?? AppTexts.mobileNumber,
-          style: labelStyle ?? TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.black,
-          ),
+          style:
+              labelStyle ??
+              TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.black,
+              ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -98,19 +102,23 @@ class PhoneInputSection extends StatelessWidget {
               ),
               Expanded(
                 child: TextFormField(
+                  controller: controller,
                   keyboardType: TextInputType.phone,
                   onChanged: onPhoneChanged,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: AppTexts.enterYourPhoneNumber,
-                    hintStyle: hintStyle ?? const TextStyle(color: AppColors.textGrey),
+                    hintStyle:
+                        hintStyle ?? const TextStyle(color: AppColors.textGrey),
                     isDense: true,
                   ),
-                  style: textStyle ?? TextStyle(
-                    fontSize: 16.sp,
-                    color: AppColors.black,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style:
+                      textStyle ??
+                      TextStyle(
+                        fontSize: 16.sp,
+                        color: AppColors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ),
             ],

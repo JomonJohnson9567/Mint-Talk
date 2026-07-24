@@ -9,8 +9,8 @@ class Validators {
     }
 
     final trimmed = value.trim();
-    if (trimmed.length < 5) {
-      return 'Name must be at least 5 characters';
+    if (trimmed.length < 3) {
+      return 'Name must be at least 3 characters';
     }
     if (trimmed.length > 50) {
       return 'Name must not exceed 50 characters';

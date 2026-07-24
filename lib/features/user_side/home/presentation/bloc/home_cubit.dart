@@ -2,13 +2,25 @@ import 'package:bloc/bloc.dart';
 import '../../domain/entities/home_user_entity.dart';
 import 'package:injectable/injectable.dart';
 import 'home_state.dart';
+import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
 
 @injectable
 class HomeCubit extends Cubit<HomeState> {
+  final AuthLocalDataSource _localDataSource;
   List<HomeUserEntity> _allUsers = [];
 
-  HomeCubit() : super(const HomeState()) {
+  HomeCubit(this._localDataSource) : super(const HomeState()) {
     _loadInitialData();
+    _loadCallRates();
+  }
+
+  Future<void> _loadCallRates() async {
+    final rates = await Future.wait<int?>([
+      _localDataSource.getAudioRate(),
+      _localDataSource.getVideoRate(),
+    ]);
+    if (isClosed) return;
+    emit(state.copyWith(audioRate: rates[0], videoRate: rates[1]));
   }
 
   void _loadInitialData() {

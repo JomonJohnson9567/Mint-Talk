@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
+import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/app_start/presentation/cubit/app_start_cubit.dart';
 import 'package:mint_talk/features/app_start/presentation/cubit/app_start_state.dart';
 
@@ -27,19 +28,24 @@ class _SplashView extends StatelessWidget {
     return BlocListener<AppStartCubit, AppStartState>(
       listener: (context, state) {
         if (state is AppStartUnauthenticated) {
-          Navigator.pushReplacementNamed(context, AppRoutes.phoneNumber);
+          Navigator.pushReplacementNamed(context, AppRoutes.welcome);
         } else if (state is AppStartNeedsProfile) {
           // Send to profile setup
           Navigator.pushReplacementNamed(context, AppRoutes.profileSetup);
         } else if (state is AppStartAuthenticated) {
-          // Send to home or main navigation
-          Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
+          Navigator.pushReplacementNamed(
+            context,
+            state.isStaff
+                ? AppRoutes.hostMainNavigation
+                : AppRoutes.mainNavigation,
+          );
         } else if (state is AppStartError) {
+          appLogger.e('App start initialization error: ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            const SnackBar(content: Text('Something went wrong. Please try again later.')),
           );
           // Fallback to unauthenticated screen
-          Navigator.pushReplacementNamed(context, AppRoutes.phoneNumber);
+          Navigator.pushReplacementNamed(context, AppRoutes.welcome);
         }
       },
       child: const Scaffold(
@@ -78,4 +84,3 @@ class SplashInitialView extends StatelessWidget {
     );
   }
 }
-

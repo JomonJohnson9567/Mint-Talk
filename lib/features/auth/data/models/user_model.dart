@@ -10,6 +10,12 @@ class UserModel extends UserEntity {
     super.fullName,
     super.gender,
     super.dob,
+    super.referralCode,
+    super.audioRate,
+    super.videoRate,
+    super.isAudioAllowed,
+    super.isVideoAllowed,
+    super.termsAcceptedAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +27,12 @@ class UserModel extends UserEntity {
       fullName: json['fullName'] as String?,
       gender: json['gender'] as String?,
       dob: json['dob'] as String?,
+      referralCode: json['referralCode'] as String?,
+      audioRate: _intFromJson(json['audioRate']),
+      videoRate: _intFromJson(json['videoRate']),
+      isAudioAllowed: json['isAudioAllowed'] as bool?,
+      isVideoAllowed: json['isVideoAllowed'] as bool?,
+      termsAcceptedAt: json['termsAcceptedAt'] as String?,
     );
   }
 
@@ -33,6 +45,18 @@ class UserModel extends UserEntity {
       'fullName': fullName,
       'gender': gender,
       'dob': dob,
+      'referralCode': referralCode,
+      'audioRate': audioRate,
+      'videoRate': videoRate,
+      'isAudioAllowed': isAudioAllowed,
+      'isVideoAllowed': isVideoAllowed,
+      'termsAcceptedAt': termsAcceptedAt,
     };
+  }
+
+  static int? _intFromJson(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 }

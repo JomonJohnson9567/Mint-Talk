@@ -14,16 +14,14 @@ class ApplyDobInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<ApplyForHostCubit>();
     return BlocBuilder<ApplyForHostCubit, ApplyForHostState>(
-      buildWhen: (p, c) => p.dob != c.dob || p.fieldErrors['dob'] != c.fieldErrors['dob'],
+      buildWhen: (p, c) =>
+          p.dob != c.dob || p.fieldErrors['dob'] != c.fieldErrors['dob'],
       builder: (context, state) {
         return ProfileField(
           key: ValueKey(state.dob),
           label: 'DATE OF BIRTH',
           hintText: 'DD/MM/YYYY',
-          suffixIcon: Icon(
-            AppIcons.calendar,
-            color: AppColors.textGrey,
-          ),
+          suffixIcon: Icon(AppIcons.calendar, color: AppColors.textGrey),
           readOnly: true,
           initialValue: state.dob,
           errorText: state.fieldErrors['dob'],

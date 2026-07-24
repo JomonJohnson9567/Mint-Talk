@@ -8,6 +8,7 @@ import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/profile_cubit.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/profile_state.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/referral_cubit.dart';
+
 class ProfileSetupScreen extends StatelessWidget {
   const ProfileSetupScreen({super.key});
 
@@ -27,9 +28,12 @@ class ProfileSetupScreen extends StatelessWidget {
             listener: (context, state) {
               if (state.submissionStatus == ProfileSubmissionStatus.success) {
                 Navigator.pushReplacementNamed(context, AppRoutes.successSetup);
-              } else if (state.submissionStatus == ProfileSubmissionStatus.error) {
+              } else if (state.submissionStatus ==
+                  ProfileSubmissionStatus.error) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.errorMessage ?? 'Submission failed')),
+                  SnackBar(
+                    content: Text(state.errorMessage ?? 'Submission failed'),
+                  ),
                 );
               }
             },

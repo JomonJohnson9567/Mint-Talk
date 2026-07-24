@@ -14,7 +14,13 @@ class AuthInterceptor extends Interceptor {
     final tokenManager = getIt<TokenManager>();
 
     // 1. Attach Access Token as Bearer Header
-    final accessToken = tokenManager.getAccessToken();
+    var accessToken = tokenManager.getAccessToken();
+    if ((accessToken == null || accessToken.isEmpty) &&
+        await tokenManager.hasRefreshToken()) {
+      await _tryRefreshToken(tokenManager);
+      accessToken = tokenManager.getAccessToken();
+    }
+
     if (accessToken != null && accessToken.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $accessToken';
     }
@@ -42,8 +48,7 @@ class AuthInterceptor extends Interceptor {
     final response = err.response;
     final statusCode = response?.statusCode;
 
-    // Handle 401 / 403 Unauthorized errors
-    if (statusCode == 401 || statusCode == 403) {
+    if (statusCode == 401) {
       final tokenManager = getIt<TokenManager>();
 
       // Avoid infinite loop if the refresh attempt itself or the retried request fails again
@@ -71,10 +76,7 @@ class AuthInterceptor extends Interceptor {
             options.path,
             data: options.data,
             queryParameters: options.queryParameters,
-            options: Options(
-              method: options.method,
-              headers: options.headers,
-            ),
+            options: Options(method: options.method, headers: options.headers),
           );
           return handler.resolve(retryResponse);
         } on DioException catch (retryErr) {
@@ -83,7 +85,9 @@ class AuthInterceptor extends Interceptor {
       } else {
         await tokenManager.clearAll();
         // Redirect to login screen on session expiry
-        getIt<NavigationService>().navigateAndRemoveUntil(AppRoutes.phoneNumber);
+        getIt<NavigationService>().navigateAndRemoveUntil(
+          AppRoutes.phoneNumber,
+        );
       }
     }
 
@@ -95,11 +99,13 @@ class AuthInterceptor extends Interceptor {
       final refreshToken = await tokenManager.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final refreshDio = Dio(BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 60),
-      ));
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
 
       final response = await refreshDio.post(
         ApiEndpoints.refreshToken,
@@ -114,7 +120,8 @@ class AuthInterceptor extends Interceptor {
       if (response.statusCode == 200) {
         final body = response.data;
         if (body is Map<String, dynamic>) {
-          final isSuccess = body['success'] == true || body['status'] == 'success';
+          final isSuccess =
+              body['success'] == true || body['status'] == 'success';
           if (isSuccess && body['accessToken'] != null) {
             tokenManager.saveAccessToken(body['accessToken'] as String);
             return true;

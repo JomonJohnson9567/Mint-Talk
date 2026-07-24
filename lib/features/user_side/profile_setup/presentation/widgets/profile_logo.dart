@@ -10,7 +10,6 @@ class ProfileLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        
         decoration: BoxDecoration(
           color: AppColors.white,
           image: DecorationImage(

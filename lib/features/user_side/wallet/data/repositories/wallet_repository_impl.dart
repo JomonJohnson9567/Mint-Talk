@@ -64,6 +64,22 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
+  Future<Either<Failure, RechargePlanItem>> getPlanById(String planId) async {
+    try {
+      final result = await remoteDataSource.getPlanById(planId);
+      return Right(result);
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, int>> verifyPayment({
     required String razorpayOrderId,
     required String razorpayPaymentId,

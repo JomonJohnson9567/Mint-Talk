@@ -5,7 +5,7 @@ import 'package:mint_talk/features/user_side/host_profile_screen/presentation/wi
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_special_categories.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_warning_banner.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_action_buttons.dart';
- 
+
 class ScreenContents extends StatelessWidget {
   final HomeUserEntity user;
 
@@ -25,7 +25,7 @@ class ScreenContents extends StatelessWidget {
             imageUrl: user.imageUrl,
           ),
           SizedBox(height: 24.h),
-          const HostActionButtons(),
+          HostActionButtons(hostName: user.name),
           SizedBox(height: 24.h),
 
           const HostSpecialCategories(),

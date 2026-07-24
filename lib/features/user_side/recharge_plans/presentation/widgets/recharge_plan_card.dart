@@ -26,7 +26,7 @@ class RechargePlanCard extends StatelessWidget {
         Navigator.pushNamed(
           context,
           AppRoutes.planDetail,
-          arguments: PlanDetailArgs(plan: plan, accentColor: accentColor),
+          arguments: PlanDetailArgs(planId: plan.id, accentColor: accentColor),
         );
       },
       borderRadius: BorderRadius.circular(22.r),
@@ -34,7 +34,9 @@ class RechargePlanCard extends StatelessWidget {
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < 160;
           final hasTightHeight = constraints.maxHeight < 232;
-          final imageContainerSize = (isCompact || hasTightHeight) ? 52.0 : 60.0;
+          final imageContainerSize = (isCompact || hasTightHeight)
+              ? 52.0
+              : 60.0;
           final imageSize = (isCompact || hasTightHeight) ? 30.0 : 40.0;
           final coinFontSize = (isCompact || hasTightHeight) ? 16.0 : 18.0;
           final priceFontSize = (isCompact || hasTightHeight) ? 18.0 : 20.0;
@@ -201,10 +203,7 @@ class _PlanBadge extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: reservedHeight),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 5,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(999.r),

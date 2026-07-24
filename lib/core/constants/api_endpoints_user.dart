@@ -22,6 +22,7 @@ class ApiEndpoints {
 
   // ── Plans ─────────────────────────────────────────────────────────────
   static const String plans = '/plans';
+  static String planById(String planId) => '/plans/$planId';
 
   // ── Wallet ────────────────────────────────────────────────────────────
   static const String walletInitialize = '/wallet/initialize';
@@ -37,4 +38,33 @@ class ApiEndpoints {
   // POst------
   static const String applyForHost = '/host-applications/apply';
   static const String verifyKYC = '/host-applications/kyc';
+  static const String hostApplicationStatus = '/host-applications/my-status';
+
+  // ── Host ─────────────────────────────────────────────────────────────
+  static const String hostMyEarningsLedger = '/earnings/my-ledger';
+  static const String hostWithdrawalsRequest = '/withdrawals/request';
+  static const String hostWithdrawalsMyRequests = '/withdrawals/my-requests';
+  static const String hostLeavesRequest = '/leaves/request';
+  static const String hostLeavesMyRequests = '/leaves/my-requests';
+  static const String hostPreferences = '/hosts/preferences';
+
+  // ── Block Users ───────────────────────────────────────────────────────
+  static const String blockedList = '/user/blocked-list';
+  static const String blockUser = '/user/block';
+  static const String unblockUser = '/user/unblock';
+
+  // ── Call Logs & Reports ────────────────────────────────────────────────
+  static const String userCallLogs = '/calls/user-logs';
+  static const String hostCallLogs = '/calls/host-logs';
+  static const String callReportSummary = '/calls/report';
+  static String reportCall(String callId) => '/calls/$callId/report';
+
+  // ── Profile Image ──────────────────────────────────────────────────────
+  static const String profileImage = '/user/profile-image';
+
+  // ── Hosts ─────────────────────────────────────────────────────────────
+  static const String hosts = '/hosts';
+  static const String hostsOnline = '/hosts/online';
+  static const String hostsOffline = '/hosts/offline';
+  static const String hostsOnCall = '/hosts/on-call';
 }

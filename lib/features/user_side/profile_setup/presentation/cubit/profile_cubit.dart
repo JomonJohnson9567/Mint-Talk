@@ -16,50 +16,58 @@ class ProfileCubit extends Cubit<ProfileState> {
   final CreateUserProfile _createUserProfile;
   final AuthLocalDataSource _localDataSource;
 
-  ProfileCubit(
-    this._createUserProfile,
-    this._localDataSource,
-  ) : super(const ProfileState());
+  ProfileCubit(this._createUserProfile, this._localDataSource)
+    : super(const ProfileState());
 
   final formKey = GlobalKey<FormState>();
 
   void nameChanged(String name) {
-    emit(state.copyWith(
-      name: name,
-      formStatus: ProfileFormStatus.initial,
-      fieldErrors: Map.from(state.fieldErrors)..remove('fullName'),
-    ));
+    emit(
+      state.copyWith(
+        name: name,
+        formStatus: ProfileFormStatus.initial,
+        fieldErrors: Map.from(state.fieldErrors)..remove('fullName'),
+      ),
+    );
   }
 
   void dobChanged(String dob) {
-    emit(state.copyWith(
-      dob: dob,
-      formStatus: ProfileFormStatus.initial,
-      fieldErrors: Map.from(state.fieldErrors)..remove('dob'),
-    ));
+    emit(
+      state.copyWith(
+        dob: dob,
+        formStatus: ProfileFormStatus.initial,
+        fieldErrors: Map.from(state.fieldErrors)..remove('dob'),
+      ),
+    );
   }
 
   void genderChanged(String gender) {
-    emit(state.copyWith(
-      gender: gender,
-      formStatus: ProfileFormStatus.initial,
-      fieldErrors: Map.from(state.fieldErrors)..remove('gender'),
-    ));
+    emit(
+      state.copyWith(
+        gender: gender,
+        formStatus: ProfileFormStatus.initial,
+        fieldErrors: Map.from(state.fieldErrors)..remove('gender'),
+      ),
+    );
   }
 
   void referralCodeChanged(String? code) {
-    emit(state.copyWith(
-      referralCode: code,
-      fieldErrors: Map.from(state.fieldErrors)..remove('referralCode'),
-    ));
+    emit(
+      state.copyWith(
+        referralCode: code,
+        fieldErrors: Map.from(state.fieldErrors)..remove('referralCode'),
+      ),
+    );
   }
 
   Future<void> submit() async {
-    emit(state.copyWith(
-      formStatus: ProfileFormStatus.validating,
-      submissionStatus: ProfileSubmissionStatus.idle,
-      clearErrors: true,
-    ));
+    emit(
+      state.copyWith(
+        formStatus: ProfileFormStatus.validating,
+        submissionStatus: ProfileSubmissionStatus.idle,
+        clearErrors: true,
+      ),
+    );
 
     try {
       // 1. Domain Validation using Value Objects
@@ -77,10 +85,12 @@ class ProfileCubit extends Cubit<ProfileState> {
       );
 
       // 2. Submit to UseCase
-      emit(state.copyWith(
-        formStatus: ProfileFormStatus.valid,
-        submissionStatus: ProfileSubmissionStatus.submitting,
-      ));
+      emit(
+        state.copyWith(
+          formStatus: ProfileFormStatus.valid,
+          submissionStatus: ProfileSubmissionStatus.submitting,
+        ),
+      );
 
       final result = await _createUserProfile(profile);
 
@@ -92,31 +102,41 @@ class ProfileCubit extends Cubit<ProfileState> {
             // We would map them here. Assuming generic message for now.
             fieldErrors['general'] = failure.message;
           }
-          
-          emit(state.copyWith(
-            submissionStatus: ProfileSubmissionStatus.error,
-            errorMessage: failure.message,
-            fieldErrors: fieldErrors,
-          ));
+
+          emit(
+            state.copyWith(
+              submissionStatus: ProfileSubmissionStatus.error,
+              errorMessage: failure.message,
+              fieldErrors: fieldErrors,
+            ),
+          );
         },
         (_) async {
           await _localDataSource.saveIsProfileCompleted(true);
-          emit(state.copyWith(
-            submissionStatus: ProfileSubmissionStatus.success,
-          ));
+          await _localDataSource.saveFullName(state.name);
+          await _localDataSource.saveDob(state.dob);
+          await _localDataSource.saveGender(state.gender);
+          await _localDataSource.saveReferralCode(state.referralCode);
+          emit(
+            state.copyWith(submissionStatus: ProfileSubmissionStatus.success),
+          );
         },
       );
     } on ValidationException catch (e) {
       // 3. Handle Domain Validation Errors
-      emit(state.copyWith(
-        formStatus: ProfileFormStatus.invalid,
-        fieldErrors: e.errors,
-      ));
+      emit(
+        state.copyWith(
+          formStatus: ProfileFormStatus.invalid,
+          fieldErrors: e.errors,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        submissionStatus: ProfileSubmissionStatus.error,
-        errorMessage: 'An unexpected error occurred',
-      ));
+      emit(
+        state.copyWith(
+          submissionStatus: ProfileSubmissionStatus.error,
+          errorMessage: 'An unexpected error occurred',
+        ),
+      );
     }
   }
 }
