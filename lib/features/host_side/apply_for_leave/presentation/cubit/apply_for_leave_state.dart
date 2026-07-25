@@ -8,6 +8,7 @@ class ApplyForLeaveState extends Equatable {
   final DateTime? startDate;
   final DateTime? endDate;
   final String reason;
+  final String leaveType;
   final int availableDays;
   final ApplyForLeaveStatus status;
   final LeaveHistoryStatus historyStatus;
@@ -20,6 +21,7 @@ class ApplyForLeaveState extends Equatable {
     this.startDate,
     this.endDate,
     this.reason = '',
+    this.leaveType = 'Casual Leave',
     this.availableDays = 12,
     this.status = ApplyForLeaveStatus.initial,
     this.historyStatus = LeaveHistoryStatus.initial,
@@ -33,6 +35,7 @@ class ApplyForLeaveState extends Equatable {
     DateTime? startDate,
     DateTime? endDate,
     String? reason,
+    String? leaveType,
     int? availableDays,
     ApplyForLeaveStatus? status,
     LeaveHistoryStatus? historyStatus,
@@ -45,6 +48,7 @@ class ApplyForLeaveState extends Equatable {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       reason: reason ?? this.reason,
+      leaveType: leaveType ?? this.leaveType,
       availableDays: availableDays ?? this.availableDays,
       status: status ?? this.status,
       historyStatus: historyStatus ?? this.historyStatus,
@@ -60,6 +64,7 @@ class ApplyForLeaveState extends Equatable {
         startDate,
         endDate,
         reason,
+        leaveType,
         availableDays,
         status,
         historyStatus,

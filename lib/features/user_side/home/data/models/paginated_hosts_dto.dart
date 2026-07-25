@@ -17,16 +17,44 @@ class PaginatedHostsDto {
   });
 
   factory PaginatedHostsDto.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] is Map<String, dynamic> ? json['data'] : json;
-    final List itemsList = data['items'] is List ? data['items'] as List : [];
+    List itemsList = [];
+    final rawData = json['data'];
+
+    if (rawData is List) {
+      itemsList = rawData;
+    } else if (rawData is Map<String, dynamic>) {
+      if (rawData['items'] is List) {
+        itemsList = rawData['items'] as List;
+      } else if (rawData['hosts'] is List) {
+        itemsList = rawData['hosts'] as List;
+      }
+    } else if (json['items'] is List) {
+      itemsList = json['items'] as List;
+    } else if (json['hosts'] is List) {
+      itemsList = json['hosts'] as List;
+    }
+
+    final int page = (rawData is Map && rawData['page'] is int)
+        ? rawData['page']
+        : (json['page'] is int ? json['page'] : 1);
+    final int limit = (rawData is Map && rawData['limit'] is int)
+        ? rawData['limit']
+        : (json['limit'] is int ? json['limit'] : 20);
+    final int total = (rawData is Map && rawData['total'] is int)
+        ? rawData['total']
+        : (json['total'] is int ? json['total'] : itemsList.length);
+    final int totalPages = (rawData is Map && rawData['totalPages'] is int)
+        ? rawData['totalPages']
+        : (json['totalPages'] is int ? json['totalPages'] : 1);
 
     return PaginatedHostsDto(
-      page: data['page'] is int ? data['page'] : 1,
-      limit: data['limit'] is int ? data['limit'] : 20,
-      total: data['total'] is int ? data['total'] : itemsList.length,
-      totalPages: data['totalPages'] is int ? data['totalPages'] : 1,
+      page: page,
+      limit: limit,
+      total: total,
+      totalPages: totalPages,
       items: itemsList
-          .map((item) => HostDto.fromJson(item as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map((item) => HostDto.fromJson(item))
           .toList(),
     );
   }

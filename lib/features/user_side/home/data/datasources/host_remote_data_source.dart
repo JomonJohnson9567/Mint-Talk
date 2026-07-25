@@ -6,8 +6,8 @@ import '../../../../../core/network/api_client.dart';
 import '../models/paginated_hosts_dto.dart';
 
 abstract class HostRemoteDataSource {
-  Future<PaginatedHostsDto> getOnlineHosts({int page = 1, int limit = 20});
-  Future<PaginatedHostsDto> getOnCallHosts({int page = 1, int limit = 20});
+  Future<PaginatedHostsDto> getOnlineHosts({int? page, int? limit});
+  Future<PaginatedHostsDto> getOnCallHosts({int? page, int? limit});
 }
 
 @LazySingleton(as: HostRemoteDataSource)
@@ -18,8 +18,8 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
 
   @override
   Future<PaginatedHostsDto> getOnlineHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   }) async {
     return _fetchHosts(
       endpoint: ApiEndpoints.hostsOnline,
@@ -30,8 +30,8 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
 
   @override
   Future<PaginatedHostsDto> getOnCallHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   }) async {
     return _fetchHosts(
       endpoint: ApiEndpoints.hostsOnCall,
@@ -42,17 +42,21 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
 
   Future<PaginatedHostsDto> _fetchHosts({
     required String endpoint,
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   }) async {
     try {
+      final Map<String, dynamic> queryParams = {};
+      if (page != null) queryParams['page'] = page;
+      if (limit != null) queryParams['limit'] = limit;
+
       final response = await apiClient.get(
         endpoint,
         requiresAuth: true,
-        queryParams: {'page': page, 'limit': limit},
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
 
-      if (response['success'] == true) {
+      if (response['success'] == true || response['status'] == 'success') {
         return PaginatedHostsDto.fromJson(response);
       }
       throw ServerException(

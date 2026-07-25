@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import '../../../../../core/constants/app_assets.dart';
 import '../../../../../core/constants/app_icons.dart';
 import '../../../../../core/theme/color.dart';
@@ -31,20 +35,7 @@ class HostProfileEditAvatar extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(60.w),
-              child: Image.asset(
-                avatarAsset.isNotEmpty ? avatarAsset : AppAssets.femaleIcon,
-                fit: BoxFit.cover,
-                width: 120.w,
-                height: 120.w,
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                    AppAssets.femaleIcon,
-                    fit: BoxFit.cover,
-                    width: 120.w,
-                    height: 120.w,
-                  );
-                },
-              ),
+              child: _buildAvatarImage(avatarAsset),
             ),
           ),
           Positioned(
@@ -74,6 +65,57 @@ class HostProfileEditAvatar extends StatelessWidget {
     );
   }
 
+  Widget _buildAvatarImage(String path) {
+    if (path.isNotEmpty) {
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return Image.network(
+          path,
+          fit: BoxFit.cover,
+          width: 120.w,
+          height: 120.w,
+          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+        );
+      }
+      if (path.startsWith('/uploads/')) {
+        return Image.network(
+          '${ApiEndpoints.baseUrl}$path',
+          fit: BoxFit.cover,
+          width: 120.w,
+          height: 120.w,
+          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+        );
+      }
+      if (File(path).existsSync()) {
+        return Image.file(
+          File(path),
+          fit: BoxFit.cover,
+          width: 120.w,
+          height: 120.w,
+          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+        );
+      }
+      if (path.startsWith('assets/')) {
+        return Image.asset(
+          path,
+          fit: BoxFit.cover,
+          width: 120.w,
+          height: 120.w,
+          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+        );
+      }
+    }
+    return _fallbackImage();
+  }
+
+  Widget _fallbackImage() {
+    return Image.asset(
+      AppAssets.femaleIcon,
+      fit: BoxFit.cover,
+      width: 120.w,
+      height: 120.w,
+    );
+  }
+
   static const List<String> _hostAvatars = [
     'assets/host_profile_img/h1.jpeg',
     'assets/host_profile_img/h2.jpeg',
@@ -99,7 +141,7 @@ class HostProfileEditAvatar extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       backgroundColor: AppColors.white,
-      builder: (context) {
+      builder: (sheetContext) {
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
@@ -116,9 +158,52 @@ class HostProfileEditAvatar extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 24.h),
+                SizedBox(height: 16.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    InkWell(
+                      onTap: () => _pick(sheetContext, ImageSource.camera),
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: Padding(
+                        padding: EdgeInsets.all(12.r),
+                        child: Column(
+                          children: [
+                            Icon(Icons.camera_alt_outlined, color: AppColors.primaryColor, size: 28.sp),
+                            SizedBox(height: 4.h),
+                            Text('Camera', style: GoogleFonts.manrope(fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => _pick(sheetContext, ImageSource.gallery),
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: Padding(
+                        padding: EdgeInsets.all(12.r),
+                        child: Column(
+                          children: [
+                            Icon(Icons.photo_library_outlined, color: AppColors.primaryColor, size: 28.sp),
+                            SizedBox(height: 4.h),
+                            Text('Gallery', style: GoogleFonts.manrope(fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Or pick a preset avatar',
+                  style: GoogleFonts.manrope(
+                    fontSize: 13.sp,
+                    color: AppColors.subtitleText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12.h),
                 SizedBox(
-                  height: 120.h,
+                  height: 110.h,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _hostAvatars.length,
@@ -134,20 +219,32 @@ class HostProfileEditAvatar extends StatelessWidget {
                           isSelected: isSelected,
                           onTap: () {
                             onAvatarChanged(assetPath);
-                            Navigator.pop(context);
+                            Navigator.pop(sheetContext);
                           },
                         ),
                       );
                     },
                   ),
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 12.h),
               ],
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _pick(BuildContext context, ImageSource source) async {
+    Navigator.pop(context);
+    final image = await ImagePicker().pickImage(
+      source: source,
+      preferredCameraDevice: CameraDevice.front,
+      maxWidth: 1080,
+      maxHeight: 1080,
+      imageQuality: 78,
+    );
+    if (image != null) onAvatarChanged(image.path);
   }
 }
 
@@ -184,16 +281,16 @@ class _AvatarOption extends StatelessWidget {
               child: Image.asset(
                 assetPath,
                 fit: BoxFit.cover,
-                width: 80.w,
-                height: 80.w,
+                width: 70.w,
+                height: 70.w,
               ),
             ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           Text(
             label,
             style: GoogleFonts.manrope(
-              fontSize: 12.sp,
+              fontSize: 11.sp,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: isSelected ? AppColors.primaryColor : AppColors.subtitleText,
             ),
@@ -203,3 +300,4 @@ class _AvatarOption extends StatelessWidget {
     );
   }
 }
+

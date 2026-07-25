@@ -14,8 +14,8 @@ class HostRepositoryImpl implements HostRepository {
 
   @override
   Future<Either<Failure, PaginatedHostsEntity>> getOnlineHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   }) async {
     return _fetchHosts(
       () => remoteDataSource.getOnlineHosts(page: page, limit: limit),
@@ -24,8 +24,8 @@ class HostRepositoryImpl implements HostRepository {
 
   @override
   Future<Either<Failure, PaginatedHostsEntity>> getOnCallHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   }) async {
     return _fetchHosts(
       () => remoteDataSource.getOnCallHosts(page: page, limit: limit),

@@ -8,13 +8,13 @@ import '../repositories/host_repository.dart';
 
 class GetHostsParams extends Equatable {
   final bool isOnline;
-  final int page;
-  final int limit;
+  final int? page;
+  final int? limit;
 
   const GetHostsParams({
     required this.isOnline,
-    this.page = 1,
-    this.limit = 20,
+    this.page,
+    this.limit,
   });
 
   @override

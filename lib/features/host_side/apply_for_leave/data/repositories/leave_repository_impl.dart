@@ -8,6 +8,8 @@ import 'package:mint_talk/features/host_side/apply_for_leave/domain/entities/lea
 import 'package:mint_talk/features/host_side/apply_for_leave/domain/entities/leave_history_entity.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/domain/repositories/leave_repository.dart';
 
+import 'package:mint_talk/core/errors/exceptions.dart';
+
 @LazySingleton(as: LeaveRepository)
 class LeaveRepositoryImpl implements LeaveRepository {
   final LeaveRemoteDataSource remoteDataSource;
@@ -20,6 +22,10 @@ class LeaveRepositoryImpl implements LeaveRepository {
       final model = LeaveRequestModel.fromEntity(request);
       await remoteDataSource.applyForLeave(model);
       return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
     } catch (e, stackTrace) {
       appLogger.e(
         'LeaveRepositoryImpl: Error applying for leave: $e',
@@ -35,6 +41,10 @@ class LeaveRepositoryImpl implements LeaveRepository {
     try {
       final days = await remoteDataSource.getAvailableDays();
       return Right(days);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
     } catch (e, stackTrace) {
       appLogger.e(
         'LeaveRepositoryImpl: Error getting available days: $e',
@@ -53,6 +63,10 @@ class LeaveRepositoryImpl implements LeaveRepository {
     try {
       final history = await remoteDataSource.getLeaveHistory(page: page, limit: limit);
       return Right(history);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
     } catch (e, stackTrace) {
       appLogger.e(
         'LeaveRepositoryImpl: Error getting leave history: $e',

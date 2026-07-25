@@ -9,6 +9,8 @@ class HostProfileEntity extends Equatable {
   final String phone;
   final String idNumber;
   final String dob;
+  final String gender;
+  final String termsAcceptedAt;
   final List<String> selectedCategories;
   final String avatarAsset;
 
@@ -19,6 +21,8 @@ class HostProfileEntity extends Equatable {
     required this.phone,
     required this.idNumber,
     required this.dob,
+    this.gender = 'female',
+    this.termsAcceptedAt = '',
     required this.selectedCategories,
     required this.avatarAsset,
   });
@@ -30,6 +34,8 @@ class HostProfileEntity extends Equatable {
     String? phone,
     String? idNumber,
     String? dob,
+    String? gender,
+    String? termsAcceptedAt,
     List<String>? selectedCategories,
     String? avatarAsset,
   }) {
@@ -40,6 +46,8 @@ class HostProfileEntity extends Equatable {
       phone: phone ?? this.phone,
       idNumber: idNumber ?? this.idNumber,
       dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      termsAcceptedAt: termsAcceptedAt ?? this.termsAcceptedAt,
       selectedCategories: selectedCategories ?? this.selectedCategories,
       avatarAsset: avatarAsset ?? this.avatarAsset,
     );
@@ -53,6 +61,8 @@ class HostProfileEntity extends Equatable {
         phone,
         idNumber,
         dob,
+        gender,
+        termsAcceptedAt,
         selectedCategories,
         avatarAsset,
       ];

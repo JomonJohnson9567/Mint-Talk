@@ -104,13 +104,14 @@ class _HostProfileBody extends StatelessWidget {
   }
 
   Future<void> _openEditProfile(BuildContext context) async {
-    final wasUpdated = await Navigator.of(
-      context,
-    ).pushNamed<bool>(AppRoutes.hostProfileEditScreen);
+    final wasUpdated = await Navigator.of(context).pushNamed(
+      AppRoutes.hostProfileEditScreen,
+    );
     if (wasUpdated == true && context.mounted) {
       await context.read<HostProfileCubit>().loadProfile();
     }
   }
+
 }
 
 class _ProfileLoadFailure extends StatelessWidget {

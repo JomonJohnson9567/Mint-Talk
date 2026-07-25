@@ -170,6 +170,7 @@ class ScreenContents extends StatelessWidget {
                               onPressed: isLoading
                                   ? null
                                   : () {
+                                      FocusManager.instance.primaryFocus?.unfocus();
                                       if (state.isValid) {
                                         final countryState = context
                                             .read<CountrySelectorCubit>()

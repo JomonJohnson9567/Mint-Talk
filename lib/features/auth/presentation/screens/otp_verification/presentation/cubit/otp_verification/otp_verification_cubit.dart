@@ -33,9 +33,16 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
   Timer? _resendTimer;
   StreamSubscription<String>? _smsCodeSubscription;
   bool _isInitialized = false;
+  String _phone = '';
+  String _countryCode = '';
 
   OtpVerificationCubit(this._verifyOtpUseCase, this._sendOtpUseCase)
     : super(const OtpVerificationState());
+
+  void setCredentials({required String phone, required String countryCode}) {
+    _phone = phone;
+    _countryCode = countryCode;
+  }
 
   List<TextEditingController> get otpControllers =>
       List<TextEditingController>.unmodifiable(_otpControllers);
@@ -66,6 +73,8 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     updatedDigits[index] = nextValue;
     _syncOtpController(index, nextValue);
 
+    final isComplete = updatedDigits.every((digit) => digit.isNotEmpty);
+
     emit(
       state.copyWith(
         otpDigits: updatedDigits,
@@ -75,6 +84,11 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     );
 
     _moveFocus(index: index, value: nextValue, otpLength: updatedDigits.length);
+
+    if (isComplete && _phone.isNotEmpty && state.status != OtpStatus.submitting) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      submitOtp(phone: _phone, countryCode: _countryCode);
+    }
   }
 
   Future<void> submitOtp({
@@ -189,6 +203,10 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
       ),
     );
     FocusManager.instance.primaryFocus?.unfocus();
+
+    if (_phone.isNotEmpty && state.status != OtpStatus.submitting) {
+      submitOtp(phone: _phone, countryCode: _countryCode);
+    }
   }
 
   void _startResendTimer() {

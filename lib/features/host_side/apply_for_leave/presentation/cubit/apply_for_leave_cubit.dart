@@ -43,6 +43,13 @@ class ApplyForLeaveCubit extends Cubit<ApplyForLeaveState> {
     ));
   }
 
+  void changeLeaveType(String leaveType) {
+    emit(state.copyWith(
+      leaveType: leaveType,
+      status: ApplyForLeaveStatus.initial,
+    ));
+  }
+
   Future<void> loadAvailableDays() async {
     final result = await getAvailableDaysUseCase(NoParams());
     result.fold(
@@ -105,6 +112,20 @@ class ApplyForLeaveCubit extends Cubit<ApplyForLeaveState> {
       ));
       return;
     }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedStart = DateTime(
+      state.startDate!.year,
+      state.startDate!.month,
+      state.startDate!.day,
+    );
+    if (selectedStart.isBefore(today)) {
+      emit(state.copyWith(
+        status: ApplyForLeaveStatus.failure,
+        errorMessage: 'Start date cannot be in the past',
+      ));
+      return;
+    }
 
     emit(state.copyWith(status: ApplyForLeaveStatus.loading));
 
@@ -112,6 +133,7 @@ class ApplyForLeaveCubit extends Cubit<ApplyForLeaveState> {
       startDate: state.startDate!,
       endDate: state.endDate!,
       reason: state.reason,
+      leaveType: state.leaveType,
     );
 
     final result = await applyForLeaveUseCase(request);

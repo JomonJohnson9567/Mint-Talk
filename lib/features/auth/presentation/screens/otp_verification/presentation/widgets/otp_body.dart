@@ -149,6 +149,7 @@ class OtpBody extends StatelessWidget {
                         text: AppTexts.verify,
                         onPressed: state.isOtpComplete
                             ? () {
+                                FocusManager.instance.primaryFocus?.unfocus();
                                 context.read<OtpVerificationCubit>().submitOtp(
                                   phone: phone,
                                   countryCode: countryCode,

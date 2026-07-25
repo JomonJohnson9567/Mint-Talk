@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/network/api_client.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/data/models/leave_request_model.dart';
@@ -22,11 +24,27 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
 
   @override
   Future<void> applyForLeave(LeaveRequestModel model) async {
-    appLogger.d('LeaveRemoteDataSource: Applying for leave with: ${model.toJson()}');
-    await apiClient.post(
-      ApiEndpoints.hostLeavesRequest,
-      body: model.toJson(),
-    );
+    try {
+      appLogger.d('LeaveRemoteDataSource: Applying for leave with: ${model.toJson()}');
+      final response = await apiClient.post(
+        ApiEndpoints.hostLeavesRequest,
+        body: model.toJson(),
+      );
+
+      if (response['status'] == 'error' || response['success'] == false) {
+        throw ServerException(
+          message: response['message'] ?? 'Failed to submit leave request',
+        );
+      }
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data?['message'] ?? e.message ?? 'Failed to submit leave request',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException(message: e.toString());
+    }
   }
 
   @override
@@ -40,11 +58,21 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
     int page = 1,
     int limit = 20,
   }) async {
-    appLogger.d('LeaveRemoteDataSource: Fetching leave history');
-    final response = await apiClient.get(
-      ApiEndpoints.hostLeavesMyRequests,
-      queryParams: {'page': page, 'limit': limit},
-    );
-    return LeaveHistoryPageModel.fromJson(response);
+    try {
+      appLogger.d('LeaveRemoteDataSource: Fetching leave history');
+      final response = await apiClient.get(
+        ApiEndpoints.hostLeavesMyRequests,
+        queryParams: {'page': page, 'limit': limit},
+      );
+      return LeaveHistoryPageModel.fromJson(response);
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch leave history',
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException(message: e.toString());
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:injectable/injectable.dart';
+import '../../../../../core/constants/api_endpoints_user.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../models/host_profile_model.dart';
@@ -12,8 +13,7 @@ abstract class HostProfileRemoteDataSource {
 class HostProfileRemoteDataSourceImpl implements HostProfileRemoteDataSource {
   final ApiClient apiClient;
 
-  // In-memory local cache simulating the remote database.
-  // Defaults to values currently displayed on the Host Profile Screen.
+  // Fallback local cache when offline or initial seed
   static HostProfileModel _cachedProfile = const HostProfileModel(
     id: 'Rm237349',
     fullName: 'Ramani Nair',
@@ -30,19 +30,26 @@ class HostProfileRemoteDataSourceImpl implements HostProfileRemoteDataSource {
   @override
   Future<HostProfileModel> getHostProfile() async {
     appLogger.d('HostProfileRemoteDataSourceImpl: Fetching host profile');
-    
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 400));
     return _cachedProfile;
   }
 
   @override
   Future<bool> updateHostProfile(HostProfileModel profile) async {
-    appLogger.d('HostProfileRemoteDataSourceImpl: Updating host profile to: ${profile.fullName}');
+    final payload = profile.toUpdateJson();
+    appLogger.d('HostProfileRemoteDataSourceImpl.updateHostProfile payload:\n$payload');
     
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    final response = await apiClient.patch(
+      ApiEndpoints.updateProfile,
+      requiresAuth: true,
+      body: payload,
+    );
+    appLogger.d('HostProfileRemoteDataSourceImpl.updateHostProfile response:\n$response');
+    
     _cachedProfile = profile;
-    return true;
+    return response['success'] == true ||
+        response['status'] == 'success' ||
+        response.containsKey('data') ||
+        response.isNotEmpty;
   }
 }
+

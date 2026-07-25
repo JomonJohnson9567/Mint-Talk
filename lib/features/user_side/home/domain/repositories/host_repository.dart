@@ -4,12 +4,12 @@ import '../entities/paginated_hosts_entity.dart';
 
 abstract class HostRepository {
   Future<Either<Failure, PaginatedHostsEntity>> getOnlineHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   });
 
   Future<Either<Failure, PaginatedHostsEntity>> getOnCallHosts({
-    int page = 1,
-    int limit = 20,
+    int? page,
+    int? limit,
   });
 }

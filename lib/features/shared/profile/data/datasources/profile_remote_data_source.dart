@@ -31,8 +31,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         },
       );
 
-      if (response['success'] == true && response['data'] != null) {
-        return ProfileImageDto.fromJson(response['data'] as Map<String, dynamic>);
+      if (response['success'] == true || response['data'] != null) {
+        return ProfileImageDto.fromJson(response);
       }
       throw ServerException(
         message: response['message'] ?? 'Failed to upload profile image',

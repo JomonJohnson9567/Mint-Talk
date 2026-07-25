@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
@@ -30,6 +32,8 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
       localDataSource.getUserId(),
       localDataSource.getDob(),
       localDataSource.getProfileImagePath(),
+      localDataSource.getGender(),
+      localDataSource.getTermsAcceptedAt(),
     ]);
     final result = await getProfileUseCase(NoParams());
     result.fold(
@@ -98,17 +102,36 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
     emit(state.copyWith(status: HostProfileEditStatus.saving));
 
     String finalAvatarAsset = state.avatarAsset;
-    if (state.avatarAsset.isNotEmpty && !state.avatarAsset.startsWith('http')) {
+    if (state.avatarAsset.isNotEmpty &&
+        !state.avatarAsset.startsWith('http') &&
+        !state.avatarAsset.startsWith('/uploads/') &&
+        !state.avatarAsset.startsWith('assets/') &&
+        File(state.avatarAsset).existsSync()) {
       final uploadResult = await uploadProfileImageUseCase(
         UploadProfileImageParams(imagePath: state.avatarAsset),
       );
-      uploadResult.fold(
-        (_) {},
+      final isFailure = uploadResult.fold(
+        (failure) {
+          emit(
+            state.copyWith(
+              status: HostProfileEditStatus.failure,
+              errorMessage: failure.message,
+            ),
+          );
+          return true;
+        },
         (entity) {
-          finalAvatarAsset = entity.avatarUrl;
+          if (entity.avatarUrl.isNotEmpty) {
+            finalAvatarAsset = entity.avatarUrl;
+          }
+          return false;
         },
       );
+      if (isFailure) return;
     }
+
+    final genderVal = await localDataSource.getGender();
+    final termsVal = await localDataSource.getTermsAcceptedAt();
 
     final profile = HostProfileEntity(
       id: state.idNumber,
@@ -117,6 +140,10 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
       phone: state.phone,
       idNumber: state.idNumber,
       dob: state.dob,
+      gender: (genderVal ?? '').trim().isEmpty ? 'female' : genderVal!,
+      termsAcceptedAt: (termsVal ?? '').trim().isEmpty
+          ? DateTime.now().toUtc().toIso8601String()
+          : termsVal!,
       selectedCategories: state.selectedCategories,
       avatarAsset: finalAvatarAsset,
     );

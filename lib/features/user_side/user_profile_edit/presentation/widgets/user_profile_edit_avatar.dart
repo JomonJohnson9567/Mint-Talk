@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class UserProfileEditAvatar extends StatelessWidget {
@@ -47,11 +48,8 @@ class UserProfileEditAvatar extends StatelessWidget {
               child: CircleAvatar(
                 radius: 54.r,
                 backgroundColor: AppColors.primaryColor.withValues(alpha: .10),
-                backgroundImage:
-                    imagePath.isNotEmpty && File(imagePath).existsSync()
-                    ? FileImage(File(imagePath))
-                    : null,
-                child: imagePath.isEmpty || !File(imagePath).existsSync()
+                backgroundImage: _resolveImageProvider(imagePath),
+                child: _resolveImageProvider(imagePath) == null
                     ? Text(
                         initials,
                         style: GoogleFonts.manrope(
@@ -148,6 +146,23 @@ class UserProfileEditAvatar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  ImageProvider? _resolveImageProvider(String path) {
+    if (path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return NetworkImage(path);
+    }
+    if (path.startsWith('/uploads/')) {
+      return NetworkImage('${ApiEndpoints.baseUrl}$path');
+    }
+    if (File(path).existsSync()) {
+      return FileImage(File(path));
+    }
+    if (path.startsWith('assets/')) {
+      return AssetImage(path);
+    }
+    return null;
   }
 
   Future<void> _pick(BuildContext context, ImageSource source) async {

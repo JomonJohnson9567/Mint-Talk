@@ -6,6 +6,7 @@ import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_state.dart';
 import 'available_days_card.dart';
 import 'date_selection_row.dart';
+import 'leave_type_dropdown.dart';
 import 'reason_input_field.dart';
 
 class ApplyForLeaveBody extends StatelessWidget {
@@ -29,6 +30,11 @@ class ApplyForLeaveBody extends StatelessWidget {
                   color: const Color(0xFF6E7787),
                   fontWeight: FontWeight.w400,
                 ),
+              ),
+              SizedBox(height: 24.h),
+              LeaveTypeDropdown(
+                selectedType: state.leaveType,
+                onChanged: cubit.changeLeaveType,
               ),
               SizedBox(height: 24.h),
               DateSelectionRow(

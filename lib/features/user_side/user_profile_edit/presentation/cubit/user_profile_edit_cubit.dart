@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
@@ -97,16 +99,31 @@ class UserProfileEditCubit extends Cubit<UserProfileEditState> {
       );
 
       String finalImagePath = state.imagePath;
-      if (state.imagePath.isNotEmpty && !state.imagePath.startsWith('http')) {
+      if (state.imagePath.isNotEmpty &&
+          !state.imagePath.startsWith('http') &&
+          !state.imagePath.startsWith('/uploads/') &&
+          File(state.imagePath).existsSync()) {
         final uploadResult = await _uploadProfileImageUseCase(
           UploadProfileImageParams(imagePath: state.imagePath),
         );
-        uploadResult.fold(
-          (_) {},
+        final isFailure = uploadResult.fold(
+          (failure) {
+            emit(
+              state.copyWith(
+                status: UserProfileEditStatus.failure,
+                errorMessage: failure.message,
+              ),
+            );
+            return true;
+          },
           (entity) {
-            finalImagePath = entity.avatarUrl;
+            if (entity.avatarUrl.isNotEmpty) {
+              finalImagePath = entity.avatarUrl;
+            }
+            return false;
           },
         );
+        if (isFailure) return;
       }
 
       final result = await _updateProfile(profile);

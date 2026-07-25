@@ -5,6 +5,7 @@ class LeaveRequestModel extends LeaveRequestEntity {
     required super.startDate,
     required super.endDate,
     required super.reason,
+    super.leaveType,
   });
 
   factory LeaveRequestModel.fromEntity(LeaveRequestEntity entity) {
@@ -12,14 +13,20 @@ class LeaveRequestModel extends LeaveRequestEntity {
       startDate: entity.startDate,
       endDate: entity.endDate,
       reason: entity.reason,
+      leaveType: entity.leaveType,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final startStr =
+        '${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+    final endStr =
+        '${endDate.year.toString().padLeft(4, '0')}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+
     return {
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
-      'reason': reason,
+      'startDate': startStr,
+      'endDate': endStr,
+      'reason': reason.trim(),
     };
   }
 }
