@@ -1,4 +1,4 @@
-package com.example.mint_talk
+package com.minttalk.app
 
 import io.flutter.embedding.android.FlutterActivity
 
