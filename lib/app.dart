@@ -26,7 +26,6 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Mint Talk',
             theme: AppTheme.lightTheme,
-            // home: const HostMainNavigationScreen(),
             initialRoute: AppRoutes.splash,
             onGenerateRoute: AppRouter.onGenerateRoute,
           ),

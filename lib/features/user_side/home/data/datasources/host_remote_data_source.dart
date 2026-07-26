@@ -22,7 +22,7 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
     int? limit,
   }) async {
     return _fetchHosts(
-      endpoint: ApiEndpoints.hostsOnline,
+      status: 'online',
       page: page,
       limit: limit,
     );
@@ -34,24 +34,25 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
     int? limit,
   }) async {
     return _fetchHosts(
-      endpoint: ApiEndpoints.hostsOnCall,
+      status: 'on-call',
       page: page,
       limit: limit,
     );
   }
 
   Future<PaginatedHostsDto> _fetchHosts({
-    required String endpoint,
+    String? status,
     int? page,
     int? limit,
   }) async {
     try {
       final Map<String, dynamic> queryParams = {};
+      if (status != null) queryParams['status'] = status;
       if (page != null) queryParams['page'] = page;
       if (limit != null) queryParams['limit'] = limit;
 
       final response = await apiClient.get(
-        endpoint,
+        ApiEndpoints.hosts,
         requiresAuth: true,
         queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
