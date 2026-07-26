@@ -12,6 +12,10 @@ class HostCallLogInitial extends HostCallLogState {
   const HostCallLogInitial();
 }
 
+class HostCallLogLoading extends HostCallLogState {
+  const HostCallLogLoading();
+}
+
 class HostCallLogLoaded extends HostCallLogState {
   final List<HostCallLogEntryModel> entries;
 

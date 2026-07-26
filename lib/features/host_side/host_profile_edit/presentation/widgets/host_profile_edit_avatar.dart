@@ -119,7 +119,6 @@ class HostProfileEditAvatar extends StatelessWidget {
   static const List<String> _hostAvatars = [
     'assets/host_profile_img/h1.jpeg',
     'assets/host_profile_img/h2.jpeg',
-    'assets/host_profile_img/h3.jpeg',
     'assets/host_profile_img/h4.jpeg',
     'assets/host_profile_img/h5.jpeg',
     'assets/host_profile_img/h6.jpeg',
@@ -132,7 +131,12 @@ class HostProfileEditAvatar extends StatelessWidget {
     'assets/host_profile_img/13.jpeg',
     'assets/host_profile_img/14.jpeg',
     'assets/host_profile_img/h15.jpeg',
+    'assets/host_profile_img/h17.jpeg',
+    'assets/host_profile_img/h18.jpeg',
+    'assets/host_profile_img/h19.jpeg',
+    'assets/host_profile_img/h20.jpeg',
   ];
+
 
   void _showAvatarPicker(BuildContext context) {
     showModalBottomSheet(
@@ -283,6 +287,12 @@ class _AvatarOption extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: 70.w,
                 height: 70.w,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 70.w,
+                  height: 70.w,
+                  color: AppColors.primaryColor.withValues(alpha: 0.12),
+                  child: Icon(Icons.person, color: AppColors.primaryColor, size: 36.sp),
+                ),
               ),
             ),
           ),

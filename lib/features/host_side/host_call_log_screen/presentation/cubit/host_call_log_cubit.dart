@@ -23,6 +23,7 @@ class HostCallLogCubit extends Cubit<HostCallLogState> {
   }
 
   Future<void> loadCallLogs() async {
+    emit(const HostCallLogLoading());
     final result = await getHostCallLogsUseCase(const GetCallLogsParams());
 
     result.fold(

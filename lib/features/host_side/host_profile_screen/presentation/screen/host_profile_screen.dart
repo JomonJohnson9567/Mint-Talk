@@ -14,6 +14,8 @@ import 'package:mint_talk/features/host_side/host_profile_screen/presentation/wi
 import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_cubit.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_state.dart';
 
+import 'package:mint_talk/features/host_side/host_profile_screen/presentation/widgets/host_profile_skeleton.dart';
+
 class HostProfileScreen extends StatelessWidget {
   const HostProfileScreen({super.key});
 
@@ -32,11 +34,7 @@ class HostProfileScreen extends StatelessWidget {
           body: BlocBuilder<HostProfileCubit, HostProfileState>(
             builder: (context, state) {
               if (state.isLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryColor,
-                  ),
-                );
+                return const HostProfileSkeleton();
               }
               if (state.status == HostProfileStatus.failure) {
                 return _ProfileLoadFailure(

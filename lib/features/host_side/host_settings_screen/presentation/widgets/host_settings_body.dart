@@ -11,11 +11,22 @@ import 'package:mint_talk/features/host_side/host_wallet/presentation/screen/hos
 import 'package:mint_talk/features/host_side/privacy_policy/presentation/screen/privacy_policy.dart';
 import 'package:mint_talk/features/host_side/terms_and_conditions/presentation/screen/terms_and_conditions.dart';
 
+import 'package:mint_talk/features/host_side/host_settings_screen/presentation/widgets/host_settings_skeleton.dart';
+
 class HostSettingsBody extends StatelessWidget {
-  const HostSettingsBody({super.key});
+  final bool isLoading;
+
+  const HostSettingsBody({
+    super.key,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const HostSettingsSkeleton();
+    }
+
     final items = <_SettingsItem>[
       _SettingsItem(
         icon: Icons.account_balance_wallet_rounded,

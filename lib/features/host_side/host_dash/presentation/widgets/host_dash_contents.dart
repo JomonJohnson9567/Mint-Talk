@@ -13,6 +13,8 @@ import 'select_call_card.dart';
 import 'hosts_online_grid.dart';
 import 'promo_banner.dart';
 
+import 'host_dash_skeleton.dart';
+
 class HostDashContents extends StatelessWidget {
   const HostDashContents({super.key});
 
@@ -34,6 +36,11 @@ class HostDashContents extends StatelessWidget {
       },
       buildWhen: (previous, current) => previous != current,
       builder: (context, state) {
+        if (state.status == HostDashStatus.loading ||
+            state.status == HostDashStatus.initial) {
+          return const HostDashSkeleton();
+        }
+
         final hostDashCubit = context.read<HostDashCubit>();
 
         return SafeArea(

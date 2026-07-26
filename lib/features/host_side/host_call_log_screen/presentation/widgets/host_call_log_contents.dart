@@ -12,6 +12,8 @@ import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/w
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/widgets/host_call_log_item.dart';
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/widgets/host_call_log_search_bar.dart';
 
+import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/widgets/host_call_log_skeleton.dart';
+
 class HostCallLogContents extends StatelessWidget {
   final HostCallFilterType selectedFilter;
   final ValueChanged<HostCallFilterType> onFilterChanged;
@@ -61,28 +63,31 @@ class HostCallLogContents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-          child: const HostCallLogSearchBar(),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: HostCallLogFilterTabs(
-            selectedFilter: selectedFilter,
-            onFilterChanged: onFilterChanged,
-          ),
-        ),
-        SizedBox(height: 12.h),
-        Expanded(
-          child: BlocBuilder<HostCallLogCubit, HostCallLogState>(
-            builder: (context, state) {
-              if (state is HostCallLogLoaded) {
-                final filtered = _applyFilter(state.entries, selectedFilter);
+    return BlocBuilder<HostCallLogCubit, HostCallLogState>(
+      builder: (context, state) {
+        if (state is HostCallLogInitial || state is HostCallLogLoading) {
+          return const HostCallLogSkeleton();
+        }
+        if (state is HostCallLogLoaded) {
+          final filtered = _applyFilter(state.entries, selectedFilter);
 
-                return RefreshIndicator(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                child: const HostCallLogSearchBar(),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: HostCallLogFilterTabs(
+                  selectedFilter: selectedFilter,
+                  onFilterChanged: onFilterChanged,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Expanded(
+                child: RefreshIndicator(
                   onRefresh: () async {
                     await context.read<HostCallLogCubit>().loadCallLogs();
                   },
@@ -111,13 +116,13 @@ class HostCallLogContents extends StatelessWidget {
                             );
                           },
                         ),
-                );
-              }
-              return const Center(child: CircularProgressIndicator());
-            },
-          ),
-        ),
-      ],
+                ),
+              ),
+            ],
+          );
+        }
+        return const HostCallLogSkeleton();
+      },
     );
   }
 }
