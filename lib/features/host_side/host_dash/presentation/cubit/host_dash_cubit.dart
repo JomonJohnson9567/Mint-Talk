@@ -249,7 +249,45 @@ class HostDashCubit extends Cubit<HostDashState> {
     emit(state.copyWith(callFlowMode: HostDashCallFlowMode.waitingForNextCall));
   }
 
-  void stopWaitingForCalls() {
-    emit(state.copyWith(callFlowMode: HostDashCallFlowMode.selecting));
+  Future<void> stopWaitingForCalls() async {
+    final audioRate =
+        await authLocalDataSource.getAudioRate() ?? _fallbackAudioRate;
+    final videoRate =
+        await authLocalDataSource.getVideoRate() ?? _fallbackVideoRate;
+
+    emit(
+      state.copyWith(
+        callFlowMode: HostDashCallFlowMode.selecting,
+        isAudioSelected: false,
+        isVideoSelected: false,
+      ),
+    );
+
+    await Future.wait([
+      authLocalDataSource.saveIsAudioAllowed(false),
+      authLocalDataSource.saveIsVideoAllowed(false),
+    ]);
+
+    final preferences = HostPreferencesEntity(
+      audioRate: audioRate,
+      videoRate: videoRate,
+      isAudioAllowed: false,
+      isVideoAllowed: false,
+    );
+
+    final result = await updateHostPreferencesUseCase(preferences);
+    result.fold(
+      (failure) {
+        debugPrint(
+          '❌ [HostDashCubit] Failed to update preferences on cancel: ${failure.message}',
+        );
+      },
+      (updatedPreferences) {
+        debugPrint(
+          '✅ [HostDashCubit] Host preferences updated to offline/canceled (audio: ${updatedPreferences.isAudioAllowed}, video: ${updatedPreferences.isVideoAllowed})',
+        );
+      },
+    );
   }
 }
+
