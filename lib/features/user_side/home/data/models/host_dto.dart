@@ -32,8 +32,8 @@ class HostDto {
 
   factory HostDto.fromJson(Map<String, dynamic> json) {
     return HostDto(
-      id: (json['id'] ?? json['_id'] ?? '').toString(),
-      fullName: (json['fullName'] ?? '').toString(),
+      id: (json['id'] ?? json['_id'] ?? json['userId'] ?? '').toString(),
+      fullName: (json['fullName'] ?? json['name'] ?? '').toString(),
       phone: (json['phone'] ?? '').toString(),
       avatarUrl: (json['avatarUrl'] ?? '').toString(),
       selfieUrl: (json['selfieUrl'] ?? '').toString(),

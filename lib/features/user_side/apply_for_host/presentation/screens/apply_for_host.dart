@@ -8,7 +8,9 @@ import 'package:mint_talk/core/widgets/primary_button.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import '../cubit/apply_for_host_cubit.dart';
 import '../cubit/apply_for_host_state.dart';
+import '../widgets/apply_bio_input.dart';
 import '../widgets/apply_dob_input.dart';
+import '../widgets/apply_for_host_skeleton.dart';
 import '../widgets/apply_name_input.dart';
 import '../widgets/apply_selfie_upload.dart';
 import '../widgets/apply_submit_button.dart';
@@ -39,6 +41,9 @@ class ApplyForHost extends StatelessWidget {
           }
         },
         builder: (context, state) {
+          if (state.status == ApplyForHostStatus.loading) {
+            return const ApplyForHostSkeleton();
+          }
           return SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
@@ -70,6 +75,8 @@ class ApplyForHost extends StatelessWidget {
                           const ApplyNameInput(),
                           SizedBox(height: 20.h),
                           const ApplyDobInput(),
+                          SizedBox(height: 20.h),
+                          const ApplyBioInput(),
                           SizedBox(height: 24.h),
                           const ApplySelfieUpload(),
                           SizedBox(height: 32.h),

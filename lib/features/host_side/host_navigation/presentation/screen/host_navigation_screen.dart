@@ -7,6 +7,7 @@ import 'package:mint_talk/features/user_side/main_navigation/presentation/cubit/
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/screen/host_call_log_screen.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/screens/host_dash.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/host_dash_cubit.dart';
+import 'package:mint_talk/features/host_side/host_dash/presentation/widgets/incoming_call_overlay.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_cubit.dart';
 
 class HostMainNavigationScreen extends StatelessWidget {
@@ -35,35 +36,37 @@ class HostMainNavigationScreen extends StatelessWidget {
       ],
       child: Builder(
         builder: (context) {
-          return Scaffold(
-            extendBody: true, // Allows content to flow behind bottom navigation
-            body: BlocBuilder<BottomNavCubit, int>(
-              builder: (context, currentIndex) {
-                return Stack(
-                  children: List.generate(_screens.length, (index) {
-                    return IgnorePointer(
-                      ignoring: index != currentIndex,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 300),
-                        opacity: index == currentIndex ? 1.0 : 0.0,
-                        curve: Curves.easeInOut,
-                        child: _screens[index],
-                      ),
-                    );
-                  }),
-                );
-              },
-            ),
-            bottomNavigationBar: BlocBuilder<BottomNavCubit, int>(
-              builder: (context, currentIndex) {
-                return CustomBottomNavBar(
-                  currentIndex: currentIndex,
-                  onTap: (index) {
-                    context.read<BottomNavCubit>().changeTab(index);
-                  },
-                  icons: const [Icons.call, Icons.home_rounded, Icons.settings],
-                );
-              },
+          return IncomingCallOverlayListener(
+            child: Scaffold(
+              extendBody: true, // Allows content to flow behind bottom navigation
+              body: BlocBuilder<BottomNavCubit, int>(
+                builder: (context, currentIndex) {
+                  return Stack(
+                    children: List.generate(_screens.length, (index) {
+                      return IgnorePointer(
+                        ignoring: index != currentIndex,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 300),
+                          opacity: index == currentIndex ? 1.0 : 0.0,
+                          curve: Curves.easeInOut,
+                          child: _screens[index],
+                        ),
+                      );
+                    }),
+                  );
+                },
+              ),
+              bottomNavigationBar: BlocBuilder<BottomNavCubit, int>(
+                builder: (context, currentIndex) {
+                  return CustomBottomNavBar(
+                    currentIndex: currentIndex,
+                    onTap: (index) {
+                      context.read<BottomNavCubit>().changeTab(index);
+                    },
+                    icons: const [Icons.call, Icons.home_rounded, Icons.settings],
+                  );
+                },
+              ),
             ),
           );
         },

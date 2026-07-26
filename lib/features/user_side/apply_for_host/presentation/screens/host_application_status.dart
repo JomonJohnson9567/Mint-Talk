@@ -9,6 +9,7 @@ import 'package:mint_talk/core/widgets/primary_button.dart';
 import '../cubit/host_application_status_cubit.dart';
 import '../cubit/host_application_status_state.dart';
 import '../widgets/host_application_details_card.dart';
+import '../widgets/host_application_status_skeleton.dart';
 import '../widgets/host_status_card.dart';
 
 class HostApplicationStatus extends StatelessWidget {
@@ -47,11 +48,7 @@ class HostApplicationStatus extends StatelessWidget {
                 switch (state.view) {
                   case HostApplicationStatusView.initial:
                   case HostApplicationStatusView.loading:
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryColor,
-                      ),
-                    );
+                    return const HostApplicationStatusSkeleton();
                   case HostApplicationStatusView.failure:
                     return _StatusError(message: state.errorMessage);
                   case HostApplicationStatusView.loaded:

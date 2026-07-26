@@ -20,6 +20,7 @@ class AuthLocalDataSource {
   static const _isVideoAllowedKey = 'is_video_allowed';
   static const _roleKey = 'role';
   static const _termsAcceptedAtKey = 'terms_accepted_at';
+  static const _favoriteHostIdsKey = 'favorite_host_ids';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -223,5 +224,38 @@ class AuthLocalDataSource {
     await _secureStorage.delete(key: _isVideoAllowedKey);
     await _secureStorage.delete(key: _roleKey);
     await _secureStorage.delete(key: _termsAcceptedAtKey);
+    await _secureStorage.delete(key: _favoriteHostIdsKey);
+  }
+
+  // ── Favourite Host IDs ────────────────────────────────────────────────────
+
+  /// Loads the persisted set of favourite host IDs.
+  Future<Set<String>> getFavoriteHostIds() async {
+    final raw = await _secureStorage.read(key: _favoriteHostIdsKey);
+    if (raw == null || raw.trim().isEmpty) return {};
+    return raw.split(',').map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
+  }
+
+  /// Persists the given set of favourite host IDs.
+  Future<void> saveFavoriteHostIds(Set<String> ids) async {
+    if (ids.isEmpty) {
+      await _secureStorage.delete(key: _favoriteHostIdsKey);
+      return;
+    }
+    await _secureStorage.write(key: _favoriteHostIdsKey, value: ids.join(','));
+  }
+
+  /// Toggles a host ID in the favourites set and persists the result.
+  ///
+  /// Returns the updated [Set<String>] after toggling.
+  Future<Set<String>> toggleFavoriteHostId(String hostId) async {
+    final ids = await getFavoriteHostIds();
+    if (ids.contains(hostId)) {
+      ids.remove(hostId);
+    } else {
+      ids.add(hostId);
+    }
+    await saveFavoriteHostIds(ids);
+    return ids;
   }
 }

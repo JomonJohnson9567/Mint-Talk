@@ -5,39 +5,80 @@ import '../../../../../core/theme/color.dart';
 
 class CallControls extends StatelessWidget {
   final VoidCallback onEndCall;
+  final VoidCallback onToggleMute;
+  final VoidCallback onToggleVideo;
+  final VoidCallback onToggleSpeaker;
+  final VoidCallback onSwitchCamera;
+  final bool isMuted;
+  final bool isVideoMuted;
+  final bool isSpeakerOn;
+  final bool isVideoCall;
 
-  const CallControls({super.key, required this.onEndCall});
+  const CallControls({
+    super.key,
+    required this.onEndCall,
+    required this.onToggleMute,
+    required this.onToggleVideo,
+    required this.onToggleSpeaker,
+    required this.onSwitchCamera,
+    this.isMuted = false,
+    this.isVideoMuted = false,
+    this.isSpeakerOn = false,
+    this.isVideoCall = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final actionButtonCount = isVideoCall ? 4 : 2;
     final actionButtonSize = 50.w;
     final callButtonSize = 72.w;
     final preferredGap = 12.w;
-    final totalButtonWidth = (actionButtonSize * 4) + callButtonSize;
+    final totalButtonWidth = (actionButtonSize * actionButtonCount) + callButtonSize;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 40.h),
+      padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 20.h),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final buttonGap = ((constraints.maxWidth - totalButtonWidth) / 4)
+          final buttonGap = ((constraints.maxWidth - totalButtonWidth) / (actionButtonCount + 1))
               .clamp(0.0, preferredGap)
               .toDouble();
 
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Mute Mic
               _buildActionButton(
-                icon: Icons.cameraswitch_outlined,
-                onTap: () {},
+                icon: isMuted ? Icons.mic_off : Icons.mic,
+                isActive: isMuted,
+                onTap: onToggleMute,
               ),
               SizedBox(width: buttonGap),
-              _buildActionButton(icon: Icons.videocam_outlined, onTap: () {}),
+
+              // Speaker
+              _buildActionButton(
+                icon: isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+                isActive: isSpeakerOn,
+                onTap: onToggleSpeaker,
+              ),
               SizedBox(width: buttonGap),
+
+              // End Call Button
               _buildCallButton(onTap: onEndCall),
-              SizedBox(width: buttonGap),
-              _buildActionButton(icon: Icons.mic_off_outlined, onTap: () {}),
-              SizedBox(width: buttonGap),
-              _buildActionButton(icon: Icons.more_horiz, onTap: () {}),
+
+              // Video-only Controls (Mute Video & Switch Camera)
+              if (isVideoCall) ...[
+                SizedBox(width: buttonGap),
+                _buildActionButton(
+                  icon: isVideoMuted ? Icons.videocam_off : Icons.videocam,
+                  isActive: isVideoMuted,
+                  onTap: onToggleVideo,
+                ),
+                SizedBox(width: buttonGap),
+                _buildActionButton(
+                  icon: Icons.cameraswitch_outlined,
+                  onTap: onSwitchCamera,
+                ),
+              ],
             ],
           );
         },
@@ -48,12 +89,15 @@ class CallControls extends StatelessWidget {
   Widget _buildActionButton({
     required IconData icon,
     required VoidCallback onTap,
+    bool isActive = false,
   }) {
     return CallActionButton(
       icon: icon,
       onTap: onTap,
-      iconColor: AppColors.black.withAlpha(179),
-      backgroundColor: AppColors.white.withAlpha(128),
+      iconColor: isActive ? AppColors.white : AppColors.black.withAlpha(179),
+      backgroundColor: isActive
+          ? AppColors.primaryColor
+          : AppColors.white.withAlpha(180),
       buttonSize: 50,
       iconSize: 24,
     );

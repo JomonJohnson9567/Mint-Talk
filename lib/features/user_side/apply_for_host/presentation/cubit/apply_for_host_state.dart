@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-enum ApplyForHostStatus { initial, submitting, success, failure }
+enum ApplyForHostStatus { initial, loading, submitting, success, failure }
 
 class ApplyForHostState extends Equatable {
   final String name;
   final String dob;
+  final String bio;
   final String selfiePath;
   final String selfieUrl;
 
@@ -17,6 +18,7 @@ class ApplyForHostState extends Equatable {
   const ApplyForHostState({
     this.name = '',
     this.dob = '',
+    this.bio = '',
     this.selfiePath = '',
     this.selfieUrl = '',
     this.isUploadingSelfie = false,
@@ -29,6 +31,7 @@ class ApplyForHostState extends Equatable {
       name.trim().length >= 3 &&
       name.trim().length <= 50 &&
       dob.isNotEmpty &&
+      bio.trim().length >= 10 &&
       selfiePath.isNotEmpty &&
       selfieUrl.isNotEmpty &&
       !isUploadingSelfie &&
@@ -37,6 +40,7 @@ class ApplyForHostState extends Equatable {
   ApplyForHostState copyWith({
     String? name,
     String? dob,
+    String? bio,
     String? selfiePath,
     String? selfieUrl,
     bool? isUploadingSelfie,
@@ -47,6 +51,7 @@ class ApplyForHostState extends Equatable {
     return ApplyForHostState(
       name: name ?? this.name,
       dob: dob ?? this.dob,
+      bio: bio ?? this.bio,
       selfiePath: selfiePath ?? this.selfiePath,
       selfieUrl: selfieUrl ?? this.selfieUrl,
       isUploadingSelfie: isUploadingSelfie ?? this.isUploadingSelfie,
@@ -60,6 +65,7 @@ class ApplyForHostState extends Equatable {
   List<Object?> get props => [
     name,
     dob,
+    bio,
     selfiePath,
     selfieUrl,
     isUploadingSelfie,

@@ -1,19 +1,44 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mint_talk/core/constants/app_texts.dart';
+
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/home_user_entity.dart';
 
 class UserGridItem extends StatelessWidget {
-  final HomeUserEntity user;
+  final HostEntity host;
 
-  const UserGridItem({super.key, required this.user});
+  const UserGridItem({super.key, required this.host});
+
+  // ── Derived presence helpers ─────────────────────────────────────────────
+
+  bool get _isOnline =>
+      host.presence?.status == 'online' &&
+      host.presence?.busy != true &&
+      host.presence?.state != 'busy';
+  bool get _isBusy =>
+      host.presence?.busy == true || host.presence?.state == 'busy';
+  bool get _isOffline => !_isOnline && !_isBusy;
+
+  // Maps presence state → the colour used for the status dot and border ring
+  Color _statusColor() {
+    if (_isOnline) return AppColors.green;
+    if (_isBusy) return AppColors.termsIcon;
+    return AppColors.favIcon;
+  }
+
+  String _statusLabel() {
+    if (_isOnline) return AppTexts.online;
+    if (_isBusy) return AppTexts.onCall;
+    return AppTexts.offline;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +65,20 @@ class UserGridItem extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Avatar with online ring
                 GestureDetector(
                   onTap: () {
                     Navigator.pushNamed(
                       context,
                       AppRoutes.hostProfileScreen,
-                      arguments: user,
+                      arguments: host,
                     );
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: user.status == UserStatus.online
+                        color: _isOnline
                             ? AppColors.green
                             : AppColors.transparent,
                         width: 2.w,
@@ -60,30 +86,34 @@ class UserGridItem extends StatelessWidget {
                     ),
                     padding: EdgeInsets.all(2.w),
                     child: ClipOval(
-                      child: user.imageUrl.isNotEmpty
-                          ? (user.imageUrl.startsWith('http')
-                                ? Image.network(
-                                    user.imageUrl,
-                                    width: 60.w,
-                                    height: 60.w,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            _buildPlaceholderAvatar(60.w),
-                                  )
-                                : Image.asset(
-                                    user.imageUrl,
-                                    width: 60.w,
-                                    height: 60.w,
-                                    fit: BoxFit.cover,
-                                  ))
+                      child: host.avatarUrl.isNotEmpty
+                          ? (host.avatarUrl.startsWith('http')
+                              ? Image.network(
+                                  host.avatarUrl,
+                                  width: 60.w,
+                                  height: 60.w,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildPlaceholderAvatar(60.w),
+                                )
+                              : Image.asset(
+                                  host.avatarUrl,
+                                  width: 60.w,
+                                  height: 60.w,
+                                  fit: BoxFit.cover,
+                                ))
                           : _buildPlaceholderAvatar(60.w),
                     ),
                   ),
                 ),
                 SizedBox(height: 8.h),
+                // Name
                 Text(
-                  user.name,
+                  host.fullName.isNotEmpty
+                      ? host.fullName
+                      : (host.id.isNotEmpty
+                          ? 'Host (${host.id.length > 6 ? host.id.substring(0, 6) : host.id})'
+                          : 'Host'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -93,6 +123,7 @@ class UserGridItem extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 4.h),
+                // Status dot + label
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -100,31 +131,19 @@ class UserGridItem extends StatelessWidget {
                       width: 6.w,
                       height: 6.w,
                       decoration: BoxDecoration(
-                        color: user.status == UserStatus.online
-                            ? AppColors.green
-                            : user.status == UserStatus.offline
-                            ? AppColors.favIcon
-                            : AppColors.termsIcon,
+                        color: _statusColor(),
                         shape: BoxShape.circle,
                       ),
                     ),
                     SizedBox(width: 4.w),
                     Text(
-                      user.status == UserStatus.online
-                          ? AppTexts.online
-                          : user.status == UserStatus.offline
-                          ? AppTexts.offline
-                          : AppTexts.onCall,
+                      _statusLabel(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w500,
-                        color: user.status == UserStatus.online
-                            ? AppColors.green
-                            : user.status == UserStatus.offline
-                            ? AppColors.favIcon
-                            : AppColors.termsIcon,
+                        color: _statusColor(),
                       ),
                     ),
                   ],
@@ -133,26 +152,36 @@ class UserGridItem extends StatelessWidget {
             ),
           ),
           SizedBox(height: 5.h),
+          // CTA button
           SizedBox(
             width: double.infinity,
             height: 32.h,
             child: ElevatedButton(
               onPressed: () {
-                if (user.status == UserStatus.online) {
-                  Navigator.pushNamed(context, AppRoutes.callScreen);
+                if (_isOnline) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CallScreen(
+                        hostId: host.id,
+                        hostName: host.fullName,
+                        callType: host.presence?.videoAvailable == true
+                            ? 'video'
+                            : 'audio',
+                      ),
+                    ),
+                  );
                 } else {
-                  context.read<HomeCubit>().notifyUser(user);
+                  context.read<HomeCubit>().notifyUser(host);
                 }
               },
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.zero,
-                backgroundColor: user.status == UserStatus.online
-                    ? AppColors.primaryColor
-                    : AppColors.white,
-                foregroundColor: user.status == UserStatus.online
-                    ? AppColors.white
-                    : AppColors.primaryColor,
-                side: user.status != UserStatus.online
+                backgroundColor:
+                    _isOnline ? AppColors.primaryColor : AppColors.white,
+                foregroundColor:
+                    _isOnline ? AppColors.white : AppColors.primaryColor,
+                side: _isOffline || _isBusy
                     ? BorderSide(color: AppColors.primaryColor, width: 1.w)
                     : null,
                 elevation: 0,
@@ -161,9 +190,7 @@ class UserGridItem extends StatelessWidget {
                 ),
               ),
               child: Text(
-                user.status == UserStatus.online
-                    ? AppTexts.callNow
-                    : AppTexts.notifyMe,
+                _isOnline ? AppTexts.callNow : AppTexts.notifyMe,
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w600,

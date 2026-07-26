@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 
 /// Manages access and refresh tokens.
 ///
@@ -45,5 +47,60 @@ class TokenManager {
   Future<bool> hasRefreshToken() async {
     final token = await getRefreshToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// Returns active access token, attempting refresh if missing but refresh token exists.
+  Future<String?> getValidAccessToken() async {
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      return _accessToken;
+    }
+    if (await hasRefreshToken()) {
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return _accessToken;
+      }
+    }
+    return null;
+  }
+
+  /// Attempts to refresh the access token using the stored refresh token.
+  Future<bool> refreshAccessToken() async {
+    try {
+      final refreshToken = await getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) return false;
+
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+
+      final response = await refreshDio.post(
+        ApiEndpoints.refreshToken,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'refreshToken=$refreshToken',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final body = response.data;
+        if (body is Map<String, dynamic>) {
+          final isSuccess =
+              body['success'] == true || body['status'] == 'success';
+          if (isSuccess && body['accessToken'] != null) {
+            saveAccessToken(body['accessToken'] as String);
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 }

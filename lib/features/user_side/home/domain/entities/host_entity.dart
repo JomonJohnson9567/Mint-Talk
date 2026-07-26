@@ -30,6 +30,36 @@ class HostEntity extends Equatable {
     this.presence,
   });
 
+  HostEntity copyWith({
+    String? id,
+    String? fullName,
+    String? phone,
+    String? avatarUrl,
+    String? selfieUrl,
+    String? dob,
+    String? gender,
+    num? audioRate,
+    num? videoRate,
+    bool? isAudioAllowed,
+    bool? isVideoAllowed,
+    HostPresenceEntity? presence,
+  }) {
+    return HostEntity(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      selfieUrl: selfieUrl ?? this.selfieUrl,
+      dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      audioRate: audioRate ?? this.audioRate,
+      videoRate: videoRate ?? this.videoRate,
+      isAudioAllowed: isAudioAllowed ?? this.isAudioAllowed,
+      isVideoAllowed: isVideoAllowed ?? this.isVideoAllowed,
+      presence: presence ?? this.presence,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

@@ -60,7 +60,10 @@ class ApiEndpoints {
   static String reportCall(String callId) => '/calls/$callId/report';
 
   // ── Profile Image ──────────────────────────────────────────────────────
-  static const String profileImage = '/user/profile-image';
+  /// POST multipart/form-data — field: "image" (max 5MB, JPEG/PNG/GIF/WEBP)
+  /// Docs: POST /api/v1/user/profile-image  (alias: /api/v1/user/avatar)
+  /// Backend currently serves the route at /user/avatar
+  static const String profileImage = '/user/avatar';
 
   // ── Hosts ─────────────────────────────────────────────────────────────
   static const String hosts = '/hosts';

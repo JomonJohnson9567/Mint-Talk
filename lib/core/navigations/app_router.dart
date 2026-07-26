@@ -30,7 +30,7 @@ import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
-import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/screen/host_profile_screen.dart';
 import 'package:mint_talk/features/user_side/main_navigation/presentation/screen/main_navigation_screen.dart';
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/privacy_policy/privacy_policy.dart';
@@ -179,8 +179,8 @@ class AppRouter {
 
     AppRoutes.hostProfileScreen: RouteConfig(
       builder: (settings) {
-        final user = RouteArgs.require<HomeUserEntity>(settings);
-        return HostProfileScreen(user: user);
+        final host = RouteArgs.require<HostEntity>(settings);
+        return HostProfileScreen(host: host);
       },
     ),
     AppRoutes.callScreen: RouteConfig(

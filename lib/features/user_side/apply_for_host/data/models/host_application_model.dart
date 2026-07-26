@@ -4,6 +4,7 @@ class HostApplicationModel extends HostApplicationEntity {
   const HostApplicationModel({
     required super.name,
     required super.dob,
+    required super.bio,
     required super.selfieUrl,
   });
 
@@ -11,6 +12,7 @@ class HostApplicationModel extends HostApplicationEntity {
     return HostApplicationModel(
       name: entity.name,
       dob: entity.dob,
+      bio: entity.bio,
       selfieUrl: entity.selfieUrl,
     );
   }
@@ -19,6 +21,7 @@ class HostApplicationModel extends HostApplicationEntity {
     return HostApplicationModel(
       name: json['name'] as String? ?? '',
       dob: json['dob'] as String? ?? '',
+      bio: json['bio'] as String? ?? '',
       selfieUrl: json['selfieUrl'] as String? ?? json['selfie'] as String? ?? '',
     );
   }
@@ -27,6 +30,7 @@ class HostApplicationModel extends HostApplicationEntity {
     return {
       'name': name,
       'dob': dob,
+      'bio': bio,
       'selfieUrl': selfieUrl,
     };
   }

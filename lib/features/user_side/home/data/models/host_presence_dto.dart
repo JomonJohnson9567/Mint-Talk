@@ -25,15 +25,17 @@ class HostPresenceDto {
 
   factory HostPresenceDto.fromJson(Map<String, dynamic> json) {
     return HostPresenceDto(
-      userId: (json['userId'] ?? '').toString(),
+      userId: (json['userId'] ?? json['id'] ?? json['_id'] ?? '').toString(),
       role: (json['role'] ?? '').toString(),
       status: (json['status'] ?? 'offline').toString(),
       lastSeen: json['lastSeen'] is int ? json['lastSeen'] : 0,
       updatedAt: json['updatedAt'] is int ? json['updatedAt'] : 0,
-      busy: json['busy'] == true,
-      audioAvailable: json['audio_available'] == true || json['audioAvailable'] == true,
-      videoAvailable: json['video_available'] == true || json['videoAvailable'] == true,
-      state: (json['state'] ?? '').toString(),
+      busy: json['busy'] == true || json['state'] == 'busy',
+      audioAvailable:
+          json['audio_available'] == true || json['audioAvailable'] == true,
+      videoAvailable:
+          json['video_available'] == true || json['videoAvailable'] == true,
+      state: (json['state'] ?? (json['busy'] == true ? 'busy' : '')).toString(),
     );
   }
 

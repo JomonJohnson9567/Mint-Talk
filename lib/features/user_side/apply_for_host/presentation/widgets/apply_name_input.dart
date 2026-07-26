@@ -12,10 +12,9 @@ class ApplyNameInput extends StatelessWidget {
     final cubit = context.read<ApplyForHostCubit>();
     return BlocBuilder<ApplyForHostCubit, ApplyForHostState>(
       buildWhen: (previous, current) =>
-          previous.name != current.name ||
           previous.fieldErrors['name'] != current.fieldErrors['name'],
       builder: (_, state) => ProfileField(
-        key: ValueKey('name_${state.name}'),
+        key: const Key('apply_name_input'),
         label: 'FULL NAME',
         hintText: 'Enter your full name',
         initialValue: state.name,

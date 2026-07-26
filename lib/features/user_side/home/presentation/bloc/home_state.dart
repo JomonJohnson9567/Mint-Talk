@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/home_user_entity.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 
 enum HomeTab { active, favorites, offline }
 
@@ -7,18 +7,33 @@ enum NotificationType { info, warning, success, error }
 
 class HomeState extends Equatable {
   final HomeTab selectedTab;
-  final List<HomeUserEntity> users;
+
+  /// Filtered list of hosts shown in the grid for the current [selectedTab].
+  final List<HostEntity> hosts;
+
+  /// True while the socket is connecting and no events have arrived yet.
   final bool isLoading;
+
+  /// Set when a socket connection error occurs.
+  final String? errorMessage;
+
+  // ── Notification snack-bar ────────────────────────────────────────────────
   final String? notificationMessage;
   final NotificationType? notificationType;
+
+  /// Incremented on each notification to trigger BlocListener even when the
+  /// message text is the same.
   final int? notificationId;
+
+  // ── User call rates (read from local storage) ─────────────────────────────
   final int? audioRate;
   final int? videoRate;
 
   const HomeState({
     this.selectedTab = HomeTab.active,
-    this.users = const [],
-    this.isLoading = false,
+    this.hosts = const [],
+    this.isLoading = true,
+    this.errorMessage,
     this.notificationMessage,
     this.notificationType,
     this.notificationId = 0,
@@ -28,8 +43,9 @@ class HomeState extends Equatable {
 
   HomeState copyWith({
     HomeTab? selectedTab,
-    List<HomeUserEntity>? users,
+    List<HostEntity>? hosts,
     bool? isLoading,
+    String? errorMessage,
     String? notificationMessage,
     NotificationType? notificationType,
     int? notificationId,
@@ -38,8 +54,9 @@ class HomeState extends Equatable {
   }) {
     return HomeState(
       selectedTab: selectedTab ?? this.selectedTab,
-      users: users ?? this.users,
+      hosts: hosts ?? this.hosts,
       isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
       notificationMessage: notificationMessage ?? this.notificationMessage,
       notificationType: notificationType ?? this.notificationType,
       notificationId: notificationId ?? this.notificationId,
@@ -50,13 +67,14 @@ class HomeState extends Equatable {
 
   @override
   List<Object?> get props => [
-    selectedTab,
-    users,
-    isLoading,
-    notificationMessage,
-    notificationType,
-    notificationId,
-    audioRate,
-    videoRate,
-  ];
+        selectedTab,
+        hosts,
+        isLoading,
+        errorMessage,
+        notificationMessage,
+        notificationType,
+        notificationId,
+        audioRate,
+        videoRate,
+      ];
 }

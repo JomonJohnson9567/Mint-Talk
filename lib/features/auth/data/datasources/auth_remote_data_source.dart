@@ -14,25 +14,15 @@ class AuthRemoteDataSource {
 
   const AuthRemoteDataSource(this._apiClient, this._tokenManager);
 
-  /// POST /auth/send-otp
+  /// POST /auth/send-otp (MUTED FOR TESTING)
   ///
   /// Sends an OTP to the given phone number.
   Future<void> sendOtp({
     required String phone,
     required String countryCode,
   }) async {
-    final response = await _apiClient.post(
-      ApiEndpoints.sendOtp,
-      body: {'phone': phone, 'countryCode': countryCode},
-    );
-
-    final isSuccess =
-        response['success'] == true || response['status'] == 'success';
-    if (!isSuccess) {
-      throw ServerException(
-        message: response['message'] as String? ?? 'Failed to send OTP',
-      );
-    }
+    // Muted for testing purposes: return immediately without calling backend API.
+    return;
   }
 
   /// POST /auth/verify-otp

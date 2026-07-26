@@ -20,6 +20,9 @@ class ProfileField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
+  final int? maxLines;
+  final int? minLines;
+  final int? maxLength;
 
   const ProfileField({
     super.key,
@@ -38,6 +41,9 @@ class ProfileField extends StatelessWidget {
     this.keyboardType,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
+    this.maxLines = 1,
+    this.minLines,
+    this.maxLength,
   });
 
   @override
@@ -66,6 +72,9 @@ class ProfileField extends StatelessWidget {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           textCapitalization: textCapitalization,
+          maxLines: maxLines,
+          minLines: minLines,
+          maxLength: maxLength,
           decoration: InputDecoration(
             errorText: errorText,
             hintText: hintText,

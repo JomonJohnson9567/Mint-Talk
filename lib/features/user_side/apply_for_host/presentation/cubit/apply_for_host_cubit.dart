@@ -23,6 +23,7 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
   ) : super(const ApplyForHostState());
 
   Future<void> loadProfileData() async {
+    emit(state.copyWith(status: ApplyForHostStatus.loading));
     try {
       final values = await Future.wait([
         authLocalDataSource.getFullName(),
@@ -34,10 +35,12 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
         state.copyWith(
           name: values[0]?.trim() ?? '',
           dob: values[1]?.trim() ?? '',
+          status: ApplyForHostStatus.initial,
         ),
       );
     } catch (_) {
-      // Profile prefilling is optional; users can still enter fields manually.
+      if (isClosed) return;
+      emit(state.copyWith(status: ApplyForHostStatus.initial));
     }
   }
 
@@ -57,6 +60,17 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
     emit(
       state.copyWith(
         dob: value,
+        fieldErrors: errors,
+        status: ApplyForHostStatus.initial,
+      ),
+    );
+  }
+
+  void bioChanged(String value) {
+    final errors = Map<String, String>.from(state.fieldErrors)..remove('bio');
+    emit(
+      state.copyWith(
+        bio: value,
         fieldErrors: errors,
         status: ApplyForHostStatus.initial,
       ),
@@ -110,10 +124,12 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
   void submit() async {
     final nameError = Validators.name(state.name);
     final dobError = Validators.dob(state.dob);
+    final bioError = Validators.bio(state.bio);
 
     final errors = <String, String>{};
     if (nameError != null) errors['name'] = nameError;
     if (dobError != null) errors['dob'] = dobError;
+    if (bioError != null) errors['bio'] = bioError;
 
     if (state.selfiePath.isEmpty || state.selfieUrl.isEmpty) {
       errors['selfie'] = state.isUploadingSelfie
@@ -133,6 +149,7 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
     final entity = HostApplicationEntity(
       name: state.name.trim(),
       dob: state.dob.trim(),
+      bio: state.bio.trim(),
       selfieUrl: state.selfieUrl,
     );
 
