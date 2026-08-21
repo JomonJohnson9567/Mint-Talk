@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 
 enum PlanDetailStatus { initial, loading, loaded, failure }
 
 class PlanDetailState extends Equatable {
   final PlanDetailStatus status;
-  final RechargePlanItem? plan;
+  final RechargePlanEntity? plan;
   final String? errorMessage;
 
   const PlanDetailState({
@@ -18,7 +18,7 @@ class PlanDetailState extends Equatable {
 
   PlanDetailState copyWith({
     PlanDetailStatus? status,
-    RechargePlanItem? plan,
+    RechargePlanEntity? plan,
     String? Function()? errorMessage,
   }) {
     return PlanDetailState(

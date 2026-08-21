@@ -8,6 +8,7 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/features/shared/notifications/presentation/widgets/notification_bell_icon.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 
@@ -43,7 +44,13 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
           SizedBox(width: 10.w),
+          NotificationBellIcon(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.userNotificationsScreen),
+          ),
+          SizedBox(width: 10.w),
           BlocBuilder<WalletCubit, WalletState>(
+            buildWhen: (previous, current) =>
+                previous.balance != current.balance || previous.status != current.status,
             builder: (context, state) {
               String balance = state.balance.toString();
               if (state.status == WalletStatus.loading && state.balance == 0) {

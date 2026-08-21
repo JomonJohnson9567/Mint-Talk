@@ -1,16 +1,21 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/features/user_side/chat/presentation/bloc/user_chat_cubit.dart';
+import 'package:mint_talk/features/shared/chat/domain/entities/message_entity.dart';
+import 'package:mint_talk/features/shared/chat/presentation/cubit/chat_thread_cubit.dart';
+import 'package:mint_talk/features/shared/chat/presentation/cubit/chat_thread_state.dart';
 
 class UserChatContents extends StatelessWidget {
-  const UserChatContents({super.key});
+  final bool? isOnline;
+
+  const UserChatContents({super.key, this.isOnline});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UserChatCubit, UserChatState>(
+    return BlocBuilder<ChatThreadCubit, ChatThreadState>(
       builder: (context, state) {
         return Container(
           decoration: const BoxDecoration(
@@ -22,23 +27,27 @@ class UserChatContents extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _ChatHeader(hostName: state.hostName),
+              _ChatHeader(
+                name: state.recipientName,
+                avatarUrl: state.recipientAvatarUrl,
+                isOnline: isOnline,
+              ),
               Expanded(
                 child: SafeArea(
                   top: false,
                   child: Column(
                     children: [
                       SizedBox(height: 16.h),
-                      Expanded(
-                        child: _SentMessageTimeline(
-                          messages: state.sentMessages,
+                      Expanded(child: _MessageTimeline(state: state)),
+                      if (state.predefinedMessages.isNotEmpty)
+                        _QuickMessageRail(
+                          prompts: state.predefinedMessages
+                              .map((m) => m.text)
+                              .toList(),
+                          onPromptTap: context
+                              .read<ChatThreadCubit>()
+                              .selectPrompt,
                         ),
-                      ),
-                      _QuickMessageRail(
-                        prompts: state.quickPrompts,
-                        selectedIndex: state.selectedPromptIndex,
-                        onPromptTap: context.read<UserChatCubit>().selectPrompt,
-                      ),
                     ],
                   ),
                 ),
@@ -52,9 +61,11 @@ class UserChatContents extends StatelessWidget {
 }
 
 class _ChatHeader extends StatelessWidget {
-  final String hostName;
+  final String name;
+  final String? avatarUrl;
+  final bool? isOnline;
 
-  const _ChatHeader({required this.hostName});
+  const _ChatHeader({required this.name, this.avatarUrl, this.isOnline});
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +83,7 @@ class _ChatHeader extends StatelessWidget {
           bottomLeft: Radius.circular(28.r),
           bottomRight: Radius.circular(28.r),
         ),
-        border: Border(
-          bottom: BorderSide(color: AppColors.borderSoft),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryColor.withValues(alpha: 0.08),
@@ -102,39 +111,14 @@ class _ChatHeader extends StatelessWidget {
             ),
           ),
           SizedBox(width: 12.w),
-          Container(
-            width: 46.w,
-            height: 46.w,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryColor, AppColors.tealBackground],
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryColor.withValues(alpha: 0.18),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              hostName.isNotEmpty ? hostName[0].toUpperCase() : 'H',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.white,
-              ),
-            ),
-          ),
+          _HeaderAvatar(name: name, avatarUrl: avatarUrl),
           SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hostName,
+                  name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -143,43 +127,31 @@ class _ChatHeader extends StatelessWidget {
                     color: AppColors.black,
                   ),
                 ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Container(
-                      width: 8.w,
-                      height: 8.w,
-                      decoration: const BoxDecoration(
-                        color: AppColors.onlineIndicator,
-                        shape: BoxShape.circle,
+                if (isOnline == true) ...[
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8.w,
+                        height: 8.w,
+                        decoration: const BoxDecoration(
+                          color: AppColors.onlineIndicator,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      AppTexts.onlineNow,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: AppColors.subtitleText,
-                        fontWeight: FontWeight.w500,
+                      SizedBox(width: 6.w),
+                      Text(
+                        AppTexts.onlineNow,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.subtitleText,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
-            ),
-          ),
-          Container(
-            width: 42.w,
-            height: 42.w,
-            decoration: BoxDecoration(
-              color: AppColors.softMint,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.borderSoft),
-            ),
-            child: Icon(
-              Icons.call_rounded,
-              color: AppColors.primaryColor,
-              size: 22.sp,
             ),
           ),
         ],
@@ -188,14 +160,126 @@ class _ChatHeader extends StatelessWidget {
   }
 }
 
-class _SentMessageTimeline extends StatelessWidget {
-  final List<ChatMessage> messages;
+class _HeaderAvatar extends StatelessWidget {
+  final String name;
+  final String? avatarUrl;
 
-  const _SentMessageTimeline({required this.messages});
+  const _HeaderAvatar({required this.name, this.avatarUrl});
 
   @override
   Widget build(BuildContext context) {
-    if (messages.isEmpty) {
+    final hasImage = avatarUrl != null && avatarUrl!.startsWith('http');
+    return Container(
+      width: 46.w,
+      height: 46.w,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primaryColor, AppColors.tealBackground],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: hasImage
+          ? ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: avatarUrl!,
+                width: 46.w,
+                height: 46.w,
+                fit: BoxFit.cover,
+                errorWidget: (_, _, _) => _InitialLetter(name: name),
+              ),
+            )
+          : _InitialLetter(name: name),
+    );
+  }
+}
+
+class _InitialLetter extends StatelessWidget {
+  final String name;
+
+  const _InitialLetter({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      name.isNotEmpty ? name[0].toUpperCase() : '?',
+      style: TextStyle(
+        fontSize: 18.sp,
+        fontWeight: FontWeight.w700,
+        color: AppColors.white,
+      ),
+    );
+  }
+}
+
+class _MessageTimeline extends StatefulWidget {
+  final ChatThreadState state;
+
+  const _MessageTimeline({required this.state});
+
+  @override
+  State<_MessageTimeline> createState() => _MessageTimelineState();
+}
+
+class _MessageTimelineState extends State<_MessageTimeline> {
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MessageTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.messages.length > oldWidget.state.messages.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  void _onScroll() {
+    if (_controller.position.pixels <= 100 &&
+        widget.state.hasMoreMessages &&
+        !widget.state.isLoadingMoreMessages) {
+      context.read<ChatThreadCubit>().loadMoreMessages();
+    }
+  }
+
+  void _scrollToBottom() {
+    if (!_controller.hasClients) return;
+    _controller.animateTo(
+      _controller.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onScroll);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+
+    if (state.status == ChatThreadStatus.loading && state.messages.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryColor),
+      );
+    }
+
+    if (state.messages.isEmpty) {
       return Center(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 32.w),
@@ -213,55 +297,130 @@ class _SentMessageTimeline extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        return _SentMessageBubble(message: messages[index]);
-      },
+    return RefreshIndicator(
+      color: AppColors.primaryColor,
+      onRefresh: () => context.read<ChatThreadCubit>().refreshMessages(),
+      child: ListView.builder(
+        controller: _controller,
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+        itemCount:
+            state.messages.length + (state.isLoadingMoreMessages ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (state.isLoadingMoreMessages && index == 0) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ),
+            );
+          }
+          final messageIndex = state.isLoadingMoreMessages ? index - 1 : index;
+          final message = state.messages[messageIndex];
+          return _MessageBubble(
+            message: message,
+            isMine: message.isMine(state.myUserId ?? ''),
+            isSending: state.sendingClientMessageIds.contains(message.id),
+            isFailed: state.failedClientMessageIds.contains(message.id),
+          );
+        },
+      ),
     );
   }
 }
 
-class _SentMessageBubble extends StatelessWidget {
-  final ChatMessage message;
+class _MessageBubble extends StatelessWidget {
+  final MessageEntity message;
+  final bool isMine;
+  final bool isSending;
+  final bool isFailed;
 
-  const _SentMessageBubble({required this.message});
+  const _MessageBubble({
+    required this.message,
+    required this.isMine,
+    required this.isSending,
+    required this.isFailed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 12.h),
-        constraints: BoxConstraints(maxWidth: 0.78.sw),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(18.r),
-            topRight: Radius.circular(18.r),
-            bottomLeft: Radius.circular(18.r),
-            bottomRight: Radius.circular(6.r),
-          ),
-          border: Border.all(color: AppColors.primaryColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: isMine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Opacity(
+            opacity: isSending ? 0.6 : 1,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 4.h),
+              constraints: BoxConstraints(maxWidth: 0.78.sw),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: isMine ? AppColors.primaryColor : AppColors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(18.r),
+                  topRight: Radius.circular(18.r),
+                  bottomLeft: Radius.circular(isMine ? 18.r : 6.r),
+                  bottomRight: Radius.circular(isMine ? 6.r : 18.r),
+                ),
+                border: Border.all(
+                  color: isMine
+                      ? AppColors.primaryColor
+                      : AppColors.borderSoft,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Text(
+                message.content,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  height: 1.35,
+                  color: isMine ? AppColors.white : AppColors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            fontSize: 15.sp,
-            height: 1.35,
-            color: AppColors.white,
-            fontWeight: FontWeight.w500,
           ),
-        ),
+          if (isFailed)
+            GestureDetector(
+              onTap: () =>
+                  context.read<ChatThreadCubit>().retryMessage(message.id),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 13.sp,
+                      color: AppColors.red,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Failed — tap to retry',
+                      style: TextStyle(fontSize: 11.sp, color: AppColors.red),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SizedBox(height: 8.h),
+        ],
       ),
     );
   }
@@ -269,14 +428,9 @@ class _SentMessageBubble extends StatelessWidget {
 
 class _QuickMessageRail extends StatelessWidget {
   final List<String> prompts;
-  final int? selectedIndex;
   final ValueChanged<int> onPromptTap;
 
-  const _QuickMessageRail({
-    required this.prompts,
-    required this.selectedIndex,
-    required this.onPromptTap,
-  });
+  const _QuickMessageRail({required this.prompts, required this.onPromptTap});
 
   @override
   Widget build(BuildContext context) {
@@ -315,29 +469,14 @@ class _QuickMessageRail extends StatelessWidget {
               itemCount: prompts.length,
               separatorBuilder: (context, index) => SizedBox(width: 10.w),
               itemBuilder: (context, index) {
-                final selected = selectedIndex == index;
                 return GestureDetector(
                   onTap: () => onPromptTap(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
+                  child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     decoration: BoxDecoration(
-                      gradient: selected
-                          ? const LinearGradient(
-                              colors: [
-                                AppColors.primaryColor,
-                                AppColors.tealBackground,
-                              ],
-                            )
-                          : null,
-                      color: selected ? null : AppColors.softBlue,
+                      color: AppColors.softBlue,
                       borderRadius: BorderRadius.circular(999.r),
-                      border: Border.all(
-                        color: selected
-                            ? AppColors.primaryColor
-                            : AppColors.borderSoft,
-                      ),
+                      border: Border.all(color: AppColors.borderSoft),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -345,7 +484,7 @@ class _QuickMessageRail extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
-                        color: selected ? AppColors.white : AppColors.black,
+                        color: AppColors.black,
                       ),
                     ),
                   ),

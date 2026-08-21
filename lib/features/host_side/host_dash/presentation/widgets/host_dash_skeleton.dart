@@ -7,7 +7,8 @@ class HostDashSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SkeletonShimmer(
+      child: SafeArea(
       bottom: false,
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
@@ -131,6 +132,7 @@ class HostDashSkeleton extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

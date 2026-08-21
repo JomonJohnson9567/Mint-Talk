@@ -5,12 +5,13 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_section.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_data.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/recharge_plan_section_widget.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/recharge_plans_skeleton.dart';
 
 class ScreenContents extends StatelessWidget {
   const ScreenContents({super.key, required this.contentWidth});
@@ -50,14 +51,7 @@ class ScreenContents extends StatelessWidget {
                       const _ReferralStatusPromptCard(),
                       SizedBox(height: 18.h),
                       if (state.status == WalletStatus.plansLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryColor,
-                            ),
-                          ),
-                        )
+                        const RechargePlansSkeleton()
                       else if (state.status == WalletStatus.plansLoaded)
                         ..._buildPlanSections(state.plans)
                       else
@@ -74,7 +68,7 @@ class ScreenContents extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildPlanSections(List<RechargePlanItem> mergedPlans) {
+  List<Widget> _buildPlanSections(List<RechargePlanEntity> mergedPlans) {
     // If no plans loaded yet, just show dummy sections
     if (mergedPlans.isEmpty) {
       return RechargePlanData.sections.map((section) {

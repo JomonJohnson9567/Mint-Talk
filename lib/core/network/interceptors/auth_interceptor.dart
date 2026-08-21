@@ -1,37 +1,46 @@
 import 'package:dio/dio.dart';
-import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 
 class AuthInterceptor extends Interceptor {
+  /// The shared, fully-configured Dio instance this interceptor is attached
+  /// to. Used to retry a request after a successful token refresh so the
+  /// retried request still goes through logging/error-mapping/cert-pinning,
+  /// instead of a bare throwaway Dio() that bypasses all of it. Passed in
+  /// (rather than resolved via [getIt]) because [DioModule.dio] constructs
+  /// this interceptor before the instance it attaches to is fully built.
+  final Dio _dio;
+
+  AuthInterceptor(this._dio);
+
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final tokenManager = getIt<TokenManager>();
+    // 1. Attach Access Token as Bearer Header — only for requests that opted
+    // in via `ApiClient(requiresAuth: true)`. Public/pre-auth endpoints
+    // (send-otp, verify-otp) pass `requiresAuth: false` and never get a
+    // token attached, so a stale/expired session can't leak into a call
+    // that doesn't need one.
+    if (options.extra['requiresAuth'] == true) {
+      final tokenManager = getIt<TokenManager>();
 
-    // 1. Attach Access Token as Bearer Header
-    var accessToken = tokenManager.getAccessToken();
-    if ((accessToken == null || accessToken.isEmpty) &&
-        await tokenManager.hasRefreshToken()) {
-      await _tryRefreshToken(tokenManager);
-      accessToken = tokenManager.getAccessToken();
+      var accessToken = tokenManager.getAccessToken();
+      if ((accessToken == null || accessToken.isEmpty) &&
+          await tokenManager.hasRefreshToken()) {
+        await tokenManager.refreshAccessToken();
+        accessToken = tokenManager.getAccessToken();
+      }
+
+      if (accessToken != null && accessToken.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $accessToken';
+      }
     }
 
-    if (accessToken != null && accessToken.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $accessToken';
-    }
-
-    // 2. Attach Refresh Token as Cookie Header (for manual cookie management)
-    final refreshToken = await tokenManager.getRefreshToken();
-    if (refreshToken != null && refreshToken.isNotEmpty) {
-      options.headers['Cookie'] = 'refreshToken=$refreshToken';
-    }
-
-    // 3. Remove Content-Type header for multipart/form-data to let Dio generate boundaries
+    // 2. Remove Content-Type header for multipart/form-data to let Dio generate boundaries
     if (options.data is FormData) {
       options.headers.remove('Content-Type');
       options.headers.remove('content-type');
@@ -57,7 +66,7 @@ class AuthInterceptor extends Interceptor {
         return handler.next(err);
       }
 
-      final refreshed = await _tryRefreshToken(tokenManager);
+      final refreshed = await tokenManager.refreshAccessToken();
 
       if (refreshed) {
         final options = err.requestOptions;
@@ -70,14 +79,12 @@ class AuthInterceptor extends Interceptor {
         }
 
         try {
-          // Send request again with a new, clean Dio instance
-          final retryDio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
-          final retryResponse = await retryDio.request(
-            options.path,
-            data: options.data,
-            queryParameters: options.queryParameters,
-            options: Options(method: options.method, headers: options.headers),
-          );
+          // Retry on the shared, intercepted Dio instance (not a throwaway
+          // one) so the retried request still gets logging/error-mapping/
+          // cert-pinning. Safe from infinite recursion because `options`
+          // already carries `extra['isRetry'] = true`, which the guard at
+          // the top of this method checks on the next pass.
+          final retryResponse = await _dio.fetch(options);
           return handler.resolve(retryResponse);
         } on DioException catch (retryErr) {
           return handler.next(retryErr);
@@ -92,45 +99,5 @@ class AuthInterceptor extends Interceptor {
     }
 
     return handler.next(err);
-  }
-
-  Future<bool> _tryRefreshToken(TokenManager tokenManager) async {
-    try {
-      final refreshToken = await tokenManager.getRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) return false;
-
-      final refreshDio = Dio(
-        BaseOptions(
-          baseUrl: ApiEndpoints.baseUrl,
-          connectTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-      );
-
-      final response = await refreshDio.post(
-        ApiEndpoints.refreshToken,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': 'refreshToken=$refreshToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final body = response.data;
-        if (body is Map<String, dynamic>) {
-          final isSuccess =
-              body['success'] == true || body['status'] == 'success';
-          if (isSuccess && body['accessToken'] != null) {
-            tokenManager.saveAccessToken(body['accessToken'] as String);
-            return true;
-          }
-        }
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
   }
 }

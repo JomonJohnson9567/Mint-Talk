@@ -53,8 +53,7 @@ class RazorpayService {
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     appLogger.i("PAYMENT SUCCESS\n"
         "PaymentId: ${response.paymentId}\n"
-        "OrderId: ${response.orderId}\n"
-        "Signature: ${response.signature}");
+        "OrderId: ${response.orderId}");
 
     _onSuccess?.call(response);
   }

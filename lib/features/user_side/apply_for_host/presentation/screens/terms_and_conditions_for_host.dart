@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/di/injection.dart';
-import '../../data/datasources/host_application_local_datasource.dart';
+import '../../domain/usecases/accept_host_terms_usecase.dart';
 import 'package:mint_talk/core/widgets/custom_outline_button.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
@@ -291,7 +291,7 @@ class _TermsActionButtons extends StatelessWidget {
               child: PrimaryButton(
                 onPressed: () async {
                   try {
-                    await getIt<HostApplicationLocalDataSource>().acceptTerms();
+                    await getIt<AcceptHostTermsUseCase>()();
                     if (context.mounted) Navigator.pop(context, true);
                   } catch (_) {
                     if (!context.mounted) return;

@@ -16,6 +16,12 @@ abstract class HostRepository {
     int? limit,
   });
 
+  Future<Either<Failure, PaginatedHostsEntity>> getAllHosts({
+    int? page,
+    int? limit,
+  });
+
+
   // ── Socket presence (primary data source for user home) ──────────────────
 
   /// Continuous stream of host presence events.

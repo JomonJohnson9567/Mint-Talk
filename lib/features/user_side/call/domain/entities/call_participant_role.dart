@@ -1,0 +1,4 @@
+enum CallParticipantRole {
+  caller,
+  host,
+}

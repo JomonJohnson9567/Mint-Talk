@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:mint_talk/features/host_side/host_call_log_screen/domain/models/host_call_log_entry_model.dart';
+import 'package:mint_talk/features/host_side/host_call_log_screen/domain/entities/host_call_log_entry_entity.dart';
 
 abstract class HostCallLogState extends Equatable {
   const HostCallLogState();
@@ -17,7 +17,7 @@ class HostCallLogLoading extends HostCallLogState {
 }
 
 class HostCallLogLoaded extends HostCallLogState {
-  final List<HostCallLogEntryModel> entries;
+  final List<HostCallLogEntryEntity> entries;
 
   const HostCallLogLoaded({required this.entries});
 

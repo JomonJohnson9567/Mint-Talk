@@ -1,31 +1,31 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 
 import 'host_profile_state.dart';
 
 @injectable
 class HostProfileCubit extends Cubit<HostProfileState> {
-  final AuthLocalDataSource _localDataSource;
+  final AuthRepository _authRepository;
 
-  HostProfileCubit(this._localDataSource) : super(const HostProfileState());
+  HostProfileCubit(this._authRepository) : super(const HostProfileState());
 
   Future<void> loadProfile() async {
     emit(state.copyWith(status: HostProfileStatus.loading, clearError: true));
 
     try {
       final values = await Future.wait<Object?>([
-        _localDataSource.getUserId(),
-        _localDataSource.getFullName(),
-        _localDataSource.getPhone(),
-        _localDataSource.getDob(),
-        _localDataSource.getGender(),
-        _localDataSource.getRole(),
-        _localDataSource.getProfileImagePath(),
-        _localDataSource.getAudioRate(),
-        _localDataSource.getVideoRate(),
-        _localDataSource.getIsAudioAllowed(),
-        _localDataSource.getIsVideoAllowed(),
+        _authRepository.getUserId(),
+        _authRepository.getFullName(),
+        _authRepository.getPhone(),
+        _authRepository.getDob(),
+        _authRepository.getGender(),
+        _authRepository.getRole(),
+        _authRepository.getProfileImagePath(),
+        _authRepository.getAudioRate(),
+        _authRepository.getVideoRate(),
+        _authRepository.getIsAudioAllowed(),
+        _authRepository.getIsVideoAllowed(),
       ]);
 
       if (isClosed) return;

@@ -2,21 +2,36 @@ import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/network/api_client.dart';
+import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mint_talk/features/auth/data/models/user_model.dart';
 import 'package:mint_talk/features/auth/domain/entities/auth_response_entity.dart';
 
+
 /// Remote data source for auth-related API calls.
-@lazySingleton
-class AuthRemoteDataSource {
+abstract class IAuthRemoteDataSource {
+  Future<void> sendOtp({required String phone, required String countryCode});
+
+  Future<AuthResponseEntity> verifyOtp({
+    required String phone,
+    required String countryCode,
+    required String otp,
+  });
+
+  Future<void> logout();
+}
+
+@LazySingleton(as: IAuthRemoteDataSource)
+class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
   final ApiClient _apiClient;
   final TokenManager _tokenManager;
 
-  const AuthRemoteDataSource(this._apiClient, this._tokenManager);
+  const AuthRemoteDataSourceImpl(this._apiClient, this._tokenManager);
 
   /// POST /auth/send-otp (MUTED FOR TESTING)
   ///
   /// Sends an OTP to the given phone number.
+  @override
   Future<void> sendOtp({
     required String phone,
     required String countryCode,
@@ -29,6 +44,7 @@ class AuthRemoteDataSource {
   ///
   /// Verifies the OTP and returns user + access token.
   /// Also extracts the `Set-Cookie` header to store the refresh token.
+  @override
   Future<AuthResponseEntity> verifyOtp({
     required String phone,
     required String countryCode,
@@ -41,6 +57,8 @@ class AuthRemoteDataSource {
     );
 
     final body = response.data as Map<String, dynamic>;
+
+    appLogger.d('[AuthRemoteDataSource] verifyOtp response received');
 
     // Check response status code
     if (response.statusCode == 429) {
@@ -87,6 +105,7 @@ class AuthRemoteDataSource {
   ///
   /// Invalidates current session on backend.
   /// Success is accepted for 200 / 204 paths handled by [ApiClient].
+  @override
   Future<void> logout() async {
     final response = await _apiClient.post(
       ApiEndpoints.logout,

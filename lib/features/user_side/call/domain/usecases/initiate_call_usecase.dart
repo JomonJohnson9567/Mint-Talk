@@ -4,11 +4,12 @@ import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/usecases/usecase.dart';
 import '../entities/call_session_entity.dart';
+import '../entities/call_type.dart';
 import '../repositories/i_call_repository.dart';
 
 class InitiateCallParams extends Equatable {
   final String hostId;
-  final String callType; // audio | video
+  final CallType callType;
 
   const InitiateCallParams({required this.hostId, required this.callType});
 

@@ -13,6 +13,7 @@ import 'package:mint_talk/features/auth/presentation/screens/success/presentatio
 import 'package:mint_talk/features/host_side/host_dash/presentation/screens/host_dash.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/host_dash_cubit.dart';
 import 'package:mint_talk/features/host_side/host_navigation/presentation/screen/host_navigation_screen.dart';
+import 'package:mint_talk/features/host_side/host_notification/presentation/screens/host_notifications.dart';
 import 'package:mint_talk/features/host_side/host_profile_setup/presentation/screen/host_profile_setup.dart';
 import 'package:mint_talk/features/host_side/host_profile_edit/presentation/cubit/host_profile_edit_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_edit/presentation/screen/host_profile_edit.dart';
@@ -28,6 +29,7 @@ import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/host_application_status_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_list_screen.dart';
 import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
@@ -45,6 +47,7 @@ import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/
 import 'package:mint_talk/features/user_side/user_recharge_history/presentation/screen/user_recharge_history.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/presentation/screen/referral_status_screen.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/screen/settings_screen.dart';
+import 'package:mint_talk/features/user_side/user_notification/presentation/screens/user_notifications.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_cubit.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/screen/user_profile_edit.dart';
 
@@ -155,21 +158,14 @@ class AppRouter {
     AppRoutes.videocallOnlineScreen: RouteConfig(
       builder: (_) => const VideoCallOnlineScreen(),
     ),
-    AppRoutes.chatScreen: RouteConfig(
+    AppRoutes.userChatScreen: RouteConfig(
       builder: (settings) {
-        final args =
-            RouteArgs.of<UserChatArgs>(settings) ??
-            const UserChatArgs(hostName: 'Host');
+        final args = RouteArgs.require<UserChatArgs>(settings);
         return UserChatScreen(args: args);
       },
     ),
-    AppRoutes.userChatScreen: RouteConfig(
-      builder: (settings) {
-        final args =
-            RouteArgs.of<UserChatArgs>(settings) ??
-            const UserChatArgs(hostName: 'Host');
-        return UserChatScreen(args: args);
-      },
+    AppRoutes.userChatListScreen: RouteConfig(
+      builder: (_) => const UserChatListScreen(),
     ),
 
     //audio call online screen
@@ -223,6 +219,12 @@ class AppRouter {
     ),
     AppRoutes.blockedUsersScreen: RouteConfig(
       builder: (_) => const BlockedUsersScreen(),
+    ),
+    AppRoutes.userNotificationsScreen: RouteConfig(
+      builder: (_) => const UserNotifications(),
+    ),
+    AppRoutes.hostNotificationsScreen: RouteConfig(
+      builder: (_) => const HostNotifications(),
     ),
   };
 

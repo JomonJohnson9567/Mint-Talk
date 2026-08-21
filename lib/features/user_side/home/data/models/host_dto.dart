@@ -14,6 +14,7 @@ class HostDto {
   final bool isAudioAllowed;
   final bool isVideoAllowed;
   final HostPresenceDto? presence;
+  final bool isFavorite;
 
   const HostDto({
     required this.id,
@@ -28,6 +29,7 @@ class HostDto {
     required this.isAudioAllowed,
     required this.isVideoAllowed,
     this.presence,
+    this.isFavorite = false,
   });
 
   factory HostDto.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class HostDto {
       presence: json['presence'] is Map<String, dynamic>
           ? HostPresenceDto.fromJson(json['presence'] as Map<String, dynamic>)
           : null,
+      isFavorite: json['isFavorite'] == true,
     );
   }
 
@@ -63,6 +66,7 @@ class HostDto {
       isAudioAllowed: isAudioAllowed,
       isVideoAllowed: isVideoAllowed,
       presence: presence?.toEntity(),
+      isFavorite: isFavorite,
     );
   }
 }

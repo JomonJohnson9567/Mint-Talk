@@ -29,6 +29,10 @@ class HomeState extends Equatable {
   final int? audioRate;
   final int? videoRate;
 
+  /// IDs of the current user's favorited hosts — used to render heart-icon
+  /// state on cards across every tab, sourced from the backend.
+  final Set<String> favoriteIds;
+
   const HomeState({
     this.selectedTab = HomeTab.active,
     this.hosts = const [],
@@ -39,6 +43,7 @@ class HomeState extends Equatable {
     this.notificationId = 0,
     this.audioRate,
     this.videoRate,
+    this.favoriteIds = const {},
   });
 
   HomeState copyWith({
@@ -51,6 +56,7 @@ class HomeState extends Equatable {
     int? notificationId,
     int? audioRate,
     int? videoRate,
+    Set<String>? favoriteIds,
   }) {
     return HomeState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -62,6 +68,7 @@ class HomeState extends Equatable {
       notificationId: notificationId ?? this.notificationId,
       audioRate: audioRate ?? this.audioRate,
       videoRate: videoRate ?? this.videoRate,
+      favoriteIds: favoriteIds ?? this.favoriteIds,
     );
   }
 
@@ -76,5 +83,6 @@ class HomeState extends Equatable {
         notificationId,
         audioRate,
         videoRate,
+        favoriteIds,
       ];
 }

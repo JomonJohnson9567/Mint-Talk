@@ -1,18 +1,21 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/constants/user_role.dart';
+import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/usecases/usecase.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/core/services/razorpay_service.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/create_order_usecase.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/get_plans_usecase.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/get_wallet_balance_usecase.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/initialize_wallet_usecase.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/usecases/merge_recharge_plans.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/verify_payment_usecase.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_data.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 @injectable
@@ -22,7 +25,7 @@ class WalletCubit extends Cubit<WalletState> {
   final CreateOrderUseCase createOrderUseCase;
   final VerifyPaymentUseCase verifyPaymentUseCase;
   final GetPlansUseCase getPlansUseCase;
-  final AuthLocalDataSource authLocalDataSource;
+  final AuthRepository authRepository;
   final RazorpayService razorpayService;
 
   String? _lastTransactionId;
@@ -33,7 +36,7 @@ class WalletCubit extends Cubit<WalletState> {
     required this.createOrderUseCase,
     required this.verifyPaymentUseCase,
     required this.getPlansUseCase,
-    required this.authLocalDataSource,
+    required this.authRepository,
     required this.razorpayService,
   }) : super(const WalletState(status: WalletStatus.initial)) {
     _initRazorpay();
@@ -91,12 +94,12 @@ class WalletCubit extends Cubit<WalletState> {
   Future<void> fetchBalance() async {
     if (state.status == WalletStatus.loading) return;
 
-    final role = await authLocalDataSource.getRole();
-    if (role == 'staff') {
+    final role = await authRepository.getRole();
+    if (role.toUserRole() == UserRole.host) {
       return;
     }
 
-    final userId = await authLocalDataSource.getUserId();
+    final userId = await authRepository.getUserId();
     if (userId == null) {
       emit(
         state.copyWith(
@@ -111,8 +114,7 @@ class WalletCubit extends Cubit<WalletState> {
     final result = await getWalletBalanceUseCase(userId);
     await result.fold(
       (failure) async {
-        if (failure.statusCode == 404 ||
-            failure.message.contains('Wallet not found')) {
+        if (_isWalletNotFound(failure)) {
           appLogger.i(
             'WalletCubit: Wallet not found for user $userId. Initializing...',
           );
@@ -150,7 +152,7 @@ class WalletCubit extends Cubit<WalletState> {
     emit(state.copyWith(status: WalletStatus.plansLoading));
 
     // Get dummy plans for merging
-    final List<RechargePlanItem> dummyPlans = [];
+    final List<RechargePlanEntity> dummyPlans = [];
     for (var section in RechargePlanData.sections) {
       dummyPlans.addAll(section.plans);
     }
@@ -165,25 +167,21 @@ class WalletCubit extends Cubit<WalletState> {
         );
       },
       (apiPlans) {
-        // Merge API plans with dummy plans.
-        // We put API plans first.
-        final mergedPlans = [...apiPlans, ...dummyPlans];
-
-        // Remove duplicates by ID just in case there's overlap
-        final uniqueMap = <String, RechargePlanItem>{};
-        for (var plan in mergedPlans) {
-          uniqueMap[plan.id] = plan;
-        }
-
         emit(
           state.copyWith(
             status: WalletStatus.plansLoaded,
-            plans: uniqueMap.values.toList(),
+            plans: mergeRechargePlans(apiPlans: apiPlans, fallbackPlans: dummyPlans),
           ),
         );
       },
     );
   }
+
+  /// A 404 on wallet lookup means the user has no wallet yet — the message
+  /// check is a defensive fallback in case a backend path returns a
+  /// different status code for the same "not found" condition.
+  bool _isWalletNotFound(Failure failure) =>
+      failure.statusCode == 404 || failure.message.contains('Wallet not found');
 
   Future<void> startRecharge(String planId) async {
     emit(state.copyWith(status: WalletStatus.paymentProcessing));

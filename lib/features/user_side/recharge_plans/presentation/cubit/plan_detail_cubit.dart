@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/usecases/get_plan_by_id_usecase.dart';
 import 'plan_detail_state.dart';
 
@@ -40,5 +40,5 @@ class PlanDetailCubit extends Cubit<PlanDetailState> {
     );
   }
 
-  RechargePlanItem? get currentPlan => state.plan;
+  RechargePlanEntity? get currentPlan => state.plan;
 }

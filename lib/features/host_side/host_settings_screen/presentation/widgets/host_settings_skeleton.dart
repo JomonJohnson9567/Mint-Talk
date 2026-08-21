@@ -7,7 +7,8 @@ class HostSettingsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return SkeletonShimmer(
+      child: ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.only(top: 8.h, bottom: 24.h),
       itemCount: 7,
@@ -50,6 +51,7 @@ class HostSettingsSkeleton extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }

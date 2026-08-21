@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
@@ -52,16 +53,43 @@ class HostApplicationRemoteDataSourceImpl
 
   @override
   Future<String> uploadImage(String imagePath, String key) async {
-    appLogger.d(
-      'HostApplicationRemoteDataSource.uploadImage: Mocking upload for key $key',
+    appLogger.d('HostApplicationRemoteDataSource.uploadImage: uploading $key');
+
+    final file = await MultipartFile.fromFile(
+      imagePath,
+      filename: imagePath.split('/').last,
     );
-    if (key == 'frontPageUrl') {
-      return 'https://example.com/kyc/aadhar-front.jpg';
-    } else if (key == 'backPageUrl') {
-      return 'https://example.com/kyc/aadhar-back.jpg';
-    } else {
-      return 'https://example.com/kyc/selfie.jpg';
+
+    final response = await apiClient.postMultipart(
+      ApiEndpoints.verifyKYC,
+      requiresAuth: true,
+      body: {
+        'key': key,
+        'image': file,
+      },
+    );
+
+    final isSuccess =
+        response['success'] == true || response['data'] != null;
+    if (!isSuccess) {
+      throw ServerException(
+        message: response['message'] as String? ?? 'Failed to upload $key',
+      );
     }
+
+    final data = response['data'] is Map ? response['data'] as Map : response;
+    final url = (data['url'] ??
+            data['imageUrl'] ??
+            data['fileUrl'] ??
+            data[key] ??
+            '')
+        .toString();
+
+    if (url.isEmpty) {
+      throw ServerException(message: 'Upload succeeded but no URL returned for $key');
+    }
+
+    return url;
   }
 
   @override

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/shared/profile/domain/usecases/upload_profile_image_usecase.dart';
 import '../../../../../core/usecases/usecase.dart';
 import '../../domain/entities/host_profile_entity.dart';
@@ -15,25 +15,25 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
   final GetHostProfileUseCase getProfileUseCase;
   final UpdateHostProfileUseCase updateProfileUseCase;
   final UploadProfileImageUseCase uploadProfileImageUseCase;
-  final AuthLocalDataSource localDataSource;
+  final AuthRepository authRepository;
 
   HostProfileEditCubit({
     required this.getProfileUseCase,
     required this.updateProfileUseCase,
     required this.uploadProfileImageUseCase,
-    required this.localDataSource,
+    required this.authRepository,
   }) : super(const HostProfileEditState());
 
   Future<void> loadProfile() async {
     emit(state.copyWith(status: HostProfileEditStatus.loading));
     final cachedValues = await Future.wait<String?>([
-      localDataSource.getFullName(),
-      localDataSource.getPhone(),
-      localDataSource.getUserId(),
-      localDataSource.getDob(),
-      localDataSource.getProfileImagePath(),
-      localDataSource.getGender(),
-      localDataSource.getTermsAcceptedAt(),
+      authRepository.getFullName(),
+      authRepository.getPhone(),
+      authRepository.getUserId(),
+      authRepository.getDob(),
+      authRepository.getProfileImagePath(),
+      authRepository.getGender(),
+      authRepository.getTermsAcceptedAt(),
     ]);
     final result = await getProfileUseCase(NoParams());
     result.fold(
@@ -130,8 +130,8 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
       if (isFailure) return;
     }
 
-    final genderVal = await localDataSource.getGender();
-    final termsVal = await localDataSource.getTermsAcceptedAt();
+    final genderVal = await authRepository.getGender();
+    final termsVal = await authRepository.getTermsAcceptedAt();
 
     final profile = HostProfileEntity(
       id: state.idNumber,
@@ -160,9 +160,9 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
       },
       (_) async {
         await Future.wait([
-          localDataSource.saveFullName(profile.fullName),
-          localDataSource.saveDob(profile.dob),
-          localDataSource.saveProfileImagePath(profile.avatarAsset),
+          authRepository.saveFullName(profile.fullName),
+          authRepository.saveDob(profile.dob),
+          authRepository.saveProfileImagePath(profile.avatarAsset),
         ]);
         if (isClosed) return;
         emit(state.copyWith(status: HostProfileEditStatus.success));

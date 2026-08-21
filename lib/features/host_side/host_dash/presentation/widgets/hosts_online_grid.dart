@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -199,12 +200,11 @@ class HostGridItemCard extends StatelessWidget {
 
   Widget _buildHostImage(String imageUrl) {
     if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackAsset(),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
+        errorWidget: (context, url, error) => _buildFallbackAsset(),
+        placeholder: (context, url) {
           return Container(
             color: AppColors.lightGrey,
             child: const Center(

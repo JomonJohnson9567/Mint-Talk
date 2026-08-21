@@ -1,7 +1,8 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:mint_talk/core/errors/exceptions.dart';
+import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/data/datasources/referral_status_remote_datasource.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/domain/entities/referral_status_entity.dart';
@@ -20,12 +21,8 @@ class ReferralStatusRepositoryImpl implements ReferralStatusRepository {
     try {
       final result = await remoteDataSource.getReferralStatus(userId);
       return Right(result);
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch referral status'));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

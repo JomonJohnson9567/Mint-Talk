@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -35,10 +36,10 @@ class HostProfileHeader extends StatelessWidget {
           child: ClipOval(
             child: imageUrl.isNotEmpty
                 ? (imageUrl.startsWith('http')
-                      ? Image.network(
-                          imageUrl,
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
+                          errorWidget: (context, url, error) {
                             return Image.asset(
                               AppAssets.femaleIcon,
                               fit: BoxFit.cover,

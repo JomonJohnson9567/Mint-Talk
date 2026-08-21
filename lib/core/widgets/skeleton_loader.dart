@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
+/// One shimmer "bone" — a flat placeholder box. Wrap a whole skeleton
+/// layout in a single [SkeletonShimmer] (not each box individually) so the
+/// animated sweep runs off one shared `AnimationController` instead of one
+/// per bone.
 class SkeletonBox extends StatelessWidget {
   final double? width;
   final double? height;
@@ -32,16 +37,25 @@ class SkeletonBox extends StatelessWidget {
         borderRadius: shape == BoxShape.circle
             ? null
             : (borderRadius ?? BorderRadius.circular(8)),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEAEEF4),
-            Color(0xFFF4F7FA),
-            Color(0xFFEAEEF4),
-          ],
-        ),
+        color: const Color(0xFFEAEEF4),
       ),
+      child: child,
+    );
+  }
+}
+
+/// Wraps an entire skeleton layout (built from one or more [SkeletonBox]es)
+/// in a single animated shimmer sweep.
+class SkeletonShimmer extends StatelessWidget {
+  final Widget child;
+
+  const SkeletonShimmer({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFEAEEF4),
+      highlightColor: const Color(0xFFF7FAFC),
       child: child,
     );
   }

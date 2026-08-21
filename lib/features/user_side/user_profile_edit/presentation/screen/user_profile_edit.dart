@@ -5,6 +5,7 @@ import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_cubit.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_state.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/widgets/user_profile_edit_contents.dart';
+import 'package:mint_talk/features/user_side/user_profile_edit/presentation/widgets/user_profile_edit_skeleton.dart';
 
 class UserProfileEdit extends StatelessWidget {
   const UserProfileEdit({super.key});
@@ -41,9 +42,7 @@ class UserProfileEdit extends StatelessWidget {
         builder: (context, state) {
           if (state.status == UserProfileEditStatus.initial ||
               state.status == UserProfileEditStatus.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryColor),
-            );
+            return const UserProfileEditSkeleton();
           }
           return const UserProfileEditContents();
         },

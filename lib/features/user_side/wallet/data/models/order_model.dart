@@ -1,36 +1,42 @@
-import 'package:mint_talk/config/env/env_config.dart';
-import 'package:mint_talk/core/di/injection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/entities/order_entity.dart';
 
-class OrderModel extends OrderEntity {
+class OrderModel {
+  final String orderId;
+  final int amount;
+  final String currency;
+  final String transactionId;
+  final String key;
+  final int pointsToCredit;
+
   const OrderModel({
-    required super.orderId,
-    required super.amount,
-    required super.currency,
-    required super.transactionId,
-    required super.key,
-    required super.pointsToCredit,
+    required this.orderId,
+    required this.amount,
+    required this.currency,
+    required this.transactionId,
+    required this.key,
+    required this.pointsToCredit,
   });
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    appLogger.d('OrderModel.fromJson: Received raw map: $json');
-    
+  /// [fallbackRazorpayKey] is used only when the response body doesn't carry
+  /// a key under any of the recognized field names — passed in by the caller
+  /// (typically `EnvConfig.razorpayKey`) rather than resolved here via the
+  /// service locator, so this DTO stays a pure parsing function.
+  factory OrderModel.fromJson(Map<String, dynamic> json, {String? fallbackRazorpayKey}) {
+    if (kDebugMode) {
+      appLogger.d('OrderModel.fromJson: Received raw map: $json');
+    }
+
     // Look for order ID in common places
     final orderId = (json['orderId'] ?? json['order_id'] ?? json['razorpay_order_id'] ?? json['id'] ?? '').toString();
-    
+
     // Look for key in common places, with .env fallback
     String key = (json['key'] ?? json['key_id'] ?? json['razorpay_key'] ?? json['merchantKey'] ?? json['merchant_key'] ?? json['apiKey'] ?? json['api_key'] ?? '').toString();
-    
-    if (key.isEmpty) {
-      try {
-        key = getIt<EnvConfig>().razorpayKey;
-      } catch (_) {
-        key = '';
-      }
-      if (key.isNotEmpty) {
-        appLogger.d('OrderModel.fromJson: Using RAZORPAY_KEY fallback from EnvConfig');
-      }
+
+    if (key.isEmpty && fallbackRazorpayKey != null && fallbackRazorpayKey.isNotEmpty) {
+      key = fallbackRazorpayKey;
+      appLogger.d('OrderModel.fromJson: Using RAZORPAY_KEY fallback from EnvConfig');
     }
 
     final model = OrderModel(
@@ -57,4 +63,13 @@ class OrderModel extends OrderEntity {
       'pointsToCredit': pointsToCredit,
     };
   }
+
+  OrderEntity toEntity() => OrderEntity(
+        orderId: orderId,
+        amount: amount,
+        currency: currency,
+        transactionId: transactionId,
+        key: key,
+        pointsToCredit: pointsToCredit,
+      );
 }

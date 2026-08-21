@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/user_side/user_recharge_history/domain/entities/recharge_history_item.dart';
 import 'package:mint_talk/features/user_side/user_recharge_history/domain/usecases/get_recharge_history_usecase.dart';
 import 'user_recharge_history_state.dart';
@@ -11,11 +11,11 @@ class UserRechargeHistoryCubit extends Cubit<UserRechargeHistoryState> {
   static const int _pageSize = 8;
 
   final GetRechargeHistoryUseCase _getRechargeHistoryUseCase;
-  final AuthLocalDataSource _authLocalDataSource;
+  final AuthRepository _authRepository;
 
   UserRechargeHistoryCubit(
     this._getRechargeHistoryUseCase,
-    this._authLocalDataSource,
+    this._authRepository,
   ) : super(const UserRechargeHistoryState());
 
   Future<void> loadHistory() async {
@@ -52,7 +52,7 @@ class UserRechargeHistoryCubit extends Cubit<UserRechargeHistoryState> {
   }
 
   Future<void> _fetchHistory() async {
-    final userId = await _authLocalDataSource.getUserId();
+    final userId = await _authRepository.getUserId();
     if (userId == null || userId.isEmpty) {
       emit(state.copyWith(
       status: UserRechargeHistoryStatus.failure,

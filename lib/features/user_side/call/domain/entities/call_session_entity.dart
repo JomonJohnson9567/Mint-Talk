@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'call_type.dart';
 
 class CallSessionEntity extends Equatable {
   final String callId;
   final String? agoraChannel;
   final String? agoraToken;
   final String status; // ringing | accepted | active | ended | rejected | missed | insufficient_balance
-  final String callType; // audio | video
+  final CallType callType;
   final int duration;
   final int billedMinutes;
   final int totalPointsDebited;
@@ -34,7 +35,7 @@ class CallSessionEntity extends Equatable {
     String? agoraChannel,
     String? agoraToken,
     String? status,
-    String? callType,
+    CallType? callType,
     int? duration,
     int? billedMinutes,
     int? totalPointsDebited,

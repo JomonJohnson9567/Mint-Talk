@@ -30,6 +30,7 @@ class HostWalletRemoteDataSourceImpl implements HostWalletRemoteDataSource {
     appLogger.d('HostWalletRemoteDataSourceImpl: loading withdrawal overview');
     final response = await apiClient.get(
       ApiEndpoints.hostWithdrawalsMyRequests,
+      requiresAuth: true,
       queryParams: {'page': page, 'limit': limit},
     );
     return HostWalletOverviewModel.fromJson(response);
@@ -42,6 +43,7 @@ class HostWalletRemoteDataSourceImpl implements HostWalletRemoteDataSource {
     appLogger.d('HostWalletRemoteDataSourceImpl: submitting withdrawal');
     final response = await apiClient.post(
       ApiEndpoints.hostWithdrawalsRequest,
+      requiresAuth: true,
       body: request.toJson(),
     );
     final data = (response['data'] as Map<String, dynamic>? ?? const {});

@@ -9,16 +9,18 @@ class HostApplicationStatusSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 32.h),
-      children: [
-        const _StatusCardSkeleton(),
-        SizedBox(height: 20.h),
-        const _DetailsCardSkeleton(),
-        SizedBox(height: 20.h),
-        const _ReviewNoteSkeleton(),
-      ],
+    return SkeletonShimmer(
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 32.h),
+        children: [
+          const _StatusCardSkeleton(),
+          SizedBox(height: 20.h),
+          const _DetailsCardSkeleton(),
+          SizedBox(height: 20.h),
+          const _ReviewNoteSkeleton(),
+        ],
+      ),
     );
   }
 }

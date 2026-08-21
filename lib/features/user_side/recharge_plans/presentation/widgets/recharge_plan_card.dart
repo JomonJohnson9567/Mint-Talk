@@ -7,10 +7,10 @@ import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/plan_detail_screen.dart';
 
-import '../../data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 
 class RechargePlanCard extends StatelessWidget {
-  final RechargePlanItem plan;
+  final RechargePlanEntity plan;
   final Color accentColor;
 
   const RechargePlanCard({

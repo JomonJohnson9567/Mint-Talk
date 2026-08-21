@@ -39,7 +39,9 @@ class CallProfileAvatar extends StatelessWidget {
         ),
         child: CircleAvatar(
           radius: 60.r,
-          backgroundImage: AssetImage(imagePath),
+          backgroundImage: imagePath.startsWith('http')
+              ? NetworkImage(imagePath) as ImageProvider
+              : AssetImage(imagePath),
           backgroundColor: AppColors.lightGrey,
         ),
       ),

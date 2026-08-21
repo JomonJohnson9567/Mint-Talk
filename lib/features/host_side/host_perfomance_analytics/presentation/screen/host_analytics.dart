@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/cubit/host_analytics_cubit.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/cubit/host_analytics_state.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/host_analytics_skeleton.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/host_targets_section.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/ledger_entry_card.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/ledger_summary_card.dart';
 
@@ -19,9 +21,7 @@ class HostAnalytics extends StatelessWidget {
         child: BlocBuilder<HostAnalyticsCubit, HostAnalyticsState>(
           builder: (context, state) {
             if (state.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryColor),
-              );
+              return const HostAnalyticsSkeleton();
             }
 
             if (state.status == HostAnalyticsStatus.failure) {
@@ -82,13 +82,15 @@ class HostAnalytics extends StatelessWidget {
                   children: [
                     _buildHeader(context),
                     SizedBox(height: 20.h),
+                    HostTargetsSection(targets: state.targets),
+                    if (state.targets.isNotEmpty) SizedBox(height: 8.h),
                     GridView.count(
                       crossAxisCount: 2,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12.h,
                       crossAxisSpacing: 12.w,
-                      childAspectRatio: 1.28,
+                      childAspectRatio: 1.18,
                       children: [
                         LedgerSummaryCard(
                           title: 'Gross Revenue',
@@ -191,7 +193,7 @@ class HostAnalytics extends StatelessWidget {
                         physics: const NeverScrollableScrollPhysics(),
                         mainAxisSpacing: 12.h,
                         crossAxisSpacing: 12.w,
-                        childAspectRatio: 1.28,
+                        childAspectRatio: 1.18,
                         children: [
                           LedgerSummaryCard(
                             title: 'Total Call Duration',

@@ -1,11 +1,13 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/call_type.dart';
 
 class IncomingCallPayloadDto extends Equatable {
   final String callId;
   final String callerId;
   final String callerName;
+  final String? callerAvatar;
   final String hostId;
-  final String callType; // audio | video
+  final CallType callType;
   final String? agoraChannel;
   final String? agoraToken;
 
@@ -13,6 +15,7 @@ class IncomingCallPayloadDto extends Equatable {
     required this.callId,
     required this.callerId,
     required this.callerName,
+    this.callerAvatar,
     required this.hostId,
     required this.callType,
     this.agoraChannel,
@@ -20,14 +23,20 @@ class IncomingCallPayloadDto extends Equatable {
   });
 
   factory IncomingCallPayloadDto.fromJson(Map<String, dynamic> json) {
+    final rawType = (json['callType'] ?? json['call_type'] ?? json['type'])?.toString();
     return IncomingCallPayloadDto(
       callId: (json['callId'] ?? json['id'] ?? '').toString(),
       callerId: (json['callerId'] ?? json['caller_id'] ?? '').toString(),
       callerName:
           (json['callerName'] ?? json['caller_name'] ?? 'Incoming Caller')
               .toString(),
+      callerAvatar: (json['callerAvatar'] ??
+              json['caller_avatar'] ??
+              json['callerAvatarUrl'] ??
+              json['avatarUrl'])
+          ?.toString(),
       hostId: (json['hostId'] ?? json['host_id'] ?? '').toString(),
-      callType: (json['callType'] ?? json['call_type'] ?? 'audio').toString(),
+      callType: CallType.fromString(rawType),
       agoraChannel: (json['agoraChannel'] ?? json['agora_channel'])?.toString(),
       agoraToken: (json['agoraToken'] ?? json['agora_token'])?.toString(),
     );
@@ -38,6 +47,7 @@ class IncomingCallPayloadDto extends Equatable {
         callId,
         callerId,
         callerName,
+        callerAvatar,
         hostId,
         callType,
         agoraChannel,

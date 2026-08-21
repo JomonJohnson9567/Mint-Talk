@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/errors/failures.dart';
+import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:mint_talk/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -10,18 +11,20 @@ import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart
 
 /// Concrete implementation of [AuthRepository].
 ///
-/// Converts raw exceptions from [AuthRemoteDataSource] into
+/// Converts raw exceptions from [IAuthRemoteDataSource] into
 /// domain-level [Failure] objects.
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource _remoteDataSource;
-  final AuthLocalDataSource _localDataSource;
+  final IAuthRemoteDataSource _remoteDataSource;
+  final IAuthLocalDataSource _localDataSource;
   final TokenManager _tokenManager;
+  final IPresenceSocketService _presenceSocketService;
 
   const AuthRepositoryImpl(
     this._remoteDataSource,
     this._localDataSource,
     this._tokenManager,
+    this._presenceSocketService,
   );
 
   @override
@@ -66,6 +69,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _localDataSource.saveDob(_dobForDisplay(result.user.dob));
       await _localDataSource.saveGender(result.user.gender);
       await _localDataSource.saveReferralCode(result.user.referralCode);
+      await _localDataSource.saveProfileImagePath(result.user.avatarUrl);
       await _localDataSource.saveAudioRate(result.user.audioRate);
       await _localDataSource.saveVideoRate(result.user.videoRate);
       await _localDataSource.saveIsAudioAllowed(result.user.isAudioAllowed);
@@ -153,7 +157,85 @@ class AuthRepositoryImpl implements AuthRepository {
     } finally {
       await _tokenManager.clearAll();
       await _localDataSource.clearAuthData();
+      // Prevents a stale-identity socket from lingering if a different user
+      // logs in within the same app session — the next login reconnects it.
+      _presenceSocketService.disconnect();
     }
     return const Right(null);
   }
+
+  // ── Cached profile field access ──────────────────────────────────────
+
+  @override
+  Future<String?> getUserId() => _localDataSource.getUserId();
+
+  @override
+  Future<String?> getFullName() => _localDataSource.getFullName();
+
+  @override
+  Future<String?> getPhone() => _localDataSource.getPhone();
+
+  @override
+  Future<String?> getDob() => _localDataSource.getDob();
+
+  @override
+  Future<String?> getGender() => _localDataSource.getGender();
+
+  @override
+  Future<String?> getRole() => _localDataSource.getRole();
+
+  @override
+  Future<String?> getProfileImagePath() => _localDataSource.getProfileImagePath();
+
+  @override
+  Future<String?> getReferralCode() => _localDataSource.getReferralCode();
+
+  @override
+  Future<String?> getTermsAcceptedAt() => _localDataSource.getTermsAcceptedAt();
+
+  @override
+  Future<int?> getAudioRate() => _localDataSource.getAudioRate();
+
+  @override
+  Future<int?> getVideoRate() => _localDataSource.getVideoRate();
+
+  @override
+  Future<bool?> getIsAudioAllowed() => _localDataSource.getIsAudioAllowed();
+
+  @override
+  Future<bool?> getIsVideoAllowed() => _localDataSource.getIsVideoAllowed();
+
+  @override
+  Future<void> saveFullName(String? fullName) => _localDataSource.saveFullName(fullName);
+
+  @override
+  Future<void> saveDob(String? dob) => _localDataSource.saveDob(dob);
+
+  @override
+  Future<void> saveGender(String? gender) => _localDataSource.saveGender(gender);
+
+  @override
+  Future<void> saveReferralCode(String? referralCode) =>
+      _localDataSource.saveReferralCode(referralCode);
+
+  @override
+  Future<void> saveProfileImagePath(String? path) => _localDataSource.saveProfileImagePath(path);
+
+  @override
+  Future<void> saveAudioRate(int? rate) => _localDataSource.saveAudioRate(rate);
+
+  @override
+  Future<void> saveVideoRate(int? rate) => _localDataSource.saveVideoRate(rate);
+
+  @override
+  Future<void> saveIsAudioAllowed(bool? isAllowed) =>
+      _localDataSource.saveIsAudioAllowed(isAllowed);
+
+  @override
+  Future<void> saveIsVideoAllowed(bool? isAllowed) =>
+      _localDataSource.saveIsVideoAllowed(isAllowed);
+
+  @override
+  Future<void> saveIsProfileCompleted(bool isCompleted) =>
+      _localDataSource.saveIsProfileCompleted(isCompleted);
 }

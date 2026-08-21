@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
+import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class HostProfileAvatar extends StatelessWidget {
@@ -20,12 +22,20 @@ class HostProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final normalizedPath = imagePath.trim();
-    final fallbackWidget = Text(
-      initials.isEmpty ? 'H' : initials,
-      style: TextStyle(
-        color: AppColors.primaryColor,
-        fontSize: (size * 0.3).sp,
-        fontWeight: FontWeight.w800,
+    final hardcodedFallback = Image.asset(
+      AppAssets.femaleIcon,
+      fit: BoxFit.cover,
+      width: size.w,
+      height: size.w,
+      errorBuilder: (context, error, stackTrace) => Center(
+        child: Text(
+          initials.isEmpty ? 'H' : initials,
+          style: TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: (size * 0.3).sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
 
@@ -33,22 +43,20 @@ class HostProfileAvatar extends StatelessWidget {
     if (normalizedPath.isNotEmpty) {
       if (normalizedPath.startsWith('http://') ||
           normalizedPath.startsWith('https://')) {
-        avatarChild = Image.network(
-          normalizedPath,
+        avatarChild = CachedNetworkImage(
+          imageUrl: normalizedPath,
           fit: BoxFit.cover,
           width: size.w,
           height: size.w,
-          errorBuilder: (context, error, stackTrace) =>
-              Center(child: fallbackWidget),
+          errorWidget: (context, url, error) => hardcodedFallback,
         );
       } else if (normalizedPath.startsWith('/uploads/')) {
-        avatarChild = Image.network(
-          '${ApiEndpoints.baseUrl}$normalizedPath',
+        avatarChild = CachedNetworkImage(
+          imageUrl: '${ApiEndpoints.baseUrl}$normalizedPath',
           fit: BoxFit.cover,
           width: size.w,
           height: size.w,
-          errorBuilder: (context, error, stackTrace) =>
-              Center(child: fallbackWidget),
+          errorWidget: (context, url, error) => hardcodedFallback,
         );
       } else if (normalizedPath.startsWith('assets/')) {
         avatarChild = Image.asset(
@@ -56,17 +64,23 @@ class HostProfileAvatar extends StatelessWidget {
           fit: BoxFit.cover,
           width: size.w,
           height: size.w,
-          errorBuilder: (context, error, stackTrace) =>
-              Center(child: fallbackWidget),
+          errorBuilder: (context, error, stackTrace) => hardcodedFallback,
         );
-      } else if (File(normalizedPath).existsSync()) {
-        avatarChild = Image.file(
-          File(normalizedPath),
-          fit: BoxFit.cover,
-          width: size.w,
-          height: size.w,
-          errorBuilder: (context, error, stackTrace) =>
-              Center(child: fallbackWidget),
+      } else {
+        // Local file path — checked asynchronously so this never blocks the
+        // UI thread on every rebuild the way `existsSync()` would.
+        avatarChild = FutureBuilder<bool>(
+          future: File(normalizedPath).exists(),
+          builder: (context, snapshot) {
+            if (snapshot.data != true) return hardcodedFallback;
+            return Image.file(
+              File(normalizedPath),
+              fit: BoxFit.cover,
+              width: size.w,
+              height: size.w,
+              errorBuilder: (context, error, stackTrace) => hardcodedFallback,
+            );
+          },
         );
       }
     }
@@ -79,9 +93,10 @@ class HostProfileAvatar extends StatelessWidget {
         color: AppColors.primaryColor.withValues(alpha: 0.12),
       ),
       child: ClipOval(
-        child: avatarChild ?? Center(child: fallbackWidget),
+        child: avatarChild ?? hardcodedFallback,
       ),
     );
   }
 }
+
 

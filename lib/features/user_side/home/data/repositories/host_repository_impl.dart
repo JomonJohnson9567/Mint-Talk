@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import '../../../../../core/errors/exceptions.dart';
+import '../../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../../core/errors/failures.dart';
 import '../../../../../core/services/socket/i_presence_socket_service.dart';
 import '../../domain/entities/host_presence_entity.dart';
@@ -37,16 +38,25 @@ class HostRepositoryImpl implements HostRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, PaginatedHostsEntity>> getAllHosts({
+    int? page,
+    int? limit,
+  }) async {
+    return _fetchHosts(
+      () => _remoteDataSource.getAllHosts(page: page, limit: limit),
+    );
+  }
+
+
   Future<Either<Failure, PaginatedHostsEntity>> _fetchHosts(
     Future<dynamic> Function() call,
   ) async {
     try {
       final dto = await call();
       return Right(dto.toEntity());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch hosts'));
     } catch (e) {
       return Left(UnknownFailure(message: e.toString()));
     }

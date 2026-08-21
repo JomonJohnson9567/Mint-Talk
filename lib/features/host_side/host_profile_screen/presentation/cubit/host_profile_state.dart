@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mint_talk/core/constants/user_role.dart';
 
 enum HostProfileStatus { initial, loading, loaded, failure }
 
@@ -66,7 +67,7 @@ class HostProfileState extends Equatable {
   String get displayRole {
     final value = role?.trim() ?? '';
     if (value.isEmpty) return 'Host account';
-    return value == 'staff' ? 'Verified host' : value;
+    return value.toUserRole() == UserRole.host ? 'Verified host' : value;
   }
 
   String get initials {

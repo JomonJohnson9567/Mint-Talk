@@ -16,7 +16,11 @@ class TokenManager {
   /// In-memory access token — cleared on app restart.
   String? _accessToken;
 
-  TokenManager() : _secureStorage = const FlutterSecureStorage();
+  /// De-dupes concurrent refresh attempts — see [refreshAccessToken].
+  Future<bool>? _refreshInFlight;
+
+  TokenManager({FlutterSecureStorage? secureStorage})
+      : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   // ── Access Token (in-memory) ────────────────────────────────────────
 
@@ -64,7 +68,21 @@ class TokenManager {
   }
 
   /// Attempts to refresh the access token using the stored refresh token.
-  Future<bool> refreshAccessToken() async {
+  ///
+  /// Multiple call sites can race here (e.g. [AuthInterceptor] retrying a
+  /// 401'd REST call at the same moment [PresenceSocketService] hits an
+  /// auth-classified `connect_error`). Firing two concurrent requests at
+  /// `/auth/refresh-token` risks the backend treating the second as a
+  /// reuse/replay and invalidating the session it just issued — so callers
+  /// that arrive while a refresh is already in progress piggyback on that
+  /// same in-flight result instead of starting a new one.
+  Future<bool> refreshAccessToken() {
+    return _refreshInFlight ??= _performRefresh().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  Future<bool> _performRefresh() async {
     try {
       final refreshToken = await getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) return false;

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -68,21 +69,21 @@ class HostProfileEditAvatar extends StatelessWidget {
   Widget _buildAvatarImage(String path) {
     if (path.isNotEmpty) {
       if (path.startsWith('http://') || path.startsWith('https://')) {
-        return Image.network(
-          path,
+        return CachedNetworkImage(
+          imageUrl: path,
           fit: BoxFit.cover,
           width: 120.w,
           height: 120.w,
-          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+          errorWidget: (context, url, error) => _fallbackImage(),
         );
       }
       if (path.startsWith('/uploads/')) {
-        return Image.network(
-          '${ApiEndpoints.baseUrl}$path',
+        return CachedNetworkImage(
+          imageUrl: '${ApiEndpoints.baseUrl}$path',
           fit: BoxFit.cover,
           width: 120.w,
           height: 120.w,
-          errorBuilder: (context, error, stackTrace) => _fallbackImage(),
+          errorWidget: (context, url, error) => _fallbackImage(),
         );
       }
       if (File(path).existsSync()) {

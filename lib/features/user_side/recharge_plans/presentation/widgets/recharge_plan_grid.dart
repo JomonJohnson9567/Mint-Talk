@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 import 'recharge_plan_card.dart';
 
 class RechargePlanGrid extends StatelessWidget {
-  final List<RechargePlanItem> plans;
+  final List<RechargePlanEntity> plans;
   final Color accentColor;
 
   const RechargePlanGrid({

@@ -5,6 +5,7 @@ import 'package:mint_talk/features/user_side/call_log/presentation/bloc/call_log
 import 'package:mint_talk/features/user_side/call_log/presentation/bloc/call_log_state.dart';
 import 'package:mint_talk/features/user_side/call_log/presentation/widgets/call_log_item.dart';
 import 'package:mint_talk/features/user_side/call_log/presentation/widgets/call_log_search_filter.dart';
+import 'package:mint_talk/features/user_side/call_log/presentation/widgets/call_log_skeleton.dart';
 
 class CallLogContents extends StatelessWidget {
   const CallLogContents({super.key});
@@ -45,7 +46,7 @@ class CallLogContents extends StatelessWidget {
                   ),
                 );
               }
-              return const Center(child: CircularProgressIndicator());
+              return const CallLogSkeleton();
             },
           ),
         ),

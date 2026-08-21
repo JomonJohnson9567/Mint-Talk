@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
@@ -13,6 +14,7 @@ class HostCallLogItem extends StatelessWidget {
   final bool isVideoCall;
   final bool isBlocked;
   final VoidCallback onBlockTap;
+  final VoidCallback onMessageTap;
 
   const HostCallLogItem({
     super.key,
@@ -23,6 +25,7 @@ class HostCallLogItem extends StatelessWidget {
     this.isVideoCall = true,
     this.isBlocked = false,
     required this.onBlockTap,
+    required this.onMessageTap,
   });
 
   @override
@@ -63,7 +66,9 @@ class HostCallLogItem extends StatelessWidget {
             ),
           ),
           _CallLogDuration(duration: duration),
-          SizedBox(width: 12.w),
+          SizedBox(width: 8.w),
+          _MessageIconButton(onTap: onMessageTap),
+          SizedBox(width: 8.w),
           _BlockIconButton(isBlocked: isBlocked, onTap: onBlockTap),
         ],
       ),
@@ -104,10 +109,10 @@ class _CallLogAvatar extends StatelessWidget {
                   : const ColorFilter.mode(
                       Colors.transparent, BlendMode.multiply),
               child: imageUrl.isNotEmpty && imageUrl.startsWith('http')
-                  ? Image.network(
-                      imageUrl,
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, _) => Image.asset(
+                      errorWidget: (context, url, error) => Image.asset(
                         AppAssets.femaleIcon,
                         fit: BoxFit.cover,
                       ),
@@ -232,6 +237,37 @@ class _CallLogDuration extends StatelessWidget {
   }
 }
 
+class _MessageIconButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _MessageIconButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Message user',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
+            color: AppColors.softBlue,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: AppColors.borderSoft),
+          ),
+          child: Icon(
+            Icons.chat_bubble_outline_rounded,
+            color: AppColors.primaryColor,
+            size: 20.sp,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BlockIconButton extends StatelessWidget {
   final bool isBlocked;
   final VoidCallback onTap;
@@ -240,27 +276,31 @@ class _BlockIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 40.w,
-        height: 40.w,
-        decoration: BoxDecoration(
-          color: isBlocked
-              ? AppColors.red.withAlpha(20)
-              : AppColors.softBlue,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(
+    return Semantics(
+      button: true,
+      label: isBlocked ? 'Unblock user' : 'Block user',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 40.w,
+          height: 40.w,
+          decoration: BoxDecoration(
             color: isBlocked
-                ? AppColors.red.withAlpha(80)
-                : AppColors.borderSoft,
+                ? AppColors.red.withAlpha(20)
+                : AppColors.softBlue,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(
+              color: isBlocked
+                  ? AppColors.red.withAlpha(80)
+                  : AppColors.borderSoft,
+            ),
           ),
-        ),
-        child: Icon(
-          Icons.block_rounded,
-          color: isBlocked ? AppColors.red : AppColors.primaryColor,
-          size: 22.sp,
+          child: Icon(
+            Icons.block_rounded,
+            color: isBlocked ? AppColors.red : AppColors.primaryColor,
+            size: 22.sp,
+          ),
         ),
       ),
     );

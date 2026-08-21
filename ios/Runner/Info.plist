@@ -56,11 +56,6 @@
 		<string>paytm</string>
 		<string>upi</string>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-	</dict>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -88,8 +83,8 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires photo library access to upload Aadhaar card and selfie images for host verification.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires camera access to take a selfie and Aadhaar card pictures for host verification.</string>
+	<string>Camera access is required for host verification and video calling.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app requires microphone access for verification calls.</string>
+	<string>Microphone access is required for verification and voice/video calling.</string>
 </dict>
 </plist>

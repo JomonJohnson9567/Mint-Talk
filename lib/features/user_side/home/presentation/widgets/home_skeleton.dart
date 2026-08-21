@@ -13,35 +13,37 @@ class HomeSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        int crossAxisCount = 3;
-        if (constraints.maxWidth >= 1200) {
-          crossAxisCount = 6;
-        } else if (constraints.maxWidth >= 900) {
-          crossAxisCount = 5;
-        } else if (constraints.maxWidth >= 600) {
-          crossAxisCount = 4;
-        }
+    return SkeletonShimmer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          int crossAxisCount = 3;
+          if (constraints.maxWidth >= 1200) {
+            crossAxisCount = 6;
+          } else if (constraints.maxWidth >= 900) {
+            crossAxisCount = 5;
+          } else if (constraints.maxWidth >= 600) {
+            crossAxisCount = 4;
+          }
 
-        return GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-            left: 20.w,
-            right: 20.w,
-            top: 10.h,
-            bottom: 110.h,
-          ),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 10.w,
-            mainAxisSpacing: 15.h,
-            mainAxisExtent: 190.h,
-          ),
-          itemCount: 9,
-          itemBuilder: (context, index) => const _SkeletonCard(),
-        );
-      },
+          return GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+              left: 20.w,
+              right: 20.w,
+              top: 10.h,
+              bottom: 110.h,
+            ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 10.w,
+              mainAxisSpacing: 15.h,
+              mainAxisExtent: 190.h,
+            ),
+            itemCount: 9,
+            itemBuilder: (context, index) => const _SkeletonCard(),
+          );
+        },
+      ),
     );
   }
 }

@@ -33,6 +33,7 @@ class CountryPickerSheet extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: 'Close',
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(AppIcons.close),
                 color: AppColors.black,

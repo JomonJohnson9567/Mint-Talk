@@ -37,13 +37,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       throw ServerException(
         message: response['message'] ?? 'Failed to upload profile image',
       );
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to upload profile image',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

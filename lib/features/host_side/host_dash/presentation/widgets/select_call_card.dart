@@ -102,7 +102,9 @@ class _SelectionView extends StatelessWidget {
     final Color readyColor = isAnyCallSelected
         ? AppColors.primaryColor
         : const Color(0xFFE7EBF3);
-    final Color readyTextColor = isAnyCallSelected ? AppColors.white : const Color(0xFF9E9E9E);
+    final Color readyTextColor = isAnyCallSelected
+        ? AppColors.white
+        : const Color(0xFF9E9E9E);
 
     return Container(
       padding: EdgeInsets.all(14.w),
@@ -194,7 +196,9 @@ class _SelectionView extends StatelessWidget {
                       height: 18.sp,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(readyTextColor),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          readyTextColor,
+                        ),
                       ),
                     )
                   else
@@ -208,8 +212,8 @@ class _SelectionView extends StatelessWidget {
                     isStartingCall
                         ? 'Connecting...'
                         : isAnyCallSelected
-                            ? 'Ready'
-                            : 'Select a call type',
+                        ? 'Ready'
+                        : 'Select a call type',
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w900,
@@ -247,9 +251,15 @@ class _IncomingCallView extends StatelessWidget {
             : 260.h;
         final double topBlockHeight = availableHeight * 0.66;
         final double avatarSize = (availableHeight * 0.30).clamp(56.0, 84.0);
-        final double actionButtonSize = (availableHeight * 0.24).clamp(58.0, 86.0);
+        final double actionButtonSize = (availableHeight * 0.24).clamp(
+          58.0,
+          86.0,
+        );
         final double titleFontSize = (availableHeight * 0.10).clamp(16.0, 20.0);
-        final double subtitleFontSize = (availableHeight * 0.075).clamp(12.0, 17.0);
+        final double subtitleFontSize = (availableHeight * 0.075).clamp(
+          12.0,
+          17.0,
+        );
 
         return Container(
           constraints: BoxConstraints(minHeight: 220.h),
@@ -257,11 +267,7 @@ class _IncomingCallView extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28.r),
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0E2A66),
-                Color(0xFF07204A),
-                Color(0xFF04142F),
-              ],
+              colors: [Color(0xFF0E2A66), Color(0xFF07204A), Color(0xFF04142F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -333,11 +339,12 @@ class _IncomingCallView extends StatelessWidget {
                               child: Image.asset(
                                 AppAssets.femaleIcon,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Icon(
-                                  Icons.account_circle_rounded,
-                                  size: avatarSize * 0.62,
-                                  color: AppColors.primaryColor,
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(
+                                      Icons.account_circle_rounded,
+                                      size: avatarSize * 0.62,
+                                      color: AppColors.primaryColor,
+                                    ),
                               ),
                             ),
                           ),
@@ -401,10 +408,7 @@ class _IncomingCallView extends StatelessWidget {
 class _WaitingCallView extends StatelessWidget {
   final VoidCallback onStopWaitingTapped;
 
-  const _WaitingCallView({
-    super.key,
-    required this.onStopWaitingTapped,
-  });
+  const _WaitingCallView({super.key, required this.onStopWaitingTapped});
 
   @override
   Widget build(BuildContext context) {
@@ -415,8 +419,14 @@ class _WaitingCallView extends StatelessWidget {
             : 260.h;
         final double topBlockHeight = availableHeight * 0.70;
         final double loaderSize = (availableHeight * 0.17).clamp(28.0, 42.0);
-        final double titleFontSize = (availableHeight * 0.095).clamp(16.0, 20.0);
-        final double subtitleFontSize = (availableHeight * 0.062).clamp(11.0, 13.0);
+        final double titleFontSize = (availableHeight * 0.095).clamp(
+          16.0,
+          20.0,
+        );
+        final double subtitleFontSize = (availableHeight * 0.062).clamp(
+          11.0,
+          13.0,
+        );
 
         return Container(
           constraints: BoxConstraints(minHeight: 220.h),
@@ -424,11 +434,7 @@ class _WaitingCallView extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28.r),
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0E2A66),
-                Color(0xFF07204A),
-                Color(0xFF04142F),
-              ],
+              colors: [Color(0xFF0E2A66), Color(0xFF07204A), Color(0xFF04142F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -456,7 +462,7 @@ class _WaitingCallView extends StatelessWidget {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        'Waiting for the next call',
+                        'Waiting for the call',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: titleFontSize,
@@ -541,7 +547,9 @@ class _CallTypeTile extends StatelessWidget {
             color: selected ? selectedTint : AppColors.white,
             borderRadius: BorderRadius.circular(18.r),
             border: Border.all(
-              color: selected ? AppColors.primaryColor : const Color(0xFFE7EBF3),
+              color: selected
+                  ? AppColors.primaryColor
+                  : const Color(0xFFE7EBF3),
               width: selected ? 1.5.w : 1.w,
             ),
           ),
@@ -557,16 +565,14 @@ class _CallTypeTile extends StatelessWidget {
                     color: selected ? AppColors.primaryColor : AppColors.white,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected ? AppColors.primaryColor : const Color(0xFFD1D5DB),
+                      color: selected
+                          ? AppColors.primaryColor
+                          : const Color(0xFFD1D5DB),
                       width: 1.2.w,
                     ),
                   ),
                   child: selected
-                      ? Icon(
-                          Icons.check,
-                          color: AppColors.white,
-                          size: 11.sp,
-                        )
+                      ? Icon(Icons.check, color: AppColors.white, size: 11.sp)
                       : null,
                 ),
               ),
@@ -655,11 +661,7 @@ class _ActionCircleButton extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(
-                icon,
-                color: AppColors.white,
-                size: size * 0.42,
-              ),
+              child: Icon(icon, color: AppColors.white, size: size * 0.42),
             ),
           ),
           SizedBox(height: 8.h),
@@ -681,10 +683,7 @@ class _StreakBand extends StatelessWidget {
   final double width;
   final double angle;
 
-  const _StreakBand({
-    required this.width,
-    required this.angle,
-  });
+  const _StreakBand({required this.width, required this.angle});
 
   @override
   Widget build(BuildContext context) {

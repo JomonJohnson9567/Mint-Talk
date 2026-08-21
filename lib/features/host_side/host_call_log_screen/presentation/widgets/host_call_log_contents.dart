@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/confirmation_dialog.dart';
-import 'package:mint_talk/features/host_side/host_call_log_screen/domain/models/host_call_log_entry_model.dart';
+import 'package:mint_talk/features/host_side/chat/presentation/screen/host_chat_screen.dart';
+import 'package:mint_talk/features/host_side/host_call_log_screen/domain/entities/host_call_log_entry_entity.dart';
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/cubit/host_call_log_cubit.dart';
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/cubit/host_call_log_state.dart';
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/widgets/host_call_log_filter_tabs.dart';
@@ -24,8 +25,8 @@ class HostCallLogContents extends StatelessWidget {
     required this.onFilterChanged,
   });
 
-  List<HostCallLogEntryModel> _applyFilter(
-    List<HostCallLogEntryModel> entries,
+  List<HostCallLogEntryEntity> _applyFilter(
+    List<HostCallLogEntryEntity> entries,
     HostCallFilterType filter,
   ) {
     return entries
@@ -36,7 +37,7 @@ class HostCallLogContents extends StatelessWidget {
 
   void _showBlockDialog(
     BuildContext context,
-    HostCallLogEntryModel entry,
+    HostCallLogEntryEntity entry,
   ) {
     final cubit = context.read<HostCallLogCubit>();
     final isBlocked = entry.isBlocked;
@@ -113,6 +114,17 @@ class HostCallLogContents extends StatelessWidget {
                               isVideoCall: entry.isVideoCall,
                               isBlocked: entry.isBlocked,
                               onBlockTap: () => _showBlockDialog(context, entry),
+                              onMessageTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => HostChatScreen(
+                                    args: HostChatArgs(
+                                      recipientId: entry.id,
+                                      recipientName: entry.name,
+                                      recipientAvatarUrl: entry.imageUrl,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         ),

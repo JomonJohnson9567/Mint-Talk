@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import '../../../../../core/errors/exceptions.dart';
+import '../../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../../core/errors/failures.dart';
 import '../../domain/entities/call_log_entity.dart';
 import '../../domain/entities/call_statistics_report_entity.dart';
@@ -26,10 +27,8 @@ class CallLogRepositoryImpl implements CallLogRepository {
         limit: limit,
       );
       return Right(dtos.map((dto) => dto.toEntity()).toList());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch call logs'));
     } catch (e) {
       return Left(UnknownFailure(message: e.toString()));
     }
@@ -48,10 +47,8 @@ class CallLogRepositoryImpl implements CallLogRepository {
         limit: limit,
       );
       return Right(dtos.map((dto) => dto.toEntity()).toList());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch call logs'));
     } catch (e) {
       return Left(UnknownFailure(message: e.toString()));
     }
@@ -62,10 +59,8 @@ class CallLogRepositoryImpl implements CallLogRepository {
     try {
       final dto = await remoteDataSource.getCallStatisticsReport();
       return Right(dto.toEntity());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch call logs'));
     } catch (e) {
       return Left(UnknownFailure(message: e.toString()));
     }

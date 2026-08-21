@@ -11,6 +11,7 @@ class UserModel extends UserEntity {
     super.gender,
     super.dob,
     super.referralCode,
+    super.avatarUrl,
     super.audioRate,
     super.videoRate,
     super.isAudioAllowed,
@@ -28,6 +29,12 @@ class UserModel extends UserEntity {
       gender: json['gender'] as String?,
       dob: json['dob'] as String?,
       referralCode: json['referralCode'] as String?,
+      avatarUrl: (json['avatarUrl'] ??
+              json['avatar_url'] ??
+              json['avatar'] ??
+              json['profileImagePath'] ??
+              json['profile_image_path'])
+          ?.toString(),
       audioRate: _intFromJson(json['audioRate']),
       videoRate: _intFromJson(json['videoRate']),
       isAudioAllowed: json['isAudioAllowed'] as bool?,
@@ -46,6 +53,7 @@ class UserModel extends UserEntity {
       'gender': gender,
       'dob': dob,
       'referralCode': referralCode,
+      'avatarUrl': avatarUrl,
       'audioRate': audioRate,
       'videoRate': videoRate,
       'isAudioAllowed': isAudioAllowed,

@@ -1,33 +1,33 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/utils/validators.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/host_application_entity.dart';
+import '../../domain/repositories/host_application_repository.dart';
 import '../../domain/usecases/submit_host_application_usecase.dart';
 import '../../domain/usecases/upload_image_usecase.dart';
-import '../../data/datasources/host_application_local_datasource.dart';
 import 'apply_for_host_state.dart';
 
 @injectable
 class ApplyForHostCubit extends Cubit<ApplyForHostState> {
   final SubmitHostApplicationUseCase submitHostApplicationUseCase;
   final UploadImageUseCase uploadImageUseCase;
-  final HostApplicationLocalDataSource localDataSource;
-  final AuthLocalDataSource authLocalDataSource;
+  final HostApplicationRepository repository;
+  final AuthRepository authRepository;
 
   ApplyForHostCubit(
     this.submitHostApplicationUseCase,
     this.uploadImageUseCase,
-    this.localDataSource,
-    this.authLocalDataSource,
+    this.repository,
+    this.authRepository,
   ) : super(const ApplyForHostState());
 
   Future<void> loadProfileData() async {
     emit(state.copyWith(status: ApplyForHostStatus.loading));
     try {
       final values = await Future.wait([
-        authLocalDataSource.getFullName(),
-        authLocalDataSource.getDob(),
+        authRepository.getFullName(),
+        authRepository.getDob(),
       ]);
       if (isClosed) return;
 
@@ -164,7 +164,7 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
       ),
       (_) async {
         try {
-          await localDataSource.markApplicationSubmitted();
+          await repository.markApplicationSubmitted();
         } catch (_) {
           // Application submitted remotely. Local cache exception ignored.
         }

@@ -1,5 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/host_side/host_wallet/data/datasources/host_wallet_remote_datasource.dart';
@@ -21,13 +23,20 @@ class HostWalletRepositoryImpl implements HostWalletRepository {
     try {
       final model = await remoteDataSource.getWalletOverview(page: page, limit: limit);
       return Right(model);
-    } catch (e, stackTrace) {
+    } on DioException catch (e, stackTrace) {
       appLogger.e(
-        'HostWalletRepositoryImpl: error loading wallet overview: $e',
+        'HostWalletRepositoryImpl: request error loading wallet overview: $e',
         error: e,
         stackTrace: stackTrace,
       );
-      return Left(ServerFailure(message: e.toString()));
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to load wallet overview'));
+    } catch (e, stackTrace) {
+      appLogger.e(
+        'HostWalletRepositoryImpl: unknown error loading wallet overview: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return Left(UnknownFailure(message: e.toString()));
     }
   }
 
@@ -48,13 +57,20 @@ class HostWalletRepositoryImpl implements HostWalletRepository {
         ),
       );
       return Right(model);
-    } catch (e, stackTrace) {
+    } on DioException catch (e, stackTrace) {
       appLogger.e(
-        'HostWalletRepositoryImpl: error submitting withdrawal: $e',
+        'HostWalletRepositoryImpl: request error submitting withdrawal: $e',
         error: e,
         stackTrace: stackTrace,
       );
-      return Left(ServerFailure(message: e.toString()));
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to submit withdrawal request'));
+    } catch (e, stackTrace) {
+      appLogger.e(
+        'HostWalletRepositoryImpl: unknown error submitting withdrawal: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return Left(UnknownFailure(message: e.toString()));
     }
   }
 }

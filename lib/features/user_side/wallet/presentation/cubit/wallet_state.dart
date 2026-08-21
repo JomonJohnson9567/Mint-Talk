@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 
 enum WalletStatus { 
   initial, 
@@ -17,7 +17,7 @@ enum WalletStatus {
 
 class WalletState extends Equatable {
   final int balance;
-  final List<RechargePlanItem> plans;
+  final List<RechargePlanEntity> plans;
   final WalletStatus status;
   final String? errorMessage;
   
@@ -40,7 +40,7 @@ class WalletState extends Equatable {
 
   WalletState copyWith({
     int? balance,
-    List<RechargePlanItem>? plans,
+    List<RechargePlanEntity>? plans,
     WalletStatus? status,
     String? errorMessage,
     String? orderId,

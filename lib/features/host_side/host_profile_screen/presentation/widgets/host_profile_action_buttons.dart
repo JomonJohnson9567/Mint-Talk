@@ -61,7 +61,6 @@ class _DeleteAccountButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {
-          // TODO: trigger delete account via Cubit/UseCase
         },
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.red,

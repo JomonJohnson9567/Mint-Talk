@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,9 +9,11 @@ import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
+import 'package:mint_talk/features/user_side/home/presentation/widgets/call_type_selection_bottom_sheet.dart';
 
 class UserGridItem extends StatelessWidget {
   final HostEntity host;
@@ -42,6 +45,19 @@ class UserGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        _buildCard(context),
+        Positioned(
+          top: 6.h,
+          right: 6.w,
+          child: _FavoriteButton(hostId: host.id),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -68,10 +84,22 @@ class UserGridItem extends StatelessWidget {
                 // Avatar with online ring
                 GestureDetector(
                   onTap: () {
+                    // `host.isFavorite` is never populated by `HomeCubit`
+                    // (favorite status lives separately in
+                    // `HomeState.favoriteIds`, sourced from the backend
+                    // favorites list) — stamp the real value on before
+                    // handing the entity to the profile screen, or its
+                    // favorite icon starts stale/unfavorited regardless of
+                    // what's shown here on the grid.
+                    final isFavorite = context
+                        .read<HomeCubit>()
+                        .state
+                        .favoriteIds
+                        .contains(host.id);
                     Navigator.pushNamed(
                       context,
                       AppRoutes.hostProfileScreen,
-                      arguments: host,
+                      arguments: host.copyWith(isFavorite: isFavorite),
                     );
                   },
                   child: Container(
@@ -88,12 +116,12 @@ class UserGridItem extends StatelessWidget {
                     child: ClipOval(
                       child: host.avatarUrl.isNotEmpty
                           ? (host.avatarUrl.startsWith('http')
-                              ? Image.network(
-                                  host.avatarUrl,
+                              ? CachedNetworkImage(
+                                  imageUrl: host.avatarUrl,
                                   width: 60.w,
                                   height: 60.w,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  errorWidget: (context, url, error) =>
                                       _buildPlaceholderAvatar(60.w),
                                 )
                               : Image.asset(
@@ -158,21 +186,47 @@ class UserGridItem extends StatelessWidget {
             height: 32.h,
             child: ElevatedButton(
               onPressed: () {
-                if (_isOnline) {
+                if (!_isOnline) {
+                  context.read<HomeCubit>().notifyUser(host);
+                  return;
+                }
+
+                final isAudioAvailable = host.presence?.audioAvailable ?? true;
+                final isVideoAvailable = host.presence?.videoAvailable ?? true;
+
+                if (isAudioAvailable && isVideoAvailable) {
+                  CallTypeSelectionBottomSheet.show(context, host);
+                } else if (isVideoAvailable) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => CallScreen(
                         hostId: host.id,
                         hostName: host.fullName,
-                        callType: host.presence?.videoAvailable == true
-                            ? 'video'
-                            : 'audio',
+                        hostAvatar: host.avatarUrl,
+                        callType: CallType.video,
+                      ),
+                    ),
+                  );
+                } else if (isAudioAvailable) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CallScreen(
+                        hostId: host.id,
+                        hostName: host.fullName,
+                        hostAvatar: host.avatarUrl,
+                        callType: CallType.audio,
                       ),
                     ),
                   );
                 } else {
-                  context.read<HomeCubit>().notifyUser(host);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${host.fullName} is currently not accepting calls.'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -210,6 +264,51 @@ class UserGridItem extends StatelessWidget {
       height: size ?? 70.h,
       color: AppColors.lightGrey,
       child: Image.asset(AppAssets.femaleIcon, fit: BoxFit.cover),
+    );
+  }
+}
+
+class _FavoriteButton extends StatelessWidget {
+  final String hostId;
+
+  const _FavoriteButton({required this.hostId});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFavorite = context.select<HomeCubit, bool>(
+      (cubit) => cubit.state.favoriteIds.contains(hostId),
+    );
+
+    return GestureDetector(
+      onTap: () => context.read<HomeCubit>().toggleFavorite(hostId),
+      child: Container(
+        padding: EdgeInsets.all(4.w),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          shape: BoxShape.circle,
+        ),
+        child: AnimatedSwitcher(
+          duration: Duration(milliseconds: isFavorite ? 400 : 200),
+          transitionBuilder: (child, animation) {
+            // Favoriting gets a bouncy pop-in; unfavoriting just fades —
+            // the pop is the "you just added this" feedback, so it only
+            // belongs on the way in.
+            if (isFavorite) {
+              return ScaleTransition(
+                scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
+                child: child,
+              );
+            }
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: Icon(
+            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            key: ValueKey(isFavorite),
+            size: 16.sp,
+            color: AppColors.favIcon,
+          ),
+        ),
+      ),
     );
   }
 }

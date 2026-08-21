@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
@@ -166,24 +167,20 @@ class _WhatsAppImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
       width: size,
       height: size,
       color: tintColor,
       fit: BoxFit.contain,
-      errorBuilder: (_, _, _) {
+      errorWidget: (_, _, _) {
         return Icon(
           Icons.chat_rounded,
           size: size,
           color: tintColor ?? AppColors.contactIcon,
         );
       },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
+      placeholder: (context, url) {
         return SizedBox(
           width: size,
           height: size,

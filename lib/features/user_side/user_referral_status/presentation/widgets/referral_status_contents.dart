@@ -7,6 +7,7 @@ import 'package:mint_talk/features/user_side/user_referral_status/presentation/c
 import 'package:mint_talk/features/user_side/user_referral_status/presentation/cubit/referral_status_state.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/presentation/widgets/referral_status_empty_state.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/presentation/widgets/referral_status_summary_card.dart';
+import 'package:mint_talk/features/user_side/user_referral_status/presentation/widgets/referral_status_skeleton.dart';
 
 class ReferralStatusContents extends StatelessWidget {
   const ReferralStatusContents({super.key});
@@ -16,9 +17,7 @@ class ReferralStatusContents extends StatelessWidget {
     return BlocBuilder<ReferralStatusCubit, ReferralStatusState>(
       builder: (context, state) {
         if (state.isLoading && state.referralStatus == null) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryColor),
-          );
+          return const ReferralStatusSkeleton();
         }
 
         if (state.status == ReferralStatusLoadStatus.failure &&

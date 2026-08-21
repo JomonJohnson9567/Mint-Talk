@@ -51,6 +51,7 @@ class CallControls extends StatelessWidget {
                 icon: isMuted ? Icons.mic_off : Icons.mic,
                 isActive: isMuted,
                 onTap: onToggleMute,
+                semanticLabel: isMuted ? 'Unmute microphone' : 'Mute microphone',
               ),
               SizedBox(width: buttonGap),
 
@@ -59,6 +60,7 @@ class CallControls extends StatelessWidget {
                 icon: isSpeakerOn ? Icons.volume_up : Icons.volume_down,
                 isActive: isSpeakerOn,
                 onTap: onToggleSpeaker,
+                semanticLabel: isSpeakerOn ? 'Turn speaker off' : 'Turn speaker on',
               ),
               SizedBox(width: buttonGap),
 
@@ -72,11 +74,13 @@ class CallControls extends StatelessWidget {
                   icon: isVideoMuted ? Icons.videocam_off : Icons.videocam,
                   isActive: isVideoMuted,
                   onTap: onToggleVideo,
+                  semanticLabel: isVideoMuted ? 'Turn camera on' : 'Turn camera off',
                 ),
                 SizedBox(width: buttonGap),
                 _buildActionButton(
                   icon: Icons.cameraswitch_outlined,
                   onTap: onSwitchCamera,
+                  semanticLabel: 'Switch camera',
                 ),
               ],
             ],
@@ -90,6 +94,7 @@ class CallControls extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
     bool isActive = false,
+    String? semanticLabel,
   }) {
     return CallActionButton(
       icon: icon,
@@ -100,6 +105,7 @@ class CallControls extends StatelessWidget {
           : AppColors.white.withAlpha(180),
       buttonSize: 50,
       iconSize: 24,
+      semanticLabel: semanticLabel,
     );
   }
 
@@ -111,6 +117,7 @@ class CallControls extends StatelessWidget {
       backgroundColor: AppColors.red,
       buttonSize: 72,
       iconSize: 32,
+      semanticLabel: 'End call',
       boxShadow: [
         BoxShadow(
           color: AppColors.red.withAlpha(102),

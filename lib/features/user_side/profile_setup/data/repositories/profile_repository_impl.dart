@@ -1,5 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/features/user_side/profile_setup/data/datasources/profile_remote_data_source.dart';
@@ -23,14 +25,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return Left(
         ValidationFailure(message: 'Validation failed', errors: e.errors),
       );
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      // In a real production app, we would parse field-level errors from the API response here
-      // if the ApiClient didn't already do it, or if we want to add more context.
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to create profile'));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -46,12 +42,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return Left(
         ValidationFailure(message: 'Validation failed', errors: e.errors),
       );
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to update profile'));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -62,12 +54,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       final result = await remoteDataSource.verifyReferralCode(referralCode);
       return Right(result);
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+    } on DioException catch (e) {
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to verify referral code'));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/core/errors/exceptions.dart';
+import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import '../../domain/entities/host_dashboard_data_entity.dart';
@@ -21,6 +21,13 @@ class HostDashRepositoryImpl implements HostDashRepository {
     try {
       final model = await remoteDataSource.getDashboardData();
       return Right(model);
+    } on DioException catch (e, stackTrace) {
+      appLogger.e(
+        'HostDashRepositoryImpl: Error getting dashboard data: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to load dashboard data'));
     } catch (e, stackTrace) {
       appLogger.e(
         'HostDashRepositoryImpl: Error getting dashboard data: $e',
@@ -42,16 +49,12 @@ class HostDashRepositoryImpl implements HostDashRepository {
       );
       return Right(updatedPreferences);
     } on DioException catch (e, stackTrace) {
-      final error = e.error;
       appLogger.e(
         'HostDashRepositoryImpl: Error updating host preferences: $e',
         error: e,
         stackTrace: stackTrace,
       );
-      if (error is UnauthorizedException) {
-        return Left(UnauthorizedFailure(message: error.message));
-      }
-      return Left(ServerFailure(message: e.message ?? 'Request failed'));
+      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to update host preferences'));
     } catch (e, stackTrace) {
       appLogger.e(
         'HostDashRepositoryImpl: Error updating host preferences: $e',

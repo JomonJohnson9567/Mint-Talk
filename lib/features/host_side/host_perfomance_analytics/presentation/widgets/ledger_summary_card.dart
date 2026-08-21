@@ -55,7 +55,7 @@ class LedgerSummaryCard extends StatelessWidget {
               Icon(Icons.chevron_right_rounded, size: 13.sp, color: AppColors.subtitleText),
             ],
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 8.h),
           Text(
             title,
             style: TextStyle(

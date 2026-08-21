@@ -5,15 +5,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
 class WalletBalanceCard extends StatelessWidget {
-  final String balance;
+  final int balance;
+  final VoidCallback? onWithdrawTap;
 
   const WalletBalanceCard({
     super.key,
     required this.balance,
+    this.onWithdrawTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canWithdraw = balance >= 500;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(16.w),
@@ -40,13 +44,15 @@ class WalletBalanceCard extends StatelessWidget {
               children: [
                 _BalanceLabel(),
                 SizedBox(height: 4.h),
-                _BalanceAmount(amount: balance),
+                _BalanceAmount(amount: balance.toString()),
                 SizedBox(height: 6.h),
-                const _ReadyToWithdraw(),
+                _ReadyToWithdraw(canWithdraw: canWithdraw),
               ],
             ),
           ),
-          const _WithdrawButton(),
+          _WithdrawButton(
+            onTap: canWithdraw ? onWithdrawTap : null,
+          ),
         ],
       ),
     );
@@ -61,8 +67,8 @@ class _WalletIconCircle extends StatelessWidget {
     return Container(
       width: 48.w,
       height: 48.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E6),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFF3E6),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -79,13 +85,17 @@ class _BalanceLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          'AVAILABLE BALANCE',
-          style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.subtitleText,
-            letterSpacing: 0.5,
+        Flexible(
+          child: Text(
+            'AVAILABLE BALANCE',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.subtitleText,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
         SizedBox(width: 4.w),
@@ -121,20 +131,30 @@ class _BalanceAmount extends StatelessWidget {
 }
 
 class _ReadyToWithdraw extends StatelessWidget {
-  const _ReadyToWithdraw();
+  final bool canWithdraw;
+
+  const _ReadyToWithdraw({required this.canWithdraw});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.check_circle_rounded, size: 14.sp, color: AppColors.onlineIndicator),
+        Icon(
+          canWithdraw ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+          size: 14.sp,
+          color: canWithdraw ? AppColors.onlineIndicator : AppColors.subtitleText,
+        ),
         SizedBox(width: 4.w),
-        Text(
-          'Ready to withdraw',
-          style: TextStyle(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.onlineIndicator,
+        Flexible(
+          child: Text(
+            canWithdraw ? 'Ready to withdraw' : 'Min withdrawal ₹500',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w500,
+              color: canWithdraw ? AppColors.onlineIndicator : AppColors.subtitleText,
+            ),
           ),
         ),
       ],
@@ -143,31 +163,39 @@ class _ReadyToWithdraw extends StatelessWidget {
 }
 
 class _WithdrawButton extends StatelessWidget {
-  const _WithdrawButton();
+  final VoidCallback? onTap;
+
+  const _WithdrawButton({this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: const Color(0xFFF0A500).withOpacity(0.6)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.account_balance_rounded, size: 14.sp, color: const Color(0xFFF0A500)),
-          SizedBox(width: 6.w),
-          Text(
-            'Withdraw',
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFFF0A500),
+    final isEnabled = onTap != null;
+    final color = isEnabled ? const Color(0xFFF0A500) : AppColors.subtitleText.withOpacity(0.5);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(color: color),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.account_balance_rounded, size: 14.sp, color: color),
+            SizedBox(width: 6.w),
+            Text(
+              'Withdraw',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

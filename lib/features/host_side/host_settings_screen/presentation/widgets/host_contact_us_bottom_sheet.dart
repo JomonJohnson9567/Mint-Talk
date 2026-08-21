@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
@@ -180,13 +181,13 @@ class _WhatsAppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
       width: size,
       height: size,
       color: tintColor,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) {
+      errorWidget: (context, url, error) {
         return Icon(
           Icons.chat_rounded,
           size: size,

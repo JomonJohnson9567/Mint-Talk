@@ -11,10 +11,6 @@ import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/
 import 'package:mint_talk/features/user_side/settings/presentation/widgets/contact_us_bottom_sheet.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_action_bottom_sheet.dart';
 
-/// [SettingsContents] provides the main settings menu options, including
-/// profile management, support, and authentication controls.
-///
-/// It uses [LogoutCubit] to handle the logout session flow.
 class SettingsContents extends StatelessWidget {
   const SettingsContents({super.key});
 
@@ -135,7 +131,6 @@ class SettingsContents extends StatelessWidget {
       onTap: () => SettingsActionBottomSheetPresenter.showDeleteAccount(
         context,
         onConfirm: () {
-          // TODO: Implement delete account functionality
         },
       ),
     );

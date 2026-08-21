@@ -1,0 +1,7 @@
+{
+  "BASE_URL": "https://your-backend-host/api/v1",
+  "SOCKET_URL": "wss://your-backend-host",
+  "AGORA_APP_ID": "replace_with_agora_app_id",
+  "HEALTH_URL": "https://your-backend-host/health",
+  "RAZORPAY_KEY": "replace_with_razorpay_key"
+}

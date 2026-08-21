@@ -9,6 +9,7 @@ import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wa
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_summary_row.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/withdraw_money_button.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/withdrawal_history_section.dart';
+import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/host_wallet_skeleton.dart';
 
 class WalletContents extends StatelessWidget {
   const WalletContents({super.key});
@@ -16,7 +17,17 @@ class WalletContents extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HostWalletCubit, HostWalletState>(
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.overview != current.overview,
       builder: (context, state) {
+        if (state.status == HostWalletStatus.initial ||
+            state.status == HostWalletStatus.loading) {
+          return const SafeArea(
+            bottom: false,
+            child: HostWalletSkeleton(),
+          );
+        }
         final summaryItems = [
           WalletSummaryItem(
             icon: Icons.account_balance_wallet_rounded,
@@ -54,7 +65,11 @@ class WalletContents extends StatelessWidget {
                       SizedBox(height: 8.h),
                       const WalletHeroSection(),
                       SizedBox(height: 20.h),
-                      WalletBalanceCard(balance: state.availableBalance.toString()),
+                      WalletBalanceCard(
+                        balance: state.availableBalance,
+                        onWithdrawTap: () =>
+                            HostWalletBottomSheetPresenter.showSelectBankSheet(context),
+                      ),
                       SizedBox(height: 16.h),
                       WalletSummaryRow(items: summaryItems),
                       SizedBox(height: 16.h),
@@ -67,7 +82,10 @@ class WalletContents extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.only(bottom: 20.h),
                 child: WithdrawMoneyButton(
-                  onTap: () => HostWalletBottomSheetPresenter.showSelectBankSheet(context),
+                  onTap: state.availableBalance >= 500
+                      ? () =>
+                          HostWalletBottomSheetPresenter.showSelectBankSheet(context)
+                      : null,
                 ),
               ),
             ],

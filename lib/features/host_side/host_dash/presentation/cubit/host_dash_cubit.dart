@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/constants/user_role.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/usecases/usecase.dart';
+import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_presence_entity.dart';
 import '../../domain/entities/host_online_item_entity.dart';
@@ -20,7 +21,7 @@ class HostDashCubit extends Cubit<HostDashState> {
   static const int _fallbackVideoRate = 120;
 
   final GetHostDashboardDataUseCase getHostDashboardDataUseCase;
-  final AuthLocalDataSource authLocalDataSource;
+  final AuthRepository authRepository;
   final IPresenceSocketService presenceSocketService;
   final TokenManager tokenManager;
 
@@ -31,7 +32,7 @@ class HostDashCubit extends Cubit<HostDashState> {
 
   HostDashCubit(
     this.getHostDashboardDataUseCase,
-    this.authLocalDataSource,
+    this.authRepository,
     this.presenceSocketService,
     this.tokenManager,
   ) : super(const HostDashState()) {
@@ -52,10 +53,10 @@ class HostDashCubit extends Cubit<HostDashState> {
   Future<void> _connectSocket() async {
     final token = await tokenManager.getValidAccessToken();
     if (token == null || token.isEmpty) {
-      debugPrint('⚠️ [HostDashCubit] Cannot connect socket — no access token.');
+      appLogger.d('⚠️ [HostDashCubit] Cannot connect socket — no access token.');
       return;
     }
-    debugPrint('🔌 [HostDashCubit] Connecting presence socket...');
+    appLogger.d('🔌 [HostDashCubit] Connecting presence socket...');
     presenceSocketService.connect(token);
   }
 
@@ -67,7 +68,7 @@ class HostDashCubit extends Cubit<HostDashState> {
     _presenceSub = presenceSocketService.presenceUpdates.listen(
       _onPresenceEvent,
       onError: (e) {
-        debugPrint('❌ [HostDashCubit] Presence socket error: $e');
+        appLogger.d('❌ [HostDashCubit] Presence socket error: $e');
       },
     );
   }
@@ -75,7 +76,7 @@ class HostDashCubit extends Cubit<HostDashState> {
   void _onPresenceEvent(HostPresenceEntity presence) {
     if (isClosed) return;
 
-    debugPrint(
+    appLogger.d(
       '🟢 [HostDashCubit] Presence event — '
       'userId: ${presence.userId}, status: ${presence.status}, busy: ${presence.busy}',
     );
@@ -130,6 +131,28 @@ class HostDashCubit extends Cubit<HostDashState> {
     );
   }
 
+  /// Re-fetches dashboard data for pull-to-refresh. Unlike [loadDashboardData],
+  /// this never flips [HostDashState.status] to loading, so the current
+  /// content stays visible under the refresh spinner instead of being
+  /// replaced by the skeleton.
+  Future<void> refreshDashboardData() async {
+    final dashboardResult = await getHostDashboardDataUseCase(NoParams());
+
+    if (isClosed) return;
+
+    dashboardResult.fold(
+      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (data) => emit(
+        state.copyWith(
+          status: HostDashStatus.success,
+          dashboardData: data,
+          onlineHosts: _presenceHostMap.values.toList(),
+          isHostsLoading: false,
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Call flow actions
   // ---------------------------------------------------------------------------
@@ -156,8 +179,8 @@ class HostDashCubit extends Cubit<HostDashState> {
       return;
     }
 
-    final role = await authLocalDataSource.getRole();
-    if (role != 'staff') {
+    final role = await authRepository.getRole();
+    if (role.toUserRole() != UserRole.host) {
       emit(
         state.copyWith(
           preferenceUpdateStatus: HostPreferenceUpdateStatus.failure,
@@ -178,9 +201,9 @@ class HostDashCubit extends Cubit<HostDashState> {
     await _connectSocket();
 
     final audioRate =
-        await authLocalDataSource.getAudioRate() ?? _fallbackAudioRate;
+        await authRepository.getAudioRate() ?? _fallbackAudioRate;
     final videoRate =
-        await authLocalDataSource.getVideoRate() ?? _fallbackVideoRate;
+        await authRepository.getVideoRate() ?? _fallbackVideoRate;
 
     if (isClosed) return;
 
@@ -192,10 +215,10 @@ class HostDashCubit extends Cubit<HostDashState> {
 
     // Persist selections locally so they survive app restarts.
     await Future.wait([
-      authLocalDataSource.saveAudioRate(audioRate),
-      authLocalDataSource.saveVideoRate(videoRate),
-      authLocalDataSource.saveIsAudioAllowed(state.isAudioSelected),
-      authLocalDataSource.saveIsVideoAllowed(state.isVideoSelected),
+      authRepository.saveAudioRate(audioRate),
+      authRepository.saveVideoRate(videoRate),
+      authRepository.saveIsAudioAllowed(state.isAudioSelected),
+      authRepository.saveIsVideoAllowed(state.isVideoSelected),
     ]);
 
     if (isClosed) return;
@@ -230,9 +253,9 @@ class HostDashCubit extends Cubit<HostDashState> {
   /// Takes the host offline — disconnects the socket so the backend marks them offline in Redis.
   Future<void> stopWaitingForCalls() async {
     final audioRate =
-        await authLocalDataSource.getAudioRate() ?? _fallbackAudioRate;
+        await authRepository.getAudioRate() ?? _fallbackAudioRate;
     final videoRate =
-        await authLocalDataSource.getVideoRate() ?? _fallbackVideoRate;
+        await authRepository.getVideoRate() ?? _fallbackVideoRate;
 
     emit(
       state.copyWith(
@@ -243,14 +266,14 @@ class HostDashCubit extends Cubit<HostDashState> {
     );
 
     await Future.wait([
-      authLocalDataSource.saveIsAudioAllowed(false),
-      authLocalDataSource.saveIsVideoAllowed(false),
+      authRepository.saveIsAudioAllowed(false),
+      authRepository.saveIsVideoAllowed(false),
     ]);
 
     // Simply call socket.disconnect() when staff explicitly toggles to "Go Offline"
     presenceSocketService.disconnect();
 
-    debugPrint(
+    appLogger.d(
       '✅ [HostDashCubit] Socket disconnected — host going offline.',
     );
 
@@ -277,7 +300,7 @@ class HostDashCubit extends Cubit<HostDashState> {
     await _presenceSub?.cancel();
     // Disconnect the socket — backend automatically marks host as offline.
     presenceSocketService.disconnect();
-    debugPrint('🔴 [HostDashCubit] Socket disconnected — host marked offline.');
+    appLogger.d('🔴 [HostDashCubit] Socket disconnected — host marked offline.');
     return super.close();
   }
 }

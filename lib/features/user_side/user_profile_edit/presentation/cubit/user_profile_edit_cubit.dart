@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/entities/user_profile.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/usecases/update_user_profile.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/value_objects/dob.dart';
@@ -17,12 +17,12 @@ import 'user_profile_edit_state.dart';
 @injectable
 class UserProfileEditCubit extends Cubit<UserProfileEditState> {
   final UpdateUserProfile _updateProfile;
-  final AuthLocalDataSource _localDataSource;
+  final AuthRepository _authRepository;
   final UploadProfileImageUseCase _uploadProfileImageUseCase;
 
   UserProfileEditCubit(
     this._updateProfile,
-    this._localDataSource,
+    this._authRepository,
     this._uploadProfileImageUseCase,
   ) : super(const UserProfileEditState());
 
@@ -32,12 +32,12 @@ class UserProfileEditCubit extends Cubit<UserProfileEditState> {
     );
     try {
       final values = await Future.wait<String?>([
-        _localDataSource.getFullName(),
-        _localDataSource.getPhone(),
-        _localDataSource.getDob(),
-        _localDataSource.getGender(),
-        _localDataSource.getProfileImagePath(),
-        _localDataSource.getTermsAcceptedAt(),
+        _authRepository.getFullName(),
+        _authRepository.getPhone(),
+        _authRepository.getDob(),
+        _authRepository.getGender(),
+        _authRepository.getProfileImagePath(),
+        _authRepository.getTermsAcceptedAt(),
       ]);
       emit(
         state.copyWith(
@@ -145,9 +145,9 @@ class UserProfileEditCubit extends Cubit<UserProfileEditState> {
             return;
           }
           await Future.wait([
-            _localDataSource.saveFullName(profile.fullName.value),
-            _localDataSource.saveDob(state.dob),
-            _localDataSource.saveProfileImagePath(finalImagePath),
+            _authRepository.saveFullName(profile.fullName.value),
+            _authRepository.saveDob(state.dob),
+            _authRepository.saveProfileImagePath(finalImagePath),
           ]);
           emit(state.copyWith(status: UserProfileEditStatus.success));
         },

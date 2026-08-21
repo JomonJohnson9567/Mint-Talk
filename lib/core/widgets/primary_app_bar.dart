@@ -33,6 +33,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       leading: automaticallyImplyLeading
           ? IconButton(
+              tooltip: 'Back',
               icon: Icon(AppIcons.back, size: 24.sp),
               onPressed: () => Navigator.pop(context),
             )

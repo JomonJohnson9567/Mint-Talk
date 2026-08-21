@@ -8,7 +8,8 @@ class ApplyForHostSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SkeletonShimmer(
+      child: SafeArea(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
         child: Column(
@@ -56,6 +57,7 @@ class ApplyForHostSkeleton extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

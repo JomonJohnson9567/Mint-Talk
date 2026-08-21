@@ -47,6 +47,11 @@ class ApiEndpoints {
   static const String hostLeavesRequest = '/leaves/request';
   static const String hostLeavesMyRequests = '/leaves/my-requests';
   static const String hostPreferences = '/hosts/preferences';
+  static const String hostMyTargets = '/hosts/my-targets';
+
+  // ── Favorites ────────────────────────────────────────────────────────
+  static const String userFavorites = '/user/favorites';
+  static String userFavoriteHost(String hostId) => '/user/favorites/$hostId';
 
   // ── Block Users ───────────────────────────────────────────────────────
   static const String blockedList = '/user/blocked-list';
@@ -70,4 +75,20 @@ class ApiEndpoints {
   static const String hostsOnline = '/hosts/online';
   static const String hostsOffline = '/hosts/offline';
   static const String hostsOnCall = '/hosts/on-call';
+
+  // ── Notifications ────────────────────────────────────────────────────
+  static const String notifications = '/notifications';
+  static const String notificationsUnreadCount = '/notifications/unread-count';
+  static String notificationRead(String id) => '/notifications/$id/read';
+  static const String notificationsReadAll = '/notifications/read-all';
+
+  // ── Chat ─────────────────────────────────────────────────────────────
+  static const String chatSendMessage = '/chats/messages';
+  static const String chatConversations = '/chats/conversations';
+  static String chatConversationMessages(String conversationId) =>
+      '/chats/conversations/$conversationId/messages';
+  static String chatConversationRead(String conversationId) =>
+      '/chats/conversations/$conversationId/read';
+  static const String chatMessagesDelivered = '/chats/messages/delivered';
+  static const String chatPredefinedMessages = '/chats/predefined-messages';
 }

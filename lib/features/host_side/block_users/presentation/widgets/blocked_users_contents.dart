@@ -6,6 +6,7 @@ import 'package:mint_talk/core/widgets/confirmation_dialog.dart';
 import 'package:mint_talk/features/shared/block_users/presentation/cubit/blocked_users_cubit.dart';
 import 'package:mint_talk/features/shared/block_users/presentation/cubit/blocked_users_state.dart';
 import 'package:mint_talk/features/host_side/block_users/presentation/widgets/blocked_user_tile.dart';
+import 'package:mint_talk/features/host_side/block_users/presentation/widgets/blocked_users_skeleton.dart';
 
 class BlockedUsersContents extends StatelessWidget {
   const BlockedUsersContents({super.key});
@@ -114,7 +115,7 @@ class BlockedUsersContents extends StatelessWidget {
           );
         }
 
-        return const Center(child: CircularProgressIndicator());
+        return const BlockedUsersSkeleton();
       },
     );
   }

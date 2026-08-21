@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mint_talk/core/utils/app_logger.dart';
 
 /// Custom flight shuttle builder for morphing container transitions
 Widget morphingContainerFlightShuttleBuilder(
@@ -91,10 +92,10 @@ Widget morphingImageFlightShuttleBuilder(
         isPush = (toGlobal.dx > fromGlobal.dx) || isPush;
 
         if (kDebugMode) {
-          debugPrint(
+          appLogger.d(
             'morphingImageFlightShuttle: flightDirection=$flightDirection',
           );
-          debugPrint(
+          appLogger.d(
             'morphingImageFlightShuttle: from.dx=${fromGlobal.dx}, to.dx=${toGlobal.dx}, inferredIsPush=$isPush',
           );
         }

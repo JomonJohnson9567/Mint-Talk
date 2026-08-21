@@ -72,6 +72,7 @@ class CallLogSearchFilter extends StatelessWidget {
               border: Border.all(color: AppColors.grey.withAlpha(128)),
             ),
             child: IconButton(
+              tooltip: 'Filter',
               onPressed: () {
                 // need add filter functionality
               },

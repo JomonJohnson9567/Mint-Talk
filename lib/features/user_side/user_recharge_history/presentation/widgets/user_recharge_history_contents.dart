@@ -8,6 +8,7 @@ import 'package:mint_talk/features/user_side/user_recharge_history/presentation/
 import 'package:mint_talk/features/user_side/user_recharge_history/presentation/widgets/recharge_history_empty_state.dart';
 import 'package:mint_talk/features/user_side/user_recharge_history/presentation/widgets/recharge_history_item_card.dart';
 import 'package:mint_talk/features/user_side/user_recharge_history/presentation/widgets/recharge_history_summary_card.dart';
+import 'package:mint_talk/features/user_side/user_recharge_history/presentation/widgets/user_recharge_history_skeleton.dart';
 
 class UserRechargeHistoryContents extends StatelessWidget {
   const UserRechargeHistoryContents({super.key});
@@ -17,9 +18,7 @@ class UserRechargeHistoryContents extends StatelessWidget {
     return BlocBuilder<UserRechargeHistoryCubit, UserRechargeHistoryState>(
       builder: (context, state) {
         if (state.isLoading && state.visibleHistory.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryColor),
-          );
+          return const UserRechargeHistorySkeleton();
         }
 
         if (state.status == UserRechargeHistoryStatus.failure &&
@@ -47,19 +46,32 @@ class UserRechargeHistoryContents extends StatelessWidget {
               }
               return false;
             },
-            child: ListView(
+            child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
-              children: [
-                RechargeHistorySummaryCard(history: state.history),
-                SizedBox(height: 18.h),
-                ...state.visibleHistory.map(
-                  (item) => RechargeHistoryItemCard(item: item),
-                ),
-                if (state.isLoadingMore)
-                  Padding(
+              // index 0 = summary header, last index = footer (loading-more
+              // spinner / end-of-list text / nothing), everything in
+              // between is a lazily-built history item.
+              itemCount: state.visibleHistory.length + 2,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 18.h),
+                    child: RechargeHistorySummaryCard(history: state.history),
+                  );
+                }
+
+                final itemIndex = index - 1;
+                if (itemIndex < state.visibleHistory.length) {
+                  return RechargeHistoryItemCard(
+                    item: state.visibleHistory[itemIndex],
+                  );
+                }
+
+                if (state.isLoadingMore) {
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                     child: const Center(
                       child: CircularProgressIndicator(
@@ -67,9 +79,11 @@ class UserRechargeHistoryContents extends StatelessWidget {
                         strokeWidth: 2.4,
                       ),
                     ),
-                  ),
-                if (!state.hasMore && state.visibleHistory.isNotEmpty)
-                  Padding(
+                  );
+                }
+
+                if (!state.hasMore && state.visibleHistory.isNotEmpty) {
+                  return Padding(
                     padding: EdgeInsets.only(top: 6.h, bottom: 6.h),
                     child: Center(
                       child: Text(
@@ -81,8 +95,11 @@ class UserRechargeHistoryContents extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-              ],
+                  );
+                }
+
+                return const SizedBox.shrink();
+              },
             ),
           ),
         );

@@ -5,6 +5,7 @@ import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/features/host_side/about/presentation/screen/about.dart';
 import 'package:mint_talk/features/host_side/block_users/presentation/screen/blocked_users.dart';
+import 'package:mint_talk/features/host_side/chat/presentation/screen/host_chat_list_screen.dart';
 import 'package:mint_talk/features/host_side/host_settings_screen/presentation/widgets/host_contact_us_bottom_sheet.dart';
 import 'package:mint_talk/features/host_side/host_settings_screen/presentation/widgets/settings_tile.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/screen/host_wallet.dart';
@@ -37,6 +38,24 @@ class HostSettingsBody extends StatelessWidget {
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const HostWallet())),
+      ),
+      _SettingsItem(
+        icon: Icons.chat_bubble_rounded,
+        iconColor: const Color(0xFF1E88E5),
+        iconBgColor: const Color(0xFFE3F2FD),
+        title: 'Chat',
+        subtitle: 'Message the users you connect with',
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const HostChatListScreen())),
+      ),
+      _SettingsItem(
+        icon: Icons.notifications_rounded,
+        iconColor: const Color(0xFFFFB300),
+        iconBgColor: const Color(0xFFFFF8E1),
+        title: 'Notifications',
+        subtitle: 'View your notifications',
+        onTap: () => getIt<NavigationService>().navigateTo(AppRoutes.hostNotificationsScreen),
       ),
       _SettingsItem(
         icon: Icons.calendar_month_rounded,
@@ -94,6 +113,7 @@ class HostSettingsBody extends StatelessWidget {
           context,
         ).push(MaterialPageRoute(builder: (_) => const AboutScreen())),
       ),
+       
     ];
 
     return ListView(
@@ -108,7 +128,9 @@ class HostSettingsBody extends StatelessWidget {
             subtitle: item.subtitle,
             onTap: item.onTap,
           ),
+          
         ),
+        SizedBox(height: 90.h),
       ],
     );
   }

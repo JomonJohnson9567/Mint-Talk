@@ -41,13 +41,8 @@ class CallReportRemoteDataSourceImpl implements CallReportRemoteDataSource {
       throw ServerException(
         message: response['message'] ?? 'Failed to report call',
       );
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to report call',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

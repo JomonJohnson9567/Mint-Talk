@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/entities/user_profile.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/usecases/create_user_profile.dart';
 import 'package:mint_talk/features/user_side/profile_setup/domain/value_objects/dob.dart';
@@ -14,9 +14,9 @@ import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/pr
 @injectable
 class ProfileCubit extends Cubit<ProfileState> {
   final CreateUserProfile _createUserProfile;
-  final AuthLocalDataSource _localDataSource;
+  final AuthRepository _authRepository;
 
-  ProfileCubit(this._createUserProfile, this._localDataSource)
+  ProfileCubit(this._createUserProfile, this._authRepository)
     : super(const ProfileState());
 
   final formKey = GlobalKey<FormState>();
@@ -112,11 +112,11 @@ class ProfileCubit extends Cubit<ProfileState> {
           );
         },
         (_) async {
-          await _localDataSource.saveIsProfileCompleted(true);
-          await _localDataSource.saveFullName(state.name);
-          await _localDataSource.saveDob(state.dob);
-          await _localDataSource.saveGender(state.gender);
-          await _localDataSource.saveReferralCode(state.referralCode);
+          await _authRepository.saveIsProfileCompleted(true);
+          await _authRepository.saveFullName(state.name);
+          await _authRepository.saveDob(state.dob);
+          await _authRepository.saveGender(state.gender);
+          await _authRepository.saveReferralCode(state.referralCode);
           emit(
             state.copyWith(submissionStatus: ProfileSubmissionStatus.success),
           );

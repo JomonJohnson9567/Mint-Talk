@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
@@ -51,10 +52,10 @@ class CallLogItem extends StatelessWidget {
             child: ClipOval(
               child: imageUrl.isNotEmpty
                   ? (imageUrl.startsWith('http')
-                        ? Image.network(
-                            imageUrl,
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            errorWidget: (context, url, error) {
                               return Image.asset(
                                 AppAssets.femaleIcon,
                                 fit: BoxFit.cover,
@@ -135,6 +136,7 @@ class CallLogItem extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: isVideoCall ? 'Video call' : 'Voice call',
             onPressed: onTap,
             icon: Icon(
               isVideoCall ? Icons.videocam : Icons.call,

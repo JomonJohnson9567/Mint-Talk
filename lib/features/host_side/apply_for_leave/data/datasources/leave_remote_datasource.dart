@@ -28,6 +28,7 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
       appLogger.d('LeaveRemoteDataSource: Applying for leave with: ${model.toJson()}');
       final response = await apiClient.post(
         ApiEndpoints.hostLeavesRequest,
+        requiresAuth: true,
         body: model.toJson(),
       );
 
@@ -36,13 +37,8 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
           message: response['message'] ?? 'Failed to submit leave request',
         );
       }
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to submit leave request',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -62,16 +58,12 @@ class LeaveRemoteDataSourceImpl implements LeaveRemoteDataSource {
       appLogger.d('LeaveRemoteDataSource: Fetching leave history');
       final response = await apiClient.get(
         ApiEndpoints.hostLeavesMyRequests,
+        requiresAuth: true,
         queryParams: {'page': page, 'limit': limit},
       );
       return LeaveHistoryPageModel.fromJson(response);
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch leave history',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

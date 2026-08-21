@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
-import 'package:mint_talk/core/di/injection.dart';
-import 'package:mint_talk/core/navigations/app_routes.dart';
-import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/cubit/profile_info_cubit.dart';
-import 'package:mint_talk/features/user_side/apply_for_host/data/datasources/host_application_local_datasource.dart';
+import 'profile_avatar_skeleton.dart';
 
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({super.key});
@@ -17,9 +15,20 @@ class ProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const _UserAvatarSection(),
-        SizedBox(height: 16.h),
-        const _UserInfoSection(),
+        BlocBuilder<ProfileInfoCubit, ProfileInfoState>(
+          buildWhen: (previous, current) =>
+              previous.isLoading != current.isLoading,
+          builder: (context, state) {
+            if (state.isLoading) return const ProfileAvatarSkeleton();
+            return Column(
+              children: [
+                const _UserAvatarSection(),
+                SizedBox(height: 16.h),
+                const _UserInfoSection(),
+              ],
+            );
+          },
+        ),
         SizedBox(height: 32.h),
         const _ApplyHostButton(),
       ],
@@ -44,8 +53,7 @@ class _UserAvatarSection extends StatelessWidget {
                   .map((part) => part[0].toUpperCase())
                   .join();
         final imagePath = state.imagePath ?? '';
-        final imageFile = imagePath.isNotEmpty ? File(imagePath) : null;
-        final hasImage = imageFile?.existsSync() == true;
+        final imageProvider = _resolveImageProvider(imagePath);
 
         return Stack(
           children: [
@@ -61,8 +69,8 @@ class _UserAvatarSection extends StatelessWidget {
               child: CircleAvatar(
                 radius: 50.r,
                 backgroundColor: AppColors.primaryColor.withValues(alpha: 0.12),
-                backgroundImage: hasImage ? FileImage(imageFile!) : null,
-                child: hasImage
+                backgroundImage: imageProvider,
+                child: imageProvider != null
                     ? null
                     : Text(
                         initials,
@@ -91,6 +99,24 @@ class _UserAvatarSection extends StatelessWidget {
         );
       },
     );
+  }
+
+  ImageProvider? _resolveImageProvider(String path) {
+    final trimmed = path.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return NetworkImage(trimmed);
+    }
+    if (trimmed.startsWith('/uploads/')) {
+      return NetworkImage('${ApiEndpoints.baseUrl}$trimmed');
+    }
+    if (File(trimmed).existsSync()) {
+      return FileImage(File(trimmed));
+    }
+    if (trimmed.startsWith('assets/')) {
+      return AssetImage(trimmed);
+    }
+    return null;
   }
 }
 
@@ -158,26 +184,8 @@ class _ApplyHostButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () async {
-            final preferences = getIt<HostApplicationLocalDataSource>();
             try {
-              if (await preferences.hasSubmittedApplication()) {
-                getIt<NavigationService>().navigateTo(
-                  AppRoutes.hostApplicationStatus,
-                );
-                return;
-              }
-
-              var accepted = await preferences.hasAcceptedTerms();
-              if (!accepted) {
-                accepted =
-                    await getIt<NavigationService>().navigateTo(
-                      AppRoutes.termsAndConditionsForHost,
-                    ) ==
-                    true;
-              }
-              if (accepted) {
-                getIt<NavigationService>().navigateTo(AppRoutes.applyForHost);
-              }
+              await context.read<ProfileInfoCubit>().handleApplyHostTap();
             } catch (_) {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(

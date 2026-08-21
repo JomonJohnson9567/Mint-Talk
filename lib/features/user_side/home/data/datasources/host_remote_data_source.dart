@@ -8,7 +8,9 @@ import '../models/paginated_hosts_dto.dart';
 abstract class HostRemoteDataSource {
   Future<PaginatedHostsDto> getOnlineHosts({int? page, int? limit});
   Future<PaginatedHostsDto> getOnCallHosts({int? page, int? limit});
+  Future<PaginatedHostsDto> getAllHosts({int? page, int? limit});
 }
+
 
 @LazySingleton(as: HostRemoteDataSource)
 class HostRemoteDataSourceImpl implements HostRemoteDataSource {
@@ -40,6 +42,19 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
     );
   }
 
+  @override
+  Future<PaginatedHostsDto> getAllHosts({
+    int? page,
+    int? limit,
+  }) async {
+    return _fetchHosts(
+      endpoint: ApiEndpoints.hosts,
+      page: page,
+      limit: limit,
+    );
+  }
+
+
   Future<PaginatedHostsDto> _fetchHosts({
     required String endpoint,
     int? page,
@@ -62,13 +77,12 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
       throw ServerException(
         message: response['message'] ?? 'Failed to fetch host list',
       );
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch host list',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      // DioException already carries a well-typed exception in `.error`
+      // (see ErrorInterceptor) — let it propagate untouched so the
+      // repository's mapDioExceptionToFailure can read it directly instead
+      // of it being collapsed into a generic ServerException here.
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

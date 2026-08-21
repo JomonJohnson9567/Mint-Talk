@@ -44,5 +44,19 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables
+# Environment variables (legacy, no longer bundled as assets — kept ignored
+# in case a stray local copy exists)
 .env
+.env.dev
+.env.staging
+.env.prod
+
+# Environment variables (--dart-define-from-file input). Real values are
+# git-ignored; env/example.json is the only tracked file in this directory.
+/env/*.json
+!/env/example.json
+
+# Android release signing — never commit real keystores or credentials.
+android/key.properties
+*.jks
+*.keystore

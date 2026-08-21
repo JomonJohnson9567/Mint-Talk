@@ -18,7 +18,6 @@ class AppRoutes {
   static const String settingsScreen = '/settingsScreen';
   static const String hostProfileScreen = '/hostProfileScreen';
   static const String callScreen = '/callScreen';
-  static const String chatScreen = '/chatScreen';
   static const String rechargePlansScreen = '/rechargePlansScreen';
   static const String userRechargeHistory = '/userRechargeHistory';
   static const String referralStatusScreen = '/referralStatusScreen';
@@ -26,7 +25,9 @@ class AppRoutes {
   static const String audioCallOnlineScreen = '/audioCallOnlineScreen';
   static const String planDetail = '/planDetail';
   static const String rechargeSuccess = '/rechargeSuccess';
+  static const String userNotificationsScreen = '/userNotificationsScreen';
   static const String userChatScreen = '/user_chat_screen';
+  static const String userChatListScreen = '/userChatListScreen';
   static const String userProfileEditScreen = '/userProfileEditScreen';
 
   // host side
@@ -40,4 +41,5 @@ class AppRoutes {
   static const String hostApplicationStatus = '/hostApplicationStatus';
   static const String applyForLeave = '/applyForLeave';
   static const String blockedUsersScreen = '/blockedUsersScreen';
+  static const String hostNotificationsScreen = '/hostNotificationsScreen';
 }

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
@@ -81,10 +82,10 @@ class _BlockedAvatar extends StatelessWidget {
           ),
           child: ClipOval(
             child: imageUrl.isNotEmpty && imageUrl.startsWith('http')
-                ? Image.network(
-                    imageUrl,
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, _) => Image.asset(
+                    errorWidget: (context, url, error) => Image.asset(
                       AppAssets.femaleIcon,
                       fit: BoxFit.cover,
                     ),

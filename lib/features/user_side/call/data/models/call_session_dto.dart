@@ -1,11 +1,12 @@
 import '../../domain/entities/call_session_entity.dart';
+import '../../domain/entities/call_type.dart';
 
 class CallSessionDto {
   final String callId;
   final String? agoraChannel;
   final String? agoraToken;
   final String status;
-  final String callType;
+  final CallType callType;
   final int? duration;
   final int? billedMinutes;
   final int? totalPointsDebited;
@@ -31,12 +32,16 @@ class CallSessionDto {
 
   factory CallSessionDto.fromJson(Map<String, dynamic> json) {
     final data = json['data'] is Map ? json['data'] as Map<String, dynamic> : json;
+    final rawCallType = (data['callType'] ?? data['call_type'] ?? data['type'])?.toString();
+
     return CallSessionDto(
       callId: (data['callId'] ?? data['id'] ?? data['_id'] ?? '').toString(),
-      agoraChannel: data['agoraChannel']?.toString(),
-      agoraToken: data['agoraToken']?.toString(),
+      agoraChannel: data['agoraChannel']?.toString() ?? data['channelName']?.toString(),
+      agoraToken: data['agoraToken']?.toString() ??
+          data['token']?.toString() ??
+          data['rtcToken']?.toString(),
       status: (data['status'] ?? 'ringing').toString(),
-      callType: (data['callType'] ?? 'audio').toString(),
+      callType: CallType.fromString(rawCallType),
       duration: data['duration'] is int
           ? data['duration']
           : int.tryParse(data['duration']?.toString() ?? ''),

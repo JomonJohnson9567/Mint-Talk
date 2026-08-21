@@ -95,6 +95,14 @@ class HostWalletCubit extends Cubit<HostWalletState> {
     emit(state.copyWith(withdrawalAmount: value, errorMessage: ''));
   }
 
+  void selectPayoutMethod(String method) {
+    emit(state.copyWith(payoutMethod: method, errorMessage: ''));
+  }
+
+  void updateUpiId(String value) {
+    emit(state.copyWith(upiId: value, errorMessage: ''));
+  }
+
   void clearBankForm() {
     emit(
       state.copyWith(
@@ -153,10 +161,17 @@ class HostWalletCubit extends Cubit<HostWalletState> {
   }
 
   Future<bool> submitWithdrawalRequest() async {
+    final isUpi = state.payoutMethod == 'upi';
     final selectedBank = state.selectedBankAccount;
+    final upiId = state.upiId.trim();
     final amountText = state.withdrawalAmount.trim();
 
-    if (selectedBank == null) {
+    if (isUpi) {
+      if (upiId.isEmpty) {
+        emit(state.copyWith(errorMessage: 'Please enter a UPI ID.'));
+        return false;
+      }
+    } else if (selectedBank == null) {
       emit(state.copyWith(errorMessage: 'Please select a bank account.'));
       return false;
     }
@@ -185,14 +200,20 @@ class HostWalletCubit extends Cubit<HostWalletState> {
     );
 
     final result = await requestWithdrawalUseCase(
-      HostWithdrawalRequestParams(
-        amount: amount,
-        payoutMethod: 'bank_transfer',
-        bankName: selectedBank.bankName,
-        accountNumber: selectedBank.accountNumber,
-        ifsc: selectedBank.ifscCode,
-        holderName: selectedBank.accountHolderName,
-      ),
+      isUpi
+          ? HostWithdrawalRequestParams(
+              amount: amount,
+              payoutMethod: 'upi',
+              upiId: upiId,
+            )
+          : HostWithdrawalRequestParams(
+              amount: amount,
+              payoutMethod: 'bank_transfer',
+              bankName: selectedBank!.bankName,
+              accountNumber: selectedBank.accountNumber,
+              ifsc: selectedBank.ifscCode,
+              holderName: selectedBank.accountHolderName,
+            ),
     );
 
     return await result.fold<Future<bool>>(
@@ -210,6 +231,7 @@ class HostWalletCubit extends Cubit<HostWalletState> {
           state.copyWith(
             requestStatus: HostWalletRequestStatus.success,
             withdrawalAmount: '',
+            upiId: '',
             errorMessage: '',
           ),
         );

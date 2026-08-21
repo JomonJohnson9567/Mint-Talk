@@ -1,5 +1,6 @@
 import 'package:injectable/injectable.dart';
 import '../../../../../core/constants/api_endpoints_user.dart';
+import '../../../../../core/errors/exceptions.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../../../core/utils/app_logger.dart';
 import '../models/host_profile_model.dart';
@@ -13,39 +14,38 @@ abstract class HostProfileRemoteDataSource {
 class HostProfileRemoteDataSourceImpl implements HostProfileRemoteDataSource {
   final ApiClient apiClient;
 
-  // Fallback local cache when offline or initial seed
-  static HostProfileModel _cachedProfile = const HostProfileModel(
-    id: 'Rm237349',
-    fullName: 'Ramani Nair',
-    email: 'ramani@gmail.com',
-    phone: '9874563212',
-    idNumber: 'Rm237349',
-    dob: '12/08/1996',
-    selectedCategories: ['Understanding', 'Empathy'],
-    avatarAsset: 'assets/images/profile setup/female.jpg',
-  );
-
   HostProfileRemoteDataSourceImpl(this.apiClient);
 
   @override
   Future<HostProfileModel> getHostProfile() async {
-    appLogger.d('HostProfileRemoteDataSourceImpl: Fetching host profile');
-    return _cachedProfile;
+    final response = await apiClient.get(
+      ApiEndpoints.updateProfile,
+      requiresAuth: true,
+    );
+    appLogger.d('HostProfileRemoteDataSourceImpl.getHostProfile response:\n$response');
+
+    final data = response['data'] ?? response['profile'] ?? response;
+    if (data is Map<String, dynamic>) {
+      return HostProfileModel.fromJson(data);
+    }
+    if (data is Map) {
+      return HostProfileModel.fromJson(Map<String, dynamic>.from(data));
+    }
+    throw const ServerException(message: 'Host profile data not found in response');
   }
 
   @override
   Future<bool> updateHostProfile(HostProfileModel profile) async {
     final payload = profile.toUpdateJson();
     appLogger.d('HostProfileRemoteDataSourceImpl.updateHostProfile payload:\n$payload');
-    
+
     final response = await apiClient.patch(
       ApiEndpoints.updateProfile,
       requiresAuth: true,
       body: payload,
     );
     appLogger.d('HostProfileRemoteDataSourceImpl.updateHostProfile response:\n$response');
-    
-    _cachedProfile = profile;
+
     return response['success'] == true ||
         response['status'] == 'success' ||
         response.containsKey('data') ||

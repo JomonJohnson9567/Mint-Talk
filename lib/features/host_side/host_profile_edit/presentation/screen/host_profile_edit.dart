@@ -5,6 +5,7 @@ import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import '../cubit/host_profile_edit_cubit.dart';
 import '../cubit/host_profile_edit_state.dart';
 import '../widgets/host_profile_edit_contents.dart';
+import '../widgets/host_profile_edit_skeleton.dart';
 
 class HostProfileEdit extends StatelessWidget {
   const HostProfileEdit({super.key});
@@ -40,11 +41,7 @@ class HostProfileEdit extends StatelessWidget {
         builder: (context, state) {
           if (state.status == HostProfileEditStatus.loading ||
               state.status == HostProfileEditStatus.initial) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primaryColor,
-              ),
-            );
+            return const HostProfileEditSkeleton();
           }
           return const HostProfileEditContents();
         },

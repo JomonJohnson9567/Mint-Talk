@@ -33,4 +33,36 @@ abstract class AuthRepository {
 
   /// Logs out the current user and clears local auth session on success.
   Future<Either<Failure, void>> logout();
+
+  // ── Cached profile field access ──────────────────────────────────────
+  //
+  // Plain pass-through reads/writes over the locally cached auth/profile
+  // fields. These intentionally do NOT return `Either<Failure, T>` — a
+  // secure-storage cache read/write has no meaningful failure mode worth
+  // propagating to callers (a missing key already just resolves to `null`).
+
+  Future<String?> getUserId();
+  Future<String?> getFullName();
+  Future<String?> getPhone();
+  Future<String?> getDob();
+  Future<String?> getGender();
+  Future<String?> getRole();
+  Future<String?> getProfileImagePath();
+  Future<String?> getReferralCode();
+  Future<String?> getTermsAcceptedAt();
+  Future<int?> getAudioRate();
+  Future<int?> getVideoRate();
+  Future<bool?> getIsAudioAllowed();
+  Future<bool?> getIsVideoAllowed();
+
+  Future<void> saveFullName(String? fullName);
+  Future<void> saveDob(String? dob);
+  Future<void> saveGender(String? gender);
+  Future<void> saveReferralCode(String? referralCode);
+  Future<void> saveProfileImagePath(String? path);
+  Future<void> saveAudioRate(int? rate);
+  Future<void> saveVideoRate(int? rate);
+  Future<void> saveIsAudioAllowed(bool? isAllowed);
+  Future<void> saveIsVideoAllowed(bool? isAllowed);
+  Future<void> saveIsProfileCompleted(bool isCompleted);
 }

@@ -30,6 +30,7 @@ class PerformanceAnalyticsRemoteDataSourceImpl
 
     final response = await apiClient.get(
       ApiEndpoints.hostMyEarningsLedger,
+      requiresAuth: true,
       queryParams: {
         'page': page,
         'limit': limit,

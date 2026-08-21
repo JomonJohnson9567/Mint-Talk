@@ -57,13 +57,8 @@ class CallLogRemoteDataSourceImpl implements CallLogRemoteDataSource {
             .toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch user call logs',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -97,13 +92,8 @@ class CallLogRemoteDataSourceImpl implements CallLogRemoteDataSource {
             .toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch host call logs',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -122,13 +112,8 @@ class CallLogRemoteDataSourceImpl implements CallLogRemoteDataSource {
       throw ServerException(
         message: response['message'] ?? 'Failed to fetch call statistics',
       );
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch call statistics',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

@@ -16,7 +16,7 @@ class HostApplicationLocalDataSourceImpl
   static const _applicationSubmittedKey = 'host_application_submitted';
 
   final FlutterSecureStorage _storage;
-  final AuthLocalDataSource _authLocalDataSource;
+  final IAuthLocalDataSource _authLocalDataSource;
 
   HostApplicationLocalDataSourceImpl(this._authLocalDataSource)
     : _storage = const FlutterSecureStorage();

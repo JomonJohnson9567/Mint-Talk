@@ -5,6 +5,7 @@ import 'package:mint_talk/features/host_side/apply_for_leave/domain/entities/lea
 import 'package:mint_talk/features/host_side/apply_for_leave/domain/usecases/apply_for_leave_usecase.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/domain/usecases/get_available_days_usecase.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/domain/usecases/get_leave_history_usecase.dart';
+import 'package:mint_talk/features/host_side/apply_for_leave/domain/usecases/leave_request_validator.dart';
 import 'apply_for_leave_state.dart';
 
 @injectable
@@ -84,45 +85,15 @@ class ApplyForLeaveCubit extends Cubit<ApplyForLeaveState> {
   }
 
   Future<void> submitLeaveRequest() async {
-    if (state.startDate == null) {
-      emit(state.copyWith(
-        status: ApplyForLeaveStatus.failure,
-        errorMessage: 'Please select a start date',
-      ));
-      return;
-    }
-    if (state.endDate == null) {
-      emit(state.copyWith(
-        status: ApplyForLeaveStatus.failure,
-        errorMessage: 'Please select an end date',
-      ));
-      return;
-    }
-    if (state.reason.trim().isEmpty) {
-      emit(state.copyWith(
-        status: ApplyForLeaveStatus.failure,
-        errorMessage: 'Please provide a reason for leave',
-      ));
-      return;
-    }
-    if (state.endDate!.isBefore(state.startDate!)) {
-      emit(state.copyWith(
-        status: ApplyForLeaveStatus.failure,
-        errorMessage: 'End date cannot be before start date',
-      ));
-      return;
-    }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selectedStart = DateTime(
-      state.startDate!.year,
-      state.startDate!.month,
-      state.startDate!.day,
+    final validationError = LeaveRequestValidator.validate(
+      startDate: state.startDate,
+      endDate: state.endDate,
+      reason: state.reason,
     );
-    if (selectedStart.isBefore(today)) {
+    if (validationError != null) {
       emit(state.copyWith(
         status: ApplyForLeaveStatus.failure,
-        errorMessage: 'Start date cannot be in the past',
+        errorMessage: validationError,
       ));
       return;
     }

@@ -1,9 +1,12 @@
 import 'package:mint_talk/features/user_side/wallet/domain/entities/wallet_entity.dart';
 
-class WalletModel extends WalletEntity {
+class WalletModel {
+  final int balance;
+  final String status;
+
   const WalletModel({
-    required super.balance,
-    required super.status,
+    required this.balance,
+    required this.status,
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
@@ -19,4 +22,6 @@ class WalletModel extends WalletEntity {
       'status': status,
     };
   }
+
+  WalletEntity toEntity() => WalletEntity(balance: balance, status: status);
 }

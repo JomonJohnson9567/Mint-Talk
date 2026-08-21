@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_cubit.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_state.dart';
+import 'leave_history_skeleton.dart';
 
 class LeaveHistoryList extends StatelessWidget {
   const LeaveHistoryList({super.key});
@@ -14,9 +15,7 @@ class LeaveHistoryList extends StatelessWidget {
       builder: (context, state) {
         if (state.historyStatus == LeaveHistoryStatus.loading ||
             state.historyStatus == LeaveHistoryStatus.initial) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryColor),
-          );
+          return const LeaveHistorySkeleton();
         }
 
         if (state.historyStatus == LeaveHistoryStatus.failure) {

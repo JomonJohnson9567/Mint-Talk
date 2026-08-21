@@ -23,6 +23,7 @@ class _SocketEvents {
   static const String connectError = 'connect_error';
   static const String disconnect = 'disconnect';
   static const String getPresenceSnapshot = 'get_presence_snapshot';
+  static const String subscribeFavorites = 'subscribe_favorites';
 
   // Call signaling events
   static const String incomingCall = 'incoming_call';
@@ -31,31 +32,63 @@ class _SocketEvents {
   static const String callAccepted = 'call_accepted';
   static const String subscribeCall = 'subscribe_call';
   static const String unsubscribeCall = 'unsubscribe_call';
-  static const String initiateCall = 'initiate_call';
-  static const String acceptCall = 'accept_call';
-  static const String rejectCall = 'reject_call';
-  static const String cancelCall = 'cancel_call';
-  static const String endCall = 'end_call';
+
+  // Notifications
+  static const String newNotification = 'new_notification';
+
+  // Chat
+  static const String newChatMessage = 'new_message';
+
 }
 
 /// Concrete implementation of [IPresenceSocketService] using `socket_io_client`.
 @LazySingleton(as: IPresenceSocketService)
 class PresenceSocketService implements IPresenceSocketService {
   final EnvConfig _envConfig;
+  final TokenManager _tokenManager;
   final Logger _logger = Logger();
 
   io.Socket? _socket;
   StreamController<HostPresenceEntity>? _controller;
   StreamController<Map<String, dynamic>>? _incomingCallController;
   StreamController<Map<String, dynamic>>? _callStatusController;
+  StreamController<Map<String, dynamic>>? _newNotificationController;
+  StreamController<Map<String, dynamic>>? _newChatMessageController;
 
   /// Buffered availability update — flushed automatically on the next connect.
-  /// Set when [updateAvailability] is called before the socket handshake
-  /// completes, so the intent is never silently dropped.
   bool? _pendingAudioAvailable;
   bool? _pendingVideoAvailable;
 
-  PresenceSocketService(this._envConfig);
+  /// Prevents concurrent reconnect attempts.
+  bool _isReconnecting = false;
+
+  /// True from the moment a connection attempt starts until it definitively
+  /// resolves (successful `connect`, exhausted retries, or an explicit
+  /// [disconnect]). Guards the *public* [connect] entry point against a
+  /// caller (e.g. a cubit re-asserting "make sure the socket is connected")
+  /// tearing down and restarting an already in-flight attempt — which would
+  /// interrupt a retry/backoff cycle that might otherwise have succeeded on
+  /// its own and burn through the auth-refresh budget faster than intended.
+  /// Internal retries call [_createAndConnect] directly and are unaffected.
+  bool _connectInFlight = false;
+
+  /// True once we've already logged/propagated a connect error for the
+  /// current disconnect streak — reset back to false on the next successful
+  /// `connect`. Prevents the socket's built-in reconnection loop (which
+  /// retries every few seconds while the screen is off / network is briefly
+  /// unreachable) from spamming logs and cubit error streams every attempt.
+  bool _hasReportedConnectError = false;
+  int _consecutiveConnectErrors = 0;
+
+  /// Caps the auth-refresh-and-reconnect path below. Without this, a
+  /// refreshed token that the socket server keeps rejecting (backend bug,
+  /// clock skew, a refresh token that doesn't actually rotate — any of
+  /// these) sends this handler into an unbounded refresh→reconnect→fail
+  /// loop that never lets the user reach a real login screen.
+  static const int _maxAuthRefreshAttempts = 3;
+  int _authRefreshAttempts = 0;
+
+  PresenceSocketService(this._envConfig, this._tokenManager);
 
   @override
   Stream<HostPresenceEntity> get presenceUpdates {
@@ -76,18 +109,46 @@ class PresenceSocketService implements IPresenceSocketService {
   }
 
   @override
+  Stream<Map<String, dynamic>> get newNotifications {
+    _newNotificationController ??= StreamController<Map<String, dynamic>>.broadcast();
+    return _newNotificationController!.stream;
+  }
+
+  @override
+  Stream<Map<String, dynamic>> get newChatMessages {
+    _newChatMessageController ??= StreamController<Map<String, dynamic>>.broadcast();
+    return _newChatMessageController!.stream;
+  }
+
+  @override
   void connect(String accessToken) {
-    // Ensure the stream controller is alive before registering any listeners.
+    // Ensure the stream controllers are alive before registering listeners.
     if (_controller == null || _controller!.isClosed) {
       _controller = StreamController<HostPresenceEntity>.broadcast();
+    }
+    if (_incomingCallController == null || _incomingCallController!.isClosed) {
+      _incomingCallController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    if (_callStatusController == null || _callStatusController!.isClosed) {
+      _callStatusController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    if (_newNotificationController == null || _newNotificationController!.isClosed) {
+      _newNotificationController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    if (_newChatMessageController == null || _newChatMessageController!.isClosed) {
+      _newChatMessageController = StreamController<Map<String, dynamic>>.broadcast();
     }
 
     if (_socket != null) {
       if (_socket!.connected) {
-        _logger.d(
-          '[PresenceSocket] Already connected — requesting snapshot immediately.',
-        );
+        _logger.d('[PresenceSocket] Already connected — requesting snapshot.');
         _requestSnapshot();
+        return;
+      }
+      if (_connectInFlight) {
+        _logger.d(
+          '[PresenceSocket] Connection attempt already in flight — ignoring duplicate connect().',
+        );
         return;
       }
       _logger.d('[PresenceSocket] Re-creating socket connection...');
@@ -96,7 +157,11 @@ class PresenceSocketService implements IPresenceSocketService {
     }
 
     _logger.d('[PresenceSocket] Connecting to ${_envConfig.socketUrl}');
+    _connectInFlight = true;
+    _createAndConnect(accessToken);
+  }
 
+  void _createAndConnect(String accessToken) {
     _socket = io.io(
       _envConfig.socketUrl,
       io.OptionBuilder()
@@ -104,9 +169,14 @@ class PresenceSocketService implements IPresenceSocketService {
           .disableAutoConnect()
           .setAuth({'token': accessToken, 'auth': accessToken})
           .setExtraHeaders({'Authorization': 'Bearer $accessToken'})
+          // Graceful exponential backoff instead of hammering the network
+          // every ~1s while the phone is asleep / briefly offline (which is
+          // what produced the repeated "Failed host lookup" log spam).
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(20000)
+          .setRandomizationFactor(0.5)
           .build(),
     );
-
     _registerListeners();
     _socket!.connect();
   }
@@ -119,6 +189,14 @@ class PresenceSocketService implements IPresenceSocketService {
     if (_socket != null && _socket!.connected) {
       _logger.d('[PresenceSocket] Emitting get_presence_snapshot');
       _socket!.emit(_SocketEvents.getPresenceSnapshot);
+    }
+  }
+
+  @override
+  void subscribeFavorites() {
+    if (_socket != null && _socket!.connected) {
+      _logger.d('[PresenceSocket] Emitting subscribe_favorites');
+      _socket!.emit(_SocketEvents.subscribeFavorites);
     }
   }
 
@@ -168,63 +246,19 @@ class PresenceSocketService implements IPresenceSocketService {
     }
   }
 
-  @override
-  void emitInitiateCall({
-    required String hostId,
-    required String callType,
-  }) {
-    if (_socket != null && _socket!.connected) {
-      _logger.d('[PresenceSocket] Emitting initiate_call for hostId: $hostId, type: $callType');
-      _socket!.emit(_SocketEvents.initiateCall, {
-        'hostId': hostId,
-        'callType': callType,
-      });
-    } else {
-      _logger.w('[PresenceSocket] Socket not connected when attempting emitInitiateCall');
-    }
-  }
 
-  @override
-  void emitAcceptCall(String callId) {
-    if (_socket != null && _socket!.connected) {
-      _logger.d('[PresenceSocket] Emitting accept_call for callId: $callId');
-      _socket!.emit(_SocketEvents.acceptCall, {'callId': callId});
-    }
-  }
-
-  @override
-  void emitRejectCall(String callId) {
-    if (_socket != null && _socket!.connected) {
-      _logger.d('[PresenceSocket] Emitting reject_call for callId: $callId');
-      _socket!.emit(_SocketEvents.rejectCall, {'callId': callId});
-    }
-  }
-
-  @override
-  void emitCancelCall(String callId) {
-    if (_socket != null && _socket!.connected) {
-      _logger.d('[PresenceSocket] Emitting cancel_call for callId: $callId');
-      _socket!.emit(_SocketEvents.cancelCall, {'callId': callId});
-    }
-  }
-
-  @override
-  void emitEndCall(String callId) {
-    if (_socket != null && _socket!.connected) {
-      _logger.d('[PresenceSocket] Emitting end_call for callId: $callId');
-      _socket!.emit(_SocketEvents.endCall, {'callId': callId});
-    }
-  }
 
   @override
   void disconnect() {
     _logger.d('[PresenceSocket] Disconnecting.');
+    _connectInFlight = false;
     _socket?.disconnect();
   }
 
   @override
   void dispose() {
     _logger.d('[PresenceSocket] Disposing.');
+    _connectInFlight = false;
     _socket?.dispose();
     _socket = null;
     _controller?.close();
@@ -233,6 +267,10 @@ class PresenceSocketService implements IPresenceSocketService {
     _incomingCallController = null;
     _callStatusController?.close();
     _callStatusController = null;
+    _newNotificationController?.close();
+    _newNotificationController = null;
+    _newChatMessageController?.close();
+    _newChatMessageController = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -270,6 +308,12 @@ class PresenceSocketService implements IPresenceSocketService {
           '   socket id : ${_socket?.id}',
         );
 
+        // Reset the error-dedupe streak now that we're back online.
+        _hasReportedConnectError = false;
+        _consecutiveConnectErrors = 0;
+        _authRefreshAttempts = 0;
+        _connectInFlight = false;
+
         // Flush any buffered availability update that arrived before the
         // handshake completed.
         if (_pendingAudioAvailable != null && _pendingVideoAvailable != null) {
@@ -287,6 +331,10 @@ class PresenceSocketService implements IPresenceSocketService {
 
         // Request the current online/busy host list snapshot.
         _requestSnapshot();
+
+        // Ask the server to include favorited-host updates in this same
+        // push channel — re-emitted automatically on every reconnect.
+        subscribeFavorites();
       } catch (e) {
         _logger.e('[PresenceSocket] Error in connect handler: $e');
       }
@@ -370,6 +418,32 @@ class PresenceSocketService implements IPresenceSocketService {
       }
     });
 
+    _socket!.on(_SocketEvents.newNotification, (data) {
+      try {
+        _logger.i('🔔 [PresenceSocket] new_notification event received: $data');
+        if (data is Map &&
+            _newNotificationController != null &&
+            !_newNotificationController!.isClosed) {
+          _newNotificationController!.add(Map<String, dynamic>.from(data));
+        }
+      } catch (e) {
+        _logger.e('[PresenceSocket] Error processing new_notification: $e');
+      }
+    });
+
+    _socket!.on(_SocketEvents.newChatMessage, (data) {
+      try {
+        _logger.i('💬 [PresenceSocket] new_message event received: $data');
+        if (data is Map &&
+            _newChatMessageController != null &&
+            !_newChatMessageController!.isClosed) {
+          _newChatMessageController!.add(Map<String, dynamic>.from(data));
+        }
+      } catch (e) {
+        _logger.e('[PresenceSocket] Error processing new_message: $e');
+      }
+    });
+
     _socket!.on(_SocketEvents.callStatusUpdated, _handleCallStatusData);
     _socket!.on(_SocketEvents.callStatusUpdate, _handleCallStatusData);
     _socket!.on(_SocketEvents.callAccepted, (data) {
@@ -423,18 +497,110 @@ class PresenceSocketService implements IPresenceSocketService {
       }
     });
 
-    _socket!.on(_SocketEvents.connectError, (err) {
+    _socket!.on(_SocketEvents.connectError, (err) async {
       try {
-        _logger.e('[PresenceSocket] Connection error: $err');
-        if (_controller != null && !_controller!.isClosed) {
+        final errMsg = err?.toString() ?? '';
+        _consecutiveConnectErrors++;
+
+        // The socket's own reconnection loop retries on a backoff timer
+        // (see setReconnectionDelay/Max above) — that's expected and normal
+        // while the screen is off or the network briefly drops. Only the
+        // *first* failure of a streak is worth a full log line; log the
+        // rest tersely so a long screen-off period doesn't flood logcat.
+        if (!_hasReportedConnectError) {
+          _hasReportedConnectError = true;
+          _logger.e('[PresenceSocket] Connection error: $err');
+        } else {
+          _logger.d(
+            '[PresenceSocket] Still reconnecting… '
+            '(attempt #$_consecutiveConnectErrors)',
+          );
+        }
+
+        // Detect authentication / token expiry errors and attempt refresh + reconnect.
+        // Auth errors should NOT be propagated to the stream as fatal errors —
+        // the app should silently refresh the token and reconnect instead.
+        final isAuthError = errMsg.toLowerCase().contains('auth') ||
+            errMsg.toLowerCase().contains('expired') ||
+            errMsg.toLowerCase().contains('session') ||
+            errMsg.toLowerCase().contains('token') ||
+            errMsg.toLowerCase().contains('unauthorized');
+
+        if (isAuthError && !_isReconnecting) {
+          if (_authRefreshAttempts >= _maxAuthRefreshAttempts) {
+            // The refreshed token has failed at the socket layer
+            // _maxAuthRefreshAttempts times in a row — refreshing again
+            // isn't going to fix it (backend issue, clock skew, a refresh
+            // token that isn't actually rotating, etc.). Stop looping and
+            // force a real logout instead of retrying forever.
+            _logger.e(
+              '[PresenceSocket] Auth refresh retry limit reached '
+              '($_maxAuthRefreshAttempts attempts) — logging out.',
+            );
+            _connectInFlight = false;
+            await _tokenManager.clearAll();
+            getIt<NavigationService>().navigateAndRemoveUntil(
+              AppRoutes.phoneNumber,
+              arguments: {'message': 'Session expired. Please log in again.'},
+            );
+            return;
+          }
+
+          _authRefreshAttempts++;
+          _isReconnecting = true;
+          _logger.w(
+            '[PresenceSocket] Auth error — attempting token refresh & reconnect '
+            '(attempt $_authRefreshAttempts/$_maxAuthRefreshAttempts)...',
+          );
+
+          final refreshed = await _tokenManager.refreshAccessToken();
+          if (refreshed) {
+            final newToken = _tokenManager.getAccessToken();
+            if (newToken != null && newToken.isNotEmpty) {
+              // Give the backend a moment to settle before reconnecting —
+              // reconnecting instantly after a refresh can hit the exact
+              // same "session expired" rejection if the server's session
+              // store hasn't finished propagating the refresh yet, burning
+              // through the retry budget on a race rather than a real
+              // failure. Backs off a little more on each attempt.
+              await Future.delayed(Duration(seconds: _authRefreshAttempts));
+              _logger.i('[PresenceSocket] Token refreshed — reconnecting socket...');
+              _socket?.dispose();
+              _socket = null;
+              _isReconnecting = false;
+              _createAndConnect(newToken);
+              return;
+            }
+          }
+
+          // Refresh failed — session is truly expired, clear tokens and navigate to login
+          _logger.e('[PresenceSocket] Token refresh failed — session expired. Logging out.');
+          _isReconnecting = false;
+          _connectInFlight = false;
+          await _tokenManager.clearAll();
+          getIt<NavigationService>().navigateAndRemoveUntil(
+            AppRoutes.phoneNumber,
+            arguments: {'message': 'Session expired. Please log in again.'},
+          );
+          return;
+        }
+
+        // Non-auth connect error — propagate to stream so Cubits can show an
+        // error state, but only once per disconnect streak (not on every
+        // backoff retry) so listeners don't get flooded while offline.
+        if (!isAuthError &&
+            _consecutiveConnectErrors == 1 &&
+            _controller != null &&
+            !_controller!.isClosed) {
           _controller!.addError(
             Exception('Socket connection error: $err'),
           );
         }
       } catch (e) {
-        // Safe guard against callback errors
+        _logger.e('[PresenceSocket] Error in connect_error handler: $e');
       }
     });
+
 
     _socket!.on(_SocketEvents.disconnect, (reason) {
       try {

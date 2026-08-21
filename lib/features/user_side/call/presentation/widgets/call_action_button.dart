@@ -12,6 +12,11 @@ class CallActionButton extends StatelessWidget {
   final TextStyle? labelStyle;
   final List<BoxShadow>? boxShadow;
 
+  /// Accessible name announced by screen readers, independent of [label] —
+  /// this button may have no visible caption at all (e.g. the in-call
+  /// controls) while still needing a name for accessibility.
+  final String? semanticLabel;
+
   const CallActionButton({
     super.key,
     required this.icon,
@@ -23,6 +28,7 @@ class CallActionButton extends StatelessWidget {
     this.label,
     this.labelStyle,
     this.boxShadow,
+    this.semanticLabel,
   });
 
   @override
@@ -36,6 +42,7 @@ class CallActionButton extends StatelessWidget {
         boxShadow: boxShadow,
       ),
       child: IconButton(
+        tooltip: semanticLabel ?? label,
         onPressed: onTap,
         icon: Icon(icon, color: iconColor, size: iconSize.sp),
       ),

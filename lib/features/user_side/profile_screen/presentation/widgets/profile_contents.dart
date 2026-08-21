@@ -35,6 +35,27 @@ class ProfileContents extends StatelessWidget {
               }
             },
           ),
+          //Notifications
+          ProfileTile(
+            icon: Icons.notifications,
+            iconColor: AppColors.favIcon,
+            iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
+            title: AppTexts.notifications,
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.userNotificationsScreen);
+            },
+          ),
+
+          //chat
+          ProfileTile(
+            icon: Icons.chat_bubble_rounded,
+            iconColor: AppColors.chatIcon,
+            iconBackgroundColor: AppColors.chatIcon.withValues(alpha: 0.2),
+            title: AppTexts.conversations,
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.userChatListScreen);
+            },
+          ),
 
           //blocked users
           ProfileTile(

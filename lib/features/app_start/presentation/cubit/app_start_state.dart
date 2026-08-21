@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mint_talk/core/constants/user_role.dart';
 
 sealed class AppStartState extends Equatable {
   const AppStartState();
@@ -28,7 +29,7 @@ class AppStartAuthenticated extends AppStartState {
 
   const AppStartAuthenticated({this.role});
 
-  bool get isStaff => role == 'staff';
+  bool get isStaff => role.toUserRole() == UserRole.host;
 
   @override
   List<Object?> get props => [role];

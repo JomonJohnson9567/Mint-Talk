@@ -81,6 +81,7 @@ class DobPickerBottomSheet {
                           ),
                         ),
                         IconButton(
+                          tooltip: 'Close',
                           icon: Icon(
                             AppIcons.close,
                             color: Colors.black,

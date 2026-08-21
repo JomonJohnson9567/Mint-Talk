@@ -15,6 +15,7 @@ class UserEntity extends Equatable {
   final int? videoRate;
   final bool? isAudioAllowed;
   final bool? isVideoAllowed;
+  final String? avatarUrl;
   final String? termsAcceptedAt;
 
   const UserEntity({
@@ -26,6 +27,7 @@ class UserEntity extends Equatable {
     this.gender,
     this.dob,
     this.referralCode,
+    this.avatarUrl,
     this.audioRate,
     this.videoRate,
     this.isAudioAllowed,
@@ -43,6 +45,7 @@ class UserEntity extends Equatable {
     gender,
     dob,
     referralCode,
+    avatarUrl,
     audioRate,
     videoRate,
     isAudioAllowed,

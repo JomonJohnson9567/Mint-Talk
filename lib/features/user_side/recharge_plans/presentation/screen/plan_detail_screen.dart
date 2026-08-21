@@ -7,15 +7,12 @@ import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/navigations/navigation_service.dart';
-import 'package:mint_talk/core/network/api_client.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
-import 'package:mint_talk/features/user_side/recharge_plans/data/models/recharge_plan_item.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/cubit/plan_detail_cubit.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/cubit/plan_detail_state.dart';
-import 'package:mint_talk/features/user_side/wallet/data/datasources/wallet_remote_datasource.dart';
-import 'package:mint_talk/features/user_side/wallet/data/repositories/wallet_repository_impl.dart';
-import 'package:mint_talk/features/user_side/wallet/domain/usecases/get_plan_by_id_usecase.dart';
+import 'package:mint_talk/features/user_side/recharge_plans/presentation/widgets/plan_detail_skeleton.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_state.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/pages/recharge_success_screen.dart';
@@ -34,13 +31,8 @@ class PlanDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final apiClient = getIt<ApiClient>();
-    final remoteDataSource = WalletRemoteDataSourceImpl(apiClient);
-    final repository = WalletRepositoryImpl(remoteDataSource);
-    final useCase = GetPlanByIdUseCase(repository);
-
     return BlocProvider(
-      create: (_) => PlanDetailCubit(useCase)..loadPlan(args.planId),
+      create: (_) => getIt<PlanDetailCubit>()..loadPlan(args.planId),
       child: BlocListener<WalletCubit, WalletState>(
         listener: (context, state) {
           if (state.status == WalletStatus.paymentSuccess) {
@@ -76,11 +68,7 @@ class PlanDetailScreen extends StatelessWidget {
               builder: (context, state) {
                 if (state.status == PlanDetailStatus.loading &&
                     state.plan == null) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryColor,
-                    ),
-                  );
+                  return const PlanDetailSkeleton();
                 }
 
                 if (state.status == PlanDetailStatus.failure &&
@@ -139,7 +127,7 @@ class PlanDetailScreen extends StatelessWidget {
 }
 
 class _PlanHeroCard extends StatelessWidget {
-  final RechargePlanItem plan;
+  final RechargePlanEntity plan;
   final Color accentColor;
 
   const _PlanHeroCard({required this.plan, required this.accentColor});
@@ -311,7 +299,7 @@ class _BenefitItem extends StatelessWidget {
 }
 
 class _PaymentSummarySection extends StatelessWidget {
-  final RechargePlanItem plan;
+  final RechargePlanEntity plan;
 
   const _PaymentSummarySection({required this.plan});
 
@@ -406,6 +394,7 @@ class _RechargeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WalletCubit, WalletState>(
+      buildWhen: (previous, current) => previous.status != current.status,
       builder: (context, state) {
         final isLoading = state.status == WalletStatus.paymentProcessing;
         return ElevatedButton(

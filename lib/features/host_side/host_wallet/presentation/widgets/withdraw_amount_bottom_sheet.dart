@@ -7,6 +7,7 @@ import 'package:mint_talk/features/host_side/host_wallet/presentation/cubit/host
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/host_wallet_bottom_sheet_presenter.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_sheet_handle.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/bank_account_card.dart';
+import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_text_field.dart';
 
 class WithdrawAmountBottomSheet extends StatelessWidget {
   final BuildContext rootContext;
@@ -62,6 +63,15 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
                   child: BlocBuilder<HostWalletCubit, HostWalletState>(
                     builder: (context, state) {
                       final selectedBank = state.selectedBankAccount;
+                      final isUpi = state.payoutMethod == 'upi';
+                      final amountText = state.withdrawalAmount.trim();
+                      final amount = double.tryParse(amountText) ?? 0.0;
+                      final hasValidDestination =
+                          isUpi ? state.upiId.trim().isNotEmpty : selectedBank != null;
+                      final isButtonEnabled = amount >= 500 &&
+                          amount <= state.availableBalance &&
+                          hasValidDestination &&
+                          state.requestStatus != HostWalletRequestStatus.submitting;
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +111,9 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                          SizedBox(height: 20.h),
+                          SizedBox(height: 8.h),
+                          _buildAmountTagMessage(state, amount),
+                          SizedBox(height: 16.h),
                           Text(
                             'Withdraw To',
                             style: TextStyle(
@@ -111,29 +123,43 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
                             ),
                           ),
                           SizedBox(height: 10.h),
-                          if (selectedBank != null)
-                            BankAccountCard(
-                              bankAccount: selectedBank,
-                              isSelected: true,
-                              onTap: () {},
-                            )
-                          else
-                            _NoBankSelected(onChangeBank: () => _changeBank(context)),
+                          _PayoutMethodToggle(
+                            selectedMethod: state.payoutMethod,
+                            onChanged: context.read<HostWalletCubit>().selectPayoutMethod,
+                          ),
                           SizedBox(height: 14.h),
-                          TextButton(
-                            onPressed: () => _changeBank(context),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              foregroundColor: AppColors.primaryColor,
-                            ),
-                            child: Text(
-                              'Change Bank Account',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
+                          if (isUpi)
+                            WalletTextField(
+                              label: 'UPI ID',
+                              hintText: 'e.g. yourname@upi',
+                              initialValue: state.upiId,
+                              onChanged: context.read<HostWalletCubit>().updateUpiId,
+                            )
+                          else ...[
+                            if (selectedBank != null)
+                              BankAccountCard(
+                                bankAccount: selectedBank,
+                                isSelected: true,
+                                onTap: () {},
+                              )
+                            else
+                              _NoBankSelected(onChangeBank: () => _changeBank(context)),
+                            SizedBox(height: 14.h),
+                            TextButton(
+                              onPressed: () => _changeBank(context),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                foregroundColor: AppColors.primaryColor,
+                              ),
+                              child: Text(
+                                'Change Bank Account',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                           SizedBox(height: 18.h),
                           Container(
                             width: double.infinity,
@@ -183,10 +209,14 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
                               SizedBox(width: 14.w),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () => _submitWithdrawal(context),
+                                  onPressed: isButtonEnabled
+                                      ? () => _submitWithdrawal(context)
+                                      : null,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primaryColor,
                                     foregroundColor: AppColors.white,
+                                    disabledBackgroundColor: AppColors.grey.withValues(alpha: 0.2),
+                                    disabledForegroundColor: AppColors.subtitleText,
                                     minimumSize: Size.fromHeight(54.h),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(18.r),
@@ -198,7 +228,6 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.white,
                                     ),
                                   ),
                                 ),
@@ -239,6 +268,145 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
         HostWalletBottomSheetPresenter.showWithdrawalSuccessSheet(rootContext);
       }
     });
+  }
+
+  Widget _buildAmountTagMessage(HostWalletState state, double amount) {
+    if (state.withdrawalAmount.trim().isEmpty) {
+      return Row(
+        children: [
+          Icon(Icons.info_outline_rounded, size: 14.sp, color: AppColors.subtitleText),
+          SizedBox(width: 6.w),
+          Text(
+            'Minimum withdrawal amount is ₹500.',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.subtitleText,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (amount < 500) {
+      return Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 14.sp, color: AppColors.orange),
+          SizedBox(width: 6.w),
+          Text(
+            'Minimum withdrawal amount is ₹500.',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.orange,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (amount > state.availableBalance) {
+      return Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 14.sp, color: AppColors.red),
+          SizedBox(width: 6.w),
+          Text(
+            'Amount exceeds available balance of ₹${state.availableBalance}.',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.red,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Icon(Icons.check_circle_outline_rounded, size: 14.sp, color: AppColors.green),
+        SizedBox(width: 6.w),
+        Text(
+          'Valid withdrawal amount.',
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: AppColors.green,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PayoutMethodToggle extends StatelessWidget {
+  final String selectedMethod;
+  final ValueChanged<String> onChanged;
+
+  const _PayoutMethodToggle({required this.selectedMethod, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        children: [
+          _PayoutMethodOption(
+            label: 'Bank Transfer',
+            isSelected: selectedMethod == 'bank_transfer',
+            onTap: () => onChanged('bank_transfer'),
+          ),
+          _PayoutMethodOption(
+            label: 'UPI',
+            isSelected: selectedMethod == 'upi',
+            onTap: () => onChanged('upi'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PayoutMethodOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PayoutMethodOption({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryColor : AppColors.transparent,
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: isSelected ? AppColors.white : AppColors.subtitleText,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

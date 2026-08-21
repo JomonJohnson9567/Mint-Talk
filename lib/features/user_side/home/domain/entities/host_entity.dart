@@ -14,6 +14,7 @@ class HostEntity extends Equatable {
   final bool isAudioAllowed;
   final bool isVideoAllowed;
   final HostPresenceEntity? presence;
+  final bool isFavorite;
 
   const HostEntity({
     required this.id,
@@ -28,6 +29,7 @@ class HostEntity extends Equatable {
     required this.isAudioAllowed,
     required this.isVideoAllowed,
     this.presence,
+    this.isFavorite = false,
   });
 
   HostEntity copyWith({
@@ -43,6 +45,7 @@ class HostEntity extends Equatable {
     bool? isAudioAllowed,
     bool? isVideoAllowed,
     HostPresenceEntity? presence,
+    bool? isFavorite,
   }) {
     return HostEntity(
       id: id ?? this.id,
@@ -57,6 +60,7 @@ class HostEntity extends Equatable {
       isAudioAllowed: isAudioAllowed ?? this.isAudioAllowed,
       isVideoAllowed: isVideoAllowed ?? this.isVideoAllowed,
       presence: presence ?? this.presence,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -74,5 +78,6 @@ class HostEntity extends Equatable {
         isAudioAllowed,
         isVideoAllowed,
         presence,
+        isFavorite,
       ];
 }

@@ -7,7 +7,8 @@ class HostProfileSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return SkeletonShimmer(
+      child: SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
@@ -87,6 +88,7 @@ class HostProfileSkeleton extends StatelessWidget {
           SkeletonBox(width: double.infinity, height: 48.h),
           SizedBox(height: 32.h),
         ],
+      ),
       ),
     );
   }

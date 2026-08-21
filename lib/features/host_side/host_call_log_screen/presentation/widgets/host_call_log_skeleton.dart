@@ -7,7 +7,8 @@ class HostCallLogSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return SkeletonShimmer(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Search bar skeleton
@@ -88,6 +89,7 @@ class HostCallLogSkeleton extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

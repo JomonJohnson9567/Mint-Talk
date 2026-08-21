@@ -19,6 +19,8 @@ class HostWalletState extends Equatable {
   final String branchName;
   final String withdrawalAmount;
   final String errorMessage;
+  final String payoutMethod;
+  final String upiId;
 
   const HostWalletState({
     this.status = HostWalletStatus.initial,
@@ -34,6 +36,8 @@ class HostWalletState extends Equatable {
     this.branchName = '',
     this.withdrawalAmount = '',
     this.errorMessage = '',
+    this.payoutMethod = 'bank_transfer',
+    this.upiId = '',
   });
 
   HostWalletState copyWith({
@@ -50,6 +54,8 @@ class HostWalletState extends Equatable {
     String? branchName,
     String? withdrawalAmount,
     String? errorMessage,
+    String? payoutMethod,
+    String? upiId,
   }) {
     return HostWalletState(
       status: status ?? this.status,
@@ -65,6 +71,8 @@ class HostWalletState extends Equatable {
       branchName: branchName ?? this.branchName,
       withdrawalAmount: withdrawalAmount ?? this.withdrawalAmount,
       errorMessage: errorMessage ?? this.errorMessage,
+      payoutMethod: payoutMethod ?? this.payoutMethod,
+      upiId: upiId ?? this.upiId,
     );
   }
 
@@ -95,5 +103,7 @@ class HostWalletState extends Equatable {
         branchName,
         withdrawalAmount,
         errorMessage,
+        payoutMethod,
+        upiId,
       ];
 }

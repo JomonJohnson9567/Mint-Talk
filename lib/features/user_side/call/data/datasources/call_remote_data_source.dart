@@ -1,11 +1,12 @@
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/network/api_client.dart';
+import '../../domain/entities/call_type.dart';
 import '../models/call_session_dto.dart';
 
 abstract class ICallRemoteDataSource {
   Future<CallSessionDto> initiateCall({
     required String hostId,
-    required String callType,
+    required CallType callType,
   });
 
   Future<CallSessionDto> acceptCall(String callId);
@@ -30,13 +31,14 @@ class CallRemoteDataSource implements ICallRemoteDataSource {
   @override
   Future<CallSessionDto> initiateCall({
     required String hostId,
-    required String callType,
+    required CallType callType,
   }) async {
     final response = await _apiClient.post(
       '/calls/initiate',
+      requiresAuth: true,
       body: {
         'hostId': hostId,
-        'callType': callType,
+        'callType': callType.value,
       },
     );
     return CallSessionDto.fromJson(response);
@@ -44,37 +46,55 @@ class CallRemoteDataSource implements ICallRemoteDataSource {
 
   @override
   Future<CallSessionDto> acceptCall(String callId) async {
-    final response = await _apiClient.post('/calls/$callId/accept');
+    final response = await _apiClient.post(
+      '/calls/$callId/accept',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> rejectCall(String callId) async {
-    final response = await _apiClient.post('/calls/$callId/reject');
+    final response = await _apiClient.post(
+      '/calls/$callId/reject',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> cancelCall(String callId) async {
-    final response = await _apiClient.post('/calls/$callId/cancel');
+    final response = await _apiClient.post(
+      '/calls/$callId/cancel',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> activateCall(String callId) async {
-    final response = await _apiClient.post('/calls/$callId/activate');
+    final response = await _apiClient.post(
+      '/calls/$callId/activate',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> endCall(String callId) async {
-    final response = await _apiClient.post('/calls/$callId/end');
+    final response = await _apiClient.post(
+      '/calls/$callId/end',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> getCallDetails(String callId) async {
-    final response = await _apiClient.get('/calls/$callId');
+    final response = await _apiClient.get(
+      '/calls/$callId',
+      requiresAuth: true,
+    );
     return CallSessionDto.fromJson(response);
   }
 }

@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:mint_talk/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/domain/entities/referral_status_entity.dart';
 import 'package:mint_talk/features/user_side/user_referral_status/domain/usecases/get_referral_status_usecase.dart';
 import 'referral_status_state.dart';
@@ -9,9 +9,9 @@ import 'referral_status_state.dart';
 @injectable
 class ReferralStatusCubit extends Cubit<ReferralStatusState> {
   final GetReferralStatusUseCase _getReferralStatusUseCase;
-  final AuthLocalDataSource _authLocalDataSource;
+  final AuthRepository _authRepository;
 
-  ReferralStatusCubit(this._getReferralStatusUseCase, this._authLocalDataSource)
+  ReferralStatusCubit(this._getReferralStatusUseCase, this._authRepository)
     : super(const ReferralStatusState());
 
   Future<void> loadStatus() async {
@@ -24,7 +24,7 @@ class ReferralStatusCubit extends Cubit<ReferralStatusState> {
       ),
     );
 
-    final userId = await _authLocalDataSource.getUserId();
+    final userId = await _authRepository.getUserId();
     if (userId == null || userId.isEmpty) {
       emit(
         state.copyWith(
@@ -35,7 +35,7 @@ class ReferralStatusCubit extends Cubit<ReferralStatusState> {
       return;
     }
 
-    final cachedReferralCode = await _authLocalDataSource.getReferralCode();
+    final cachedReferralCode = await _authRepository.getReferralCode();
     final result = await _getReferralStatusUseCase(userId);
     final cachedStatus = _cachedStatus(cachedReferralCode);
 

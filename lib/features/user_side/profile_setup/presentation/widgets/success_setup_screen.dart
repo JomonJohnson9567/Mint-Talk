@@ -77,12 +77,44 @@ class _VerifiedCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          SizedBox(height: 16.h),
+          const _BonusPointsBadge(),
           SizedBox(height: 32.h),
           PrimaryButton(
             text: AppTexts.continueText,
             onPressed: () {
               Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BonusPointsBadge extends StatelessWidget {
+  const _BonusPointsBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withAlpha(20),
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.stars_rounded, size: 16.sp, color: AppColors.primaryColor),
+          SizedBox(width: 6.w),
+          Text(
+            '+${AppTexts.signupBonusPoints} Bonus Points added to your wallet',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryColor,
+            ),
           ),
         ],
       ),

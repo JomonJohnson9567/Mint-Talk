@@ -32,12 +32,8 @@ class BlockRemoteDataSourceImpl implements BlockRemoteDataSource {
             .toList();
       }
       return [];
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to fetch blocked users',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
+      if (e is DioException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -56,13 +52,8 @@ class BlockRemoteDataSourceImpl implements BlockRemoteDataSource {
           message: response['message'] ?? 'Failed to block user',
         );
       }
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to block user',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -81,13 +72,8 @@ class BlockRemoteDataSourceImpl implements BlockRemoteDataSource {
           message: response['message'] ?? 'Failed to unblock user',
         );
       }
-    } on DioException catch (e) {
-      throw ServerException(
-        message: e.response?.data?['message'] ?? e.message ?? 'Failed to unblock user',
-        statusCode: e.response?.statusCode,
-      );
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is DioException || e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

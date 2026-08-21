@@ -1,4 +1,7 @@
 class AppTexts {
+  //Signup bonus
+  static const int signupBonusPoints = 50;
+
   //Button Texts
   static const String termsAndConditions = 'Terms and Conditions';
   static const String getStarted = 'Get Started';
@@ -218,6 +221,9 @@ class AppTexts {
   static const String innerPeace = 'Inner Peace';
   static const String motivation = 'Motivation';
   static const String stressManagement = 'Stress Management';
+
+  //Notifications Screen
+  static const String notifications = 'Notifications';
 
   static const List<String> hostCategories = [
     understanding,

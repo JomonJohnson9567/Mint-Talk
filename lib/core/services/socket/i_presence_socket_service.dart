@@ -1,22 +1,36 @@
 import 'package:mint_talk/features/user_side/home/domain/entities/host_presence_entity.dart';
 
-/// Abstract interface for the Socket.io presence service.
+/// Abstract interface for the Socket.io presence & call-event service.
 ///
-/// Exposes a continuous [presenceUpdates] stream that emits:
-/// - An initial burst of [HostPresenceEntity] events sent by the server
-///   immediately after the socket connects (full presence snapshot).
-/// - Subsequent real-time patch events whenever a host status changes.
+/// Responsibility split:
+///  - **Presence** : receives real-time host online/busy status updates.
+///  - **Call events**: receives server-pushed call lifecycle events
+///    (incoming_call, call_accepted, call_active, call_ended, etc.).
 ///
-/// The user-side app is a **read-only consumer** — it never emits socket events.
+/// ⚠️ This service is a READ-ONLY consumer of server-pushed events.
+///    All call STATE CHANGES (initiate, accept, reject, cancel, end) are
+///    performed via HTTP REST endpoints (ICallRepository / use cases).
+///    Socket is never used to emit call actions from the client.
 abstract class IPresenceSocketService {
   /// Continuous stream of host presence events.
   Stream<HostPresenceEntity> get presenceUpdates;
 
-  /// Continuous stream of incoming calls for host users.
+  /// Stream of incoming call payloads — consumed by the host-side overlay.
   Stream<Map<String, dynamic>> get incomingCalls;
 
-  /// Continuous stream of call status changes for an active/subscribed call.
+  /// Stream of call status events for an active/subscribed call.
+  /// Consumed by [CallRepositoryImpl] which maps raw payloads → [CallSocketEvent].
   Stream<Map<String, dynamic>> get callStatusUpdates;
+
+  /// Stream of raw notification payloads pushed the moment a new
+  /// notification is dispatched to the logged-in user.
+  Stream<Map<String, dynamic>> get newNotifications;
+
+  /// Stream of raw chat-message payloads pushed the moment a new message is
+  /// sent in any conversation the logged-in user is a participant in —
+  /// scoped server-side to the authenticated socket session, same as
+  /// [newNotifications] (no per-conversation subscribe call needed).
+  Stream<Map<String, dynamic>> get newChatMessages;
 
   /// Opens the socket connection with the given [accessToken].
   void connect(String accessToken);
@@ -27,29 +41,16 @@ abstract class IPresenceSocketService {
     required bool videoAvailable,
   });
 
-  /// Subscribes socket to real-time events for a specific [callId].
+  /// Tells the server to include the user's favorited hosts in the
+  /// [presenceUpdates] push channel. Safe to call whenever the socket is
+  /// connected — re-emitted automatically on every reconnect.
+  void subscribeFavorites();
+
+  /// Tells the server to push call events for [callId] to this socket.
   void subscribeCall(String callId);
 
-  /// Unsubscribes socket from real-time events for a specific [callId].
+  /// Tells the server to stop pushing call events for [callId] to this socket.
   void unsubscribeCall(String callId);
-
-  /// Emits an initiate call request via socket.
-  void emitInitiateCall({
-    required String hostId,
-    required String callType,
-  });
-
-  /// Emits accept call event via socket.
-  void emitAcceptCall(String callId);
-
-  /// Emits reject call event via socket.
-  void emitRejectCall(String callId);
-
-  /// Emits cancel call event via socket.
-  void emitCancelCall(String callId);
-
-  /// Emits end call event via socket.
-  void emitEndCall(String callId);
 
   /// Gracefully closes the socket connection.
   void disconnect();
@@ -57,3 +58,4 @@ abstract class IPresenceSocketService {
   /// Permanently closes stream controllers and destroys the socket.
   void dispose();
 }
+

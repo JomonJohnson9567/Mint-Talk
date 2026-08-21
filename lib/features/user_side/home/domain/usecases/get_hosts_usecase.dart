@@ -7,12 +7,12 @@ import '../entities/paginated_hosts_entity.dart';
 import '../repositories/host_repository.dart';
 
 class GetHostsParams extends Equatable {
-  final bool isOnline;
+  final bool? isOnline;
   final int? page;
   final int? limit;
 
   const GetHostsParams({
-    required this.isOnline,
+    this.isOnline,
     this.page,
     this.limit,
   });
@@ -29,9 +29,12 @@ class GetHostsUseCase implements UseCase<PaginatedHostsEntity, GetHostsParams> {
 
   @override
   Future<Either<Failure, PaginatedHostsEntity>> call(GetHostsParams params) {
-    if (params.isOnline) {
+    if (params.isOnline == true) {
       return repository.getOnlineHosts(page: params.page, limit: params.limit);
+    } else if (params.isOnline == false) {
+      return repository.getOnCallHosts(page: params.page, limit: params.limit);
     }
-    return repository.getOnCallHosts(page: params.page, limit: params.limit);
+    return repository.getAllHosts(page: params.page, limit: params.limit);
   }
 }
+

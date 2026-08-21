@@ -7,6 +7,8 @@ import 'package:mint_talk/core/navigations/app_router.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/theme.dart';
+import 'package:mint_talk/core/widgets/secure_app_overlay.dart';
+import 'package:mint_talk/features/shared/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mint_talk/features/user_side/wallet/presentation/cubit/wallet_cubit.dart';
 
 class MyApp extends StatelessWidget {
@@ -20,7 +22,10 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return MultiBlocProvider(
-          providers: [BlocProvider(create: (context) => getIt<WalletCubit>())],
+          providers: [
+            BlocProvider(create: (context) => getIt<WalletCubit>()),
+            BlocProvider(create: (context) => getIt<NotificationsCubit>()),
+          ],
           child: MaterialApp(
             navigatorKey: getIt<NavigationService>().navigatorKey,
             debugShowCheckedModeBanner: false,
@@ -28,6 +33,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             initialRoute: AppRoutes.splash,
             onGenerateRoute: AppRouter.onGenerateRoute,
+            builder: (context, child) => SecureAppOverlay(child: child),
           ),
         );
       },

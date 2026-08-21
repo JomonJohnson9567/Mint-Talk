@@ -8,6 +8,7 @@ import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
+import 'package:mint_talk/features/shared/notifications/presentation/widgets/notification_bell_icon.dart';
 
 class HostHeader extends StatelessWidget {
   const HostHeader({super.key});
@@ -42,19 +43,29 @@ class HostHeader extends StatelessWidget {
               ),
             ],
           ),
-          BlocSelector<
-            HostProfileCubit,
-            HostProfileState,
-            ({int? audioRate, int? videoRate})
-          >(
-            selector: (state) =>
-                (audioRate: state.audioRate, videoRate: state.videoRate),
-            builder: (context, rates) {
-              return _HostRateCapsule(
-                audioRate: rates.audioRate,
-                videoRate: rates.videoRate,
-              );
-            },
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NotificationBellIcon(
+                onTap: () =>
+                    getIt<NavigationService>().navigateTo(AppRoutes.hostNotificationsScreen),
+              ),
+              SizedBox(width: 10.w),
+              BlocSelector<
+                HostProfileCubit,
+                HostProfileState,
+                ({int? audioRate, int? videoRate})
+              >(
+                selector: (state) =>
+                    (audioRate: state.audioRate, videoRate: state.videoRate),
+                builder: (context, rates) {
+                  return _HostRateCapsule(
+                    audioRate: rates.audioRate,
+                    videoRate: rates.videoRate,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

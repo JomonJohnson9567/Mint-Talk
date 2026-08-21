@@ -5,7 +5,7 @@ import 'package:mint_talk/features/user_side/call_log/domain/usecases/get_host_c
 import 'package:mint_talk/features/user_side/call_log/domain/usecases/get_user_call_logs_usecase.dart';
 import 'package:mint_talk/features/shared/block_users/domain/usecases/block_user_usecase.dart';
 import 'package:mint_talk/features/shared/block_users/domain/usecases/unblock_user_usecase.dart';
-import 'package:mint_talk/features/host_side/host_call_log_screen/domain/models/host_call_log_entry_model.dart';
+import 'package:mint_talk/features/host_side/host_call_log_screen/domain/entities/host_call_log_entry_entity.dart';
 import 'package:mint_talk/features/host_side/host_call_log_screen/presentation/cubit/host_call_log_state.dart';
 
 @injectable
@@ -40,7 +40,7 @@ class HostCallLogCubit extends Cubit<HostCallLogState> {
               ? '${entity.duration ~/ 60}.${(entity.duration % 60).toString().padLeft(2, '0')} m'
               : '0 m';
 
-          return HostCallLogEntryModel(
+          return HostCallLogEntryEntity(
             id: entity.caller?.id ?? entity.id,
             name: callerName,
             imageUrl: avatarUrl,
