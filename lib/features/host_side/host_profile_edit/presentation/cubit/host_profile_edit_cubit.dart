@@ -47,7 +47,6 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
         state.copyWith(
           status: HostProfileEditStatus.loaded,
           name: _cachedOrFallback(cachedValues[0], profile.fullName),
-          email: profile.email,
           phone: _cachedOrFallback(cachedValues[1], profile.phone),
           idNumber: _cachedOrFallback(cachedValues[2], profile.idNumber),
           dob: _cachedOrFallback(cachedValues[3], profile.dob),
@@ -60,10 +59,6 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
 
   void nameChanged(String name) {
     emit(state.copyWith(name: name));
-  }
-
-  void emailChanged(String email) {
-    emit(state.copyWith(email: email));
   }
 
   void dobChanged(String dob) {
@@ -87,12 +82,7 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
   }
 
   Future<void> submit() async {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    final isEmailValid = emailRegex.hasMatch(state.email.trim());
-
     if (state.name.trim().isEmpty ||
-        state.email.trim().isEmpty ||
-        !isEmailValid ||
         state.dob.isEmpty ||
         state.selectedCategories.isEmpty) {
       emit(state.copyWith(showErrors: true));
@@ -136,7 +126,6 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
     final profile = HostProfileEntity(
       id: state.idNumber,
       fullName: state.name.trim(),
-      email: state.email.trim(),
       phone: state.phone,
       idNumber: state.idNumber,
       dob: state.dob,

@@ -69,9 +69,6 @@ class _HostProfileFormFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEmailValid =
-        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(state.email.trim());
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -86,23 +83,6 @@ class _HostProfileFormFields extends StatelessWidget {
           errorText: state.showErrors && state.name.trim().isEmpty
               ? 'Name is required'
               : null,
-        ),
-        SizedBox(height: 20.h),
-
-        // Email Address
-        ProfileField(
-          key: ValueKey('email_${state.email}'),
-          label: 'EMAIL ADDRESS',
-          hintText: 'Enter your email',
-          labelColor: AppColors.primaryColor,
-          initialValue: state.email,
-          onChanged: cubit.emailChanged,
-          keyboardType: TextInputType.emailAddress,
-          errorText: state.showErrors && state.email.trim().isEmpty
-              ? 'Email is required'
-              : (state.showErrors && !isEmailValid
-                  ? 'Enter a valid email address'
-                  : null),
         ),
         SizedBox(height: 20.h),
 

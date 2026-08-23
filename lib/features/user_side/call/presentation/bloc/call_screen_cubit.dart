@@ -9,6 +9,7 @@ import 'package:mint_talk/config/env/env_config.dart';
 import 'package:mint_talk/core/services/agora/i_agora_service.dart';
 import 'package:mint_talk/core/services/connectivity/connectivity_service.dart';
 import 'package:mint_talk/core/services/permissions/call_permission_service.dart';
+import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import '../../data/models/incoming_call_payload_dto.dart';
@@ -59,6 +60,7 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   final ICallPermissionService _permissionService;
   final AuthRepository _authRepository;
   final IConnectivityService _connectivityService;
+  final IPresenceSocketService _presenceSocketService;
 
   late final CallMediaControls _mediaControls = CallMediaControls(_agoraService);
   final CallDurationTicker _durationTicker = CallDurationTicker();
@@ -76,8 +78,25 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   CallParticipantRole? _localRole;
   bool _joinRequested = false;
 
-  /// Guards against duplicate HTTP activate calls.
+  /// True only once POST /activate has actually succeeded. Billing starts
+  /// server-side on that success, so this must never be set ahead of it —
+  /// setting it optimistically before the call resolves would permanently
+  /// abandon activation (and therefore billing) for the rest of this call
+  /// if that one attempt happened to fail, even though Agora media keeps
+  /// working fine on its own separate pipeline and the call feels
+  /// completely normal to both participants.
   bool _hasActivated = false;
+
+  /// Guards against a second, concurrent activate attempt starting while
+  /// one is already in flight (e.g. a duplicate AgoraRemoteUserJoined
+  /// callback) — separate from [_hasActivated] so a failed attempt can
+  /// still be retried.
+  bool _isActivating = false;
+
+  /// Number of retry attempts made after a failed activate call.
+  int _activateRetryAttempts = 0;
+  static const int _maxActivateRetries = 4;
+  Timer? _activateRetryTimer;
 
   /// Guards against duplicate termination handling.
   /// Set when the call is terminated (from socket or user action).
@@ -105,6 +124,7 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     this._permissionService,
     this._authRepository,
     this._connectivityService,
+    this._presenceSocketService,
   ) : super(const CallScreenState());
 
   /// Exposes the live Agora engine for widgets that need to attach a video
@@ -122,6 +142,8 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   Future<void> startOutgoingCall({
     required String hostId,
     required CallType callType,
+    String displayName = '',
+    String? avatarUrl,
   }) async {
     _cleanupResources();
     // Keep the CPU (and screen, for video calls) awake for the whole call so
@@ -131,9 +153,12 @@ class CallScreenCubit extends Cubit<CallScreenState> {
 
     // Reset state completely to initiating status
     emit(
-      const CallScreenState(
+      CallScreenState(
         status: CallScreenStatus.initiating,
         mediaStatus: CallMediaStatus.idle,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        isHost: false,
       ),
     );
 
@@ -141,6 +166,10 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _hasTerminated = false;
     _serverEndedCall = false;
     _hasActivated = false;
+    _isActivating = false;
+    _activateRetryAttempts = 0;
+    _activateRetryTimer?.cancel();
+    _activateRetryTimer = null;
     _joinRequested = false;
     _hasRetriedConnectionFailure = false;
     _lastEmittedLocalQuality = NetworkQualityLevel.unknown;
@@ -193,14 +222,21 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   /// `connecting` UI. This mirrors [startOutgoingCall]'s "navigate first, do
   /// the network I/O inside the already-visible screen" pattern instead of
   /// blocking the ringing overlay on the round trip.
-  Future<void> acceptIncomingCall(IncomingCallPayloadDto payload) async {
+  Future<void> acceptIncomingCall(
+    IncomingCallPayloadDto payload, {
+    String displayName = '',
+    String? avatarUrl,
+  }) async {
     _cleanupResources();
     unawaited(WakelockPlus.enable());
 
     emit(
-      const CallScreenState(
+      CallScreenState(
         status: CallScreenStatus.connecting,
         mediaStatus: CallMediaStatus.idle,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        isHost: true,
       ),
     );
 
@@ -208,6 +244,10 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _hasTerminated = false;
     _serverEndedCall = false;
     _hasActivated = false;
+    _isActivating = false;
+    _activateRetryAttempts = 0;
+    _activateRetryTimer?.cancel();
+    _activateRetryTimer = null;
     _joinRequested = false;
     _hasRetriedConnectionFailure = false;
     _lastEmittedLocalQuality = NetworkQualityLevel.unknown;
@@ -245,15 +285,22 @@ class CallScreenCubit extends Cubit<CallScreenState> {
 
   /// Entry point when the host has already accepted via HTTP and navigates
   /// to the call screen with the session returned by acceptCall().
-  Future<void> startIncomingCall(CallSessionEntity session) async {
+  Future<void> startIncomingCall(
+    CallSessionEntity session, {
+    String displayName = '',
+    String? avatarUrl,
+  }) async {
     _cleanupResources();
     unawaited(WakelockPlus.enable());
 
     emit(
-      state.copyWith(
+      CallScreenState(
         status: CallScreenStatus.connecting,
         mediaStatus: CallMediaStatus.idle,
         session: session,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        isHost: true,
       ),
     );
 
@@ -261,6 +308,10 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _hasTerminated = false;
     _serverEndedCall = false;
     _hasActivated = false;
+    _isActivating = false;
+    _activateRetryAttempts = 0;
+    _activateRetryTimer?.cancel();
+    _activateRetryTimer = null;
     _joinRequested = false;
     _hasRetriedConnectionFailure = false;
     _lastEmittedLocalQuality = NetworkQualityLevel.unknown;
@@ -427,14 +478,37 @@ class CallScreenCubit extends Cubit<CallScreenState> {
         case AgoraRemoteUserLeft(:final reason):
           if (_hasTerminated) break;
 
+          if (reason == UserOfflineReasonType.userOfflineQuit) {
+            // The peer left the channel voluntarily — this is Agora's own
+            // signal that they tapped "End Call", not a dropped connection,
+            // so there's no reason to show a "reconnecting" banner or wait
+            // the full network-blip grace period. Give the authoritative
+            // server-pushed `ended` socket event (handled in
+            // _handleCallTerminated) a short window to land first — it
+            // carries the real final billing numbers — and only if it
+            // doesn't arrive in time, finalize locally by fetching the
+            // latest call details from the server so the summary screen
+            // never shows stale duration/points.
+            appLogger.d(
+              '📴 [CallCubit] Remote participant left voluntarily. '
+              'Waiting briefly for server confirmation.',
+            );
+            _remoteReconnectTimer?.cancel();
+            _remoteReconnectTimer = Timer(const Duration(seconds: 4), () {
+              if (isClosed || _hasTerminated) return;
+              unawaited(_finalizeVoluntaryRemoteLeave());
+            });
+            break;
+          }
+
           // Agora's onUserOffline can fire for reasons other than a genuine
           // hangup (e.g. a momentary media-track state change while the peer
-          // mutes audio/video), so no reason here is treated as an instant,
-          // unconditional hangup. The actual, authoritative "call ended"
-          // signal is the server-pushed socket event handled in
-          // _handleCallTerminated — this branch only gives the peer a grace
-          // window to prove they're actually still there before we hang up
-          // locally, regardless of the reported reason.
+          // mutes audio/video), so a non-voluntary reason here is not
+          // treated as an instant, unconditional hangup. The actual,
+          // authoritative "call ended" signal is the server-pushed socket
+          // event handled in _handleCallTerminated — this branch only gives
+          // the peer a grace window to prove they're actually still there
+          // before we hang up locally.
           appLogger.d(
             '⚠️ [CallCubit] Remote participant reported offline '
             '(reason: $reason). Waiting up to 25s for rejoin.',
@@ -465,6 +539,7 @@ class CallScreenCubit extends Cubit<CallScreenState> {
                 session: state.session?.copyWith(
                   endReason: 'remote_network_timeout',
                 ),
+                networkStatus: const CallNetworkStatus(),
               ),
             );
             _agoraService.leaveChannel();
@@ -506,6 +581,7 @@ class CallScreenCubit extends Cubit<CallScreenState> {
                       session: state.session?.copyWith(
                         endReason: 'local_network_timeout',
                       ),
+                      networkStatus: const CallNetworkStatus(),
                     ),
                   );
                   _agoraService.leaveChannel();
@@ -759,23 +835,71 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   // ---------------------------------------------------------------------------
 
   /// Calls POST /calls/:callId/activate via HTTP.
-  /// This is the ONLY correct trigger for billing — no timer fallbacks.
+  /// This is the ONLY correct trigger for billing — no *fallback* to a
+  /// local timer to fabricate billing on our own. A failed *attempt* at
+  /// this call is, however, retried with backoff (see
+  /// [_maxActivateRetries]) rather than given up on after one try — Agora
+  /// media runs on a completely separate pipeline from this REST call, so
+  /// a single transient network blip right as both sides join the channel
+  /// would otherwise let a call run and feel completely normal for its
+  /// full length while the server never records an `activatedAt` for it,
+  /// silently losing billing for the whole call.
   Future<void> _activateCallSession(String callId) async {
-    if (_hasActivated || state.status == CallScreenStatus.active) return;
-    _hasActivated = true;
+    if (_hasActivated || _isActivating || state.status == CallScreenStatus.active) {
+      return;
+    }
+    _isActivating = true;
 
-    appLogger.d('⚡ [CallCubit] Calling HTTP activate for callId: $callId');
+    appLogger.d(
+      '⚡ [CallCubit] Calling HTTP activate for callId: $callId '
+      '(attempt ${_activateRetryAttempts + 1})',
+    );
 
     final result = await _activateCallUseCase(callId);
-    if (isClosed) return;
+    _isActivating = false;
+    if (isClosed || _hasTerminated) return;
 
     result.fold(
       (failure) {
+        // The peer's own activate (or a server-pushed `active` socket
+        // event) may have already caught this call up while this attempt
+        // was in flight — don't schedule a now-redundant retry.
+        if (_hasActivated || state.status == CallScreenStatus.active) {
+          appLogger.d(
+            'ℹ️ [CallCubit] Activate lost race (already active via '
+            'peer/socket) — ignoring: ${failure.message}',
+          );
+          return;
+        }
+
         appLogger.d('❌ [CallCubit] Activate failed: ${failure.message}');
-        // Keep the call going in case the server activated via socket or peer.
+
+        if (_activateRetryAttempts >= _maxActivateRetries) {
+          appLogger.d(
+            '❌ [CallCubit] Activate permanently failed after '
+            '$_maxActivateRetries retries — billing will not start for '
+            'this call unless the peer\'s own activation catches it up.',
+          );
+          return;
+        }
+
+        _activateRetryAttempts++;
+        final delay = Duration(seconds: _activateRetryAttempts * 2);
+        appLogger.d(
+          '⏳ [CallCubit] Retrying activate in ${delay.inSeconds}s '
+          '(attempt $_activateRetryAttempts/$_maxActivateRetries)',
+        );
+        _activateRetryTimer?.cancel();
+        _activateRetryTimer = Timer(delay, () {
+          if (isClosed || _hasTerminated || _hasActivated) return;
+          unawaited(_activateCallSession(callId));
+        });
       },
       (session) {
         appLogger.d('✅ [CallCubit] Activate succeeded');
+        _hasActivated = true;
+        _activateRetryTimer?.cancel();
+        _activateRetryTimer = null;
         // The /activate endpoint is a lightweight billing ack — it may omit
         // connection-identity fields (callType, agoraChannel, agoraToken,
         // hostId, callerId) that were already correctly set in state at
@@ -815,6 +939,25 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   void _listenToSocketEvents() {
     _socketEventSub = _callRepository.callSocketEvents.listen((event) {
       if (isClosed) return;
+
+      // `callSocketEvents` is one shared, app-wide stream — it is NOT scoped
+      // to this particular call. A stray event for a different call (a
+      // previous call's delayed/duplicate push, a reconnect replay, or
+      // cross-talk from a quick succeeding call) would otherwise be treated
+      // as belonging to this one and could terminate an active call within
+      // seconds of it starting. Only react to events for the call this
+      // cubit is actually running.
+      final currentCallId = state.session?.callId;
+      if (currentCallId != null &&
+          currentCallId.isNotEmpty &&
+          event.callId.isNotEmpty &&
+          event.callId != currentCallId) {
+        appLogger.d(
+          '⚠️ [CallCubit] Ignoring socket event for unrelated call '
+          '(event.callId=${event.callId}, current=$currentCallId)',
+        );
+        return;
+      }
 
       appLogger.d(
         '📲 [CallCubit] Socket event: status=${event.status}, '
@@ -877,6 +1020,20 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     final session = state.session;
     final currentStatus = state.status;
 
+    // If Agora already reported the remote participant offline and we're
+    // sitting in the grace window waiting for the authoritative `ended`
+    // socket push (see the AgoraRemoteUserLeft handling above — this timer
+    // is exactly what drives the "reconnecting" banner), the peer has
+    // almost certainly already ended the call server-side; that's *why*
+    // Agora saw them leave. Firing a fresh HTTP /end here would race an
+    // end the server already recorded and can make it compute a bogus
+    // near-zero duration for this second, redundant call. So a manual end
+    // tap in that window asks the server what it already knows first,
+    // instead of blindly re-triggering /end.
+    final awaitingRemoteConfirmation = _remoteReconnectTimer != null;
+    _remoteReconnectTimer?.cancel();
+    _remoteReconnectTimer = null;
+
     // The billing/duration numbers shown in the post-call summary come from
     // this same call's server response (or the socket event, for the peer).
     // Emitting `ended` before this HTTP call resolves let the summary
@@ -895,7 +1052,24 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     // If the server already ended the call (socket event), skip the HTTP call
     // to avoid a redundant POST /end after the peer already triggered it.
     if (!_serverEndedCall && session != null) {
-      if (currentStatus == CallScreenStatus.ringing ||
+      if (awaitingRemoteConfirmation) {
+        final detailsResult = await _callRepository.getCallDetails(session.callId);
+        final alreadyEnded = detailsResult.fold(
+          (_) => false,
+          (s) => s.status.toLowerCase() == 'ended',
+        );
+        if (alreadyEnded) {
+          detailsResult.fold(
+            (_) {},
+            (updated) => finalSession = _mergeBillingFields(session, updated),
+          );
+        } else {
+          // Agora's offline report was a real network blip, not a hangup —
+          // the server still thinks the call is active, so actually end it.
+          final result = await _endCallUseCase(session.callId);
+          result.fold((_) {}, (updated) => finalSession = _mergeBillingFields(session, updated));
+        }
+      } else if (currentStatus == CallScreenStatus.ringing ||
           currentStatus == CallScreenStatus.initiating) {
         // User cancelled before host answered — HTTP cancel
         final result = await _cancelCallUseCase(session.callId);
@@ -915,6 +1089,11 @@ class CallScreenCubit extends Cubit<CallScreenState> {
         status: CallScreenStatus.ended,
         isRemoteUserJoined: false,
         session: finalSession,
+        // Clears a stale `isRemoteReconnecting`/quality banner left over
+        // from right before this end — otherwise the status label keeps
+        // showing "reconnecting" forever even though the call has ended,
+        // since that check runs ahead of the ended-status check.
+        networkStatus: const CallNetworkStatus(),
       ),
     );
 
@@ -941,6 +1120,24 @@ class CallScreenCubit extends Cubit<CallScreenState> {
           ? response.endReason
           : current.endReason,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Minimize / Restore — pure UI-state flips. The call itself (Agora
+  // session, timers, socket subscriptions) keeps running underneath
+  // regardless of whether the full CallScreen or the floating bubble is
+  // what's currently mounted, so neither of these touches _cleanupResources
+  // or any live connection.
+  // ---------------------------------------------------------------------------
+
+  void minimizeCall() {
+    if (state.isCallEnded) return;
+    emit(state.copyWith(isMinimized: true));
+  }
+
+  void restoreCall() {
+    if (!state.isMinimized) return;
+    emit(state.copyWith(isMinimized: false));
   }
 
   // ---------------------------------------------------------------------------
@@ -975,10 +1172,59 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   // Private Helpers
   // ---------------------------------------------------------------------------
 
+  /// Finalizes the call after the remote participant voluntarily left the
+  /// Agora channel (a genuine hang-up) but the authoritative server-pushed
+  /// `ended` socket event didn't land within the short grace window. Fetches
+  /// the latest call details via HTTP so the final duration/billed
+  /// minutes/points reflect what the server actually recorded, instead of
+  /// guessing from whatever was last synced locally.
+  Future<void> _finalizeVoluntaryRemoteLeave() async {
+    if (_hasTerminated) return;
+    _hasTerminated = true;
+
+    _stopTimer();
+
+    final session = state.session;
+    var finalSession = session;
+    if (session != null) {
+      final result = await _callRepository.getCallDetails(session.callId);
+      if (isClosed) return;
+      result.fold(
+        (failure) => appLogger.d(
+          '❌ [CallCubit] Failed to fetch final call details after remote '
+          'hang-up: ${failure.message}',
+        ),
+        (updated) => finalSession = _mergeBillingFields(session, updated),
+      );
+    }
+
+    if (isClosed) return;
+
+    appLogger.d('🔴 [CallCubit] Remote left voluntarily. Ending call.');
+    emit(
+      state.copyWith(
+        status: CallScreenStatus.ended,
+        mediaStatus: CallMediaStatus.ended,
+        isRemoteUserJoined: false,
+        session: finalSession,
+        networkStatus: const CallNetworkStatus(),
+      ),
+    );
+    _agoraService.leaveChannel();
+    _cleanupResources();
+  }
+
   void _handleCallTerminated(CallSocketEvent event) {
     if (_hasTerminated) return;
     _hasTerminated = true;
     _serverEndedCall = true;
+
+    // Cancel any pending "waiting for remote to rejoin/confirm" timer —
+    // this authoritative event just answered that question, so the local
+    // fallback (which would otherwise fire later and, on the 25s branch,
+    // leave `isRemoteReconnecting` stuck true forever) must not run.
+    _remoteReconnectTimer?.cancel();
+    _remoteReconnectTimer = null;
 
     _stopTimer();
     emit(
@@ -986,6 +1232,9 @@ class CallScreenCubit extends Cubit<CallScreenState> {
         status: CallScreenStatus.ended,
         isRemoteUserJoined: false,
         session: _mergeSocketEvent(event),
+        // See endCall() — clears a stale reconnecting banner so the label
+        // reflects the call actually being over.
+        networkStatus: const CallNetworkStatus(),
       ),
     );
     _agoraService.leaveChannel();
@@ -997,6 +1246,9 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _hasTerminated = true;
     _serverEndedCall = true;
 
+    _remoteReconnectTimer?.cancel();
+    _remoteReconnectTimer = null;
+
     _stopTimer();
     emit(
       state.copyWith(
@@ -1004,6 +1256,7 @@ class CallScreenCubit extends Cubit<CallScreenState> {
         isRemoteUserJoined: false,
         session: _mergeSocketEvent(event),
         errorMessage: 'Call ended: insufficient balance',
+        networkStatus: const CallNetworkStatus(),
       ),
     );
     _agoraService.leaveChannel();
@@ -1079,6 +1332,22 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   }
 
   void _cleanupResources() {
+    // A host's "on call" / "busy" presence flag is set and cleared entirely
+    // server-side and only reaches any given device via that device's own
+    // presence socket's host_status_update push — if that specific push is
+    // delayed or dropped right as the call ends, whichever device is
+    // watching (the host's own dashboard, or the caller's host list showing
+    // the host they just talked to) is left stuck on stale "on call" data,
+    // since nothing else would ever ask the server again. This fires for
+    // BOTH roles: requesting a snapshot only refreshes the requesting
+    // device's own socket connection, so a caller checking whether the host
+    // they just hung up on is free again needs this exact same nudge on
+    // their own device — the host requesting it themselves does nothing for
+    // the caller's view, and vice versa.
+    if (_localRole != null) {
+      _syncPresenceAfterCallEnd();
+    }
+
     _stopTimer();
     _joinTimeoutTimer?.cancel();
     _joinTimeoutTimer = null;
@@ -1086,6 +1355,8 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _remoteReconnectTimer = null;
     _localMidCallReconnectTimer?.cancel();
     _localMidCallReconnectTimer = null;
+    _activateRetryTimer?.cancel();
+    _activateRetryTimer = null;
     _agoraEventSub?.cancel();
     _agoraEventSub = null;
     _connectivitySub?.cancel();
@@ -1100,6 +1371,28 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _socketEventSub = null;
     _agoraService.dispose();
     unawaited(WakelockPlus.disable());
+  }
+
+  /// Requests a fresh presence snapshot as a manual recovery path — the
+  /// same "don't just trust the live push" idiom already used for
+  /// pull-to-refresh in HostDashCubit.refreshDashboardData() — the moment
+  /// this device's own call ends, for whichever role this device played.
+  ///
+  /// Fired more than once on a short delay because the backend clearing
+  /// the host's "busy" flag can itself lag a beat behind the /end response
+  /// that just resolved; a single immediate request can land before that
+  /// flip happens and simply echo back the same stale "still on call"
+  /// snapshot. None of this blocks or delays the already-emitted `ended`
+  /// state — it's a fire-and-forget nudge to an external service, not part
+  /// of the call's own lifecycle.
+  void _syncPresenceAfterCallEnd() {
+    _presenceSocketService.requestPresenceSnapshot();
+    for (final delay in const [Duration(seconds: 2), Duration(seconds: 5)]) {
+      Future.delayed(delay, () {
+        if (isClosed) return;
+        _presenceSocketService.requestPresenceSnapshot();
+      });
+    }
   }
 
   @override

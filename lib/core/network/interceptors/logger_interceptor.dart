@@ -36,10 +36,21 @@ class LoggerInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (kDebugMode) {
-      _logger.e('❌ API ERROR: [${err.response?.statusCode}] ${err.requestOptions.uri}\n'
-          'Message: ${err.message}\n'
-          'Error: ${err.error}\n'
-          'Response: ${err.response?.data}');
+      final responseData = err.response?.data;
+      final message = responseData is Map ? responseData['message'] : null;
+      final isVersionConflict = err.response?.statusCode == 400 &&
+          message is String &&
+          message.contains('No matching document found');
+
+      if (isVersionConflict) {
+        _logger.w('⚠️ VERSION CONFLICT (expected race, ignored): '
+            '${err.requestOptions.uri}\n$message');
+      } else {
+        _logger.e('❌ API ERROR: [${err.response?.statusCode}] ${err.requestOptions.uri}\n'
+            'Message: ${err.message}\n'
+            'Error: ${err.error}\n'
+            'Response: ${err.response?.data}');
+      }
     }
     return handler.next(err);
   }

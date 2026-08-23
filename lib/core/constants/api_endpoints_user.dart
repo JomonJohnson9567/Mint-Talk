@@ -24,6 +24,9 @@ class ApiEndpoints {
   static const String plans = '/plans';
   static String planById(String planId) => '/plans/$planId';
 
+  // ── System Config ────────────────────────────────────────────────────
+  static const String systemConfig = '/system-config';
+
   // ── Wallet ────────────────────────────────────────────────────────────
   static const String walletInitialize = '/wallet/initialize';
   static String walletBalance(String userId) => '/wallet/$userId/balance';

@@ -1,3 +1,4 @@
+import 'package:mint_talk/core/utils/json_number_parser.dart';
 import '../../domain/entities/call_log_entity.dart';
 import 'call_participant_dto.dart';
 
@@ -37,9 +38,9 @@ class CallLogDto {
           : null,
       status: (json['status'] ?? '').toString(),
       callType: (json['callType'] ?? 'audio').toString(),
-      duration: json['duration'] is int ? json['duration'] : 0,
-      billedMinutes: json['billedMinutes'] is int ? json['billedMinutes'] : 0,
-      totalPointsDebited: json['totalPointsDebited'] is num ? json['totalPointsDebited'] : 0,
+      duration: JsonNumberParser.parseInt(json['duration']) ?? 0,
+      billedMinutes: JsonNumberParser.parseInt(json['billedMinutes']) ?? 0,
+      totalPointsDebited: JsonNumberParser.parseInt(json['totalPointsDebited']) ?? 0,
       endReason: (json['endReason'] ?? '').toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())

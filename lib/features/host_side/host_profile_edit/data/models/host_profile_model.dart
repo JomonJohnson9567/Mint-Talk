@@ -6,7 +6,6 @@ class HostProfileModel extends HostProfileEntity {
   const HostProfileModel({
     required super.id,
     required super.fullName,
-    required super.email,
     required super.phone,
     required super.idNumber,
     required super.dob,
@@ -20,14 +19,16 @@ class HostProfileModel extends HostProfileEntity {
     return HostProfileModel(
       id: json['id'] as String? ?? '',
       fullName: json['fullName'] as String? ?? '',
-      email: json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       idNumber: json['idNumber'] as String? ?? '',
       dob: json['dob'] as String? ?? '',
       gender: json['gender'] as String? ?? 'female',
       termsAcceptedAt: json['termsAcceptedAt'] as String? ?? '',
       selectedCategories: List<String>.from(json['selectedCategories'] ?? []),
-      avatarAsset: json['avatarAsset'] as String? ?? '',
+      // The backend's standard field is `avatarUrl` (used by /user/avatar
+      // and /hosts) — `avatarAsset` is kept as a fallback for compatibility.
+      avatarAsset:
+          json['avatarUrl'] as String? ?? json['avatarAsset'] as String? ?? '',
     );
   }
 
@@ -35,14 +36,13 @@ class HostProfileModel extends HostProfileEntity {
     return {
       'id': id,
       'fullName': fullName,
-      'email': email,
       'phone': phone,
       'idNumber': idNumber,
       'dob': dob,
       'gender': gender,
       'termsAcceptedAt': termsAcceptedAt,
       'selectedCategories': selectedCategories,
-      'avatarAsset': avatarAsset,
+      'avatarUrl': avatarAsset,
     };
   }
 
@@ -67,14 +67,11 @@ class HostProfileModel extends HostProfileEntity {
     if (dob.isNotEmpty) {
       data['dob'] = _formatDobForApi(dob);
     }
-    if (email.isNotEmpty) {
-      data['email'] = email;
-    }
     if (selectedCategories.isNotEmpty) {
       data['categories'] = selectedCategories;
     }
     if (avatarAsset.isNotEmpty) {
-      data['avatarAsset'] = avatarAsset;
+      data['avatarUrl'] = avatarAsset;
     }
     return data;
   }
@@ -96,7 +93,6 @@ class HostProfileModel extends HostProfileEntity {
     return HostProfileModel(
       id: entity.id,
       fullName: entity.fullName,
-      email: entity.email,
       phone: entity.phone,
       idNumber: entity.idNumber,
       dob: entity.dob,

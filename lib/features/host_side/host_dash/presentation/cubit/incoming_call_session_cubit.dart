@@ -91,6 +91,19 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
   void _listenForStatusUpdates() {
     _presenceSocketService.subscribeCall(payload.callId);
     _statusSub = _presenceSocketService.callStatusUpdates.listen((data) {
+      // callStatusUpdates is one shared, app-wide stream, not scoped to
+      // this call — without this check, a stray terminal event belonging to
+      // a different call (e.g. a delayed push from a call that just ended
+      // elsewhere) would auto-dismiss this still-ringing overlay as if it
+      // had been missed/ended/rejected/cancelled itself.
+      final eventCallId = (data['callId'] ?? data['id'] ?? data['_id'])
+          ?.toString();
+      if (eventCallId != null &&
+          eventCallId.isNotEmpty &&
+          eventCallId != payload.callId) {
+        return;
+      }
+
       final status = data['status']?.toString();
       final isTerminal =
           status == 'missed' ||
@@ -103,18 +116,22 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
     });
   }
 
-  /// Stops the ring/breathing timers and dismisses the dialog immediately —
-  /// called the instant Accept is tapped. The HTTP accept call now happens
-  /// inside `CallScreenCubit.acceptIncomingCall` after `CallScreen` is
-  /// already on screen (see [IncomingCallOverlayListener]'s `_handleAccept`),
-  /// not here, so the dialog never blocks on the network round trip.
+  /// Stops the ring/breathing timers immediately — called the instant
+  /// Accept is tapped. The HTTP accept call now happens inside
+  /// `CallScreenCubit.acceptIncomingCall` after `CallScreen` is already on
+  /// screen (see [IncomingCallOverlayListener]'s `_handleAccept`), not
+  /// here, so the dialog never blocks on the network round trip.
+  ///
+  /// Deliberately does NOT call [onDismiss] (unlike [reject] and the
+  /// terminal-status path below): `_handleAccept` already replaces this
+  /// dialog's route with `CallScreen` via `pushReplacement`, so popping
+  /// here too would remove the just-pushed `CallScreen` instead.
   void handOffToCallScreen() {
     if (state.isProcessing) return;
     _breathingTimer?.cancel();
     _ringTimer?.cancel();
     _handedOffToCallScreen = true;
     emit(state.copyWith(isProcessing: true));
-    onDismiss();
   }
 
   Future<void> reject() async {

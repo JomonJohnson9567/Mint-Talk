@@ -107,7 +107,12 @@ class _IncomingCallFullScreenModalContent extends StatelessWidget {
     // screen, showing its own "connecting" UI, instead of this overlay
     // blocking on the network round trip before ever leaving the ringing
     // screen.
-    Navigator.of(context).push(
+    //
+    // pushReplacement (not push) because this dialog and CallScreen share
+    // the same root Navigator: a separate push+pop would pop the
+    // just-pushed CallScreen instead of this dialog, leaving the ringing
+    // screen stuck on top forever.
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => CallScreen(
           incomingPayload: payload,

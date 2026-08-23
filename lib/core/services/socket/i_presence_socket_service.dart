@@ -35,6 +35,18 @@ abstract class IPresenceSocketService {
   /// Opens the socket connection with the given [accessToken].
   void connect(String accessToken);
 
+  /// Asks the server to re-push a full presence snapshot (one
+  /// [host_status_update]/[presence_update] event per online/busy host).
+  ///
+  /// Live incremental broadcasts can be missed by an already-connected
+  /// socket (e.g. a backend-side broadcast gap right after another host's
+  /// mid-session `update_availability`, as opposed to their connect/
+  /// disconnect events, which reliably re-sync). This gives callers a way
+  /// to force a manual re-sync — e.g. on pull-to-refresh — instead of the
+  /// only other reliable recovery being a full socket reconnect. No-op if
+  /// the socket isn't currently connected.
+  void requestPresenceSnapshot();
+
   /// Emits availability status update to the server (staff/host only).
   void updateAvailability({
     required bool audioAvailable,
@@ -47,6 +59,9 @@ abstract class IPresenceSocketService {
   void subscribeFavorites();
 
   /// Tells the server to push call events for [callId] to this socket.
+  /// Safe to call whenever the socket is connected — re-emitted
+  /// automatically on every reconnect for as long as the call stays
+  /// subscribed (i.e. until [unsubscribeCall] is called for it).
   void subscribeCall(String callId);
 
   /// Tells the server to stop pushing call events for [callId] to this socket.

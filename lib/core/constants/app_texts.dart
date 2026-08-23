@@ -102,7 +102,6 @@ class AppTexts {
   static const String makeYourCall = 'Make Your Call';
   static const String videoCall = 'Video Call';
   static const String audioCall = 'Audio Call';
-  static const String coinsPerMin = 'coins/min';
   static const String active = 'Active';
   static const String online = 'Online';
   static const String offline = 'Offline';
@@ -186,6 +185,11 @@ class AppTexts {
       'Deleting your account will permanently remove your MintTalk profile and access details. This action cannot be undone.';
   static const String keepAccount = 'Keep Account';
   static const String stayLoggedIn = 'Stay Logged In';
+
+  //Host Application Status Screen
+  static const String reLoginRequiredTitle = 'Login Again as Host';
+  static const String reLoginRequiredMessage =
+      'Please logout and login again with your registered mobile number to activate your host account and start receiving calls.';
 
   //Host Profile Screen
   static const String profileDetails = 'Profile Details';

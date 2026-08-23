@@ -2,8 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/rate_formatter.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 
 class HostProfileStatsRow extends StatelessWidget {
   final HostProfileState profile;
@@ -12,17 +15,18 @@ class HostProfileStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final billingUnit = context.watch<SystemConfigCubit>().state.billingUnit;
     final stats = [
       _StatItem(
         icon: Icons.phone_rounded,
         label: 'Audio rate',
-        value: _rate(profile.audioRate),
+        value: _rate(profile.audioRate, billingUnit),
         extra: _availability(profile.isAudioAllowed),
       ),
       _StatItem(
         icon: Icons.videocam_rounded,
         label: 'Video rate',
-        value: _rate(profile.videoRate),
+        value: _rate(profile.videoRate, billingUnit),
         extra: _availability(profile.isVideoAllowed),
       ),
     ];
@@ -49,7 +53,8 @@ class HostProfileStatsRow extends StatelessWidget {
     );
   }
 
-  String _rate(int? value) => value == null ? '—' : '$value pts/min';
+  String _rate(int? value, String billingUnit) =>
+      value == null ? '—' : RateFormatter.label(value, billingUnit);
 
   String _availability(bool? value) {
     return switch (value) {

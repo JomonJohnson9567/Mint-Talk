@@ -11,19 +11,32 @@ class CallSummaryDialog extends StatelessWidget {
   final CallSessionEntity session;
   final bool isHost;
 
+  /// This device's own second-by-second call tally (CallScreenState.
+  /// durationSeconds) — passed through to CallSummaryCubit purely as a
+  /// cross-check/fallback for when the server's own billing numbers haven't
+  /// caught up yet. See CallSummaryCubit's doc comment for why.
+  final int localDurationSeconds;
+
   const CallSummaryDialog({
     super.key,
     required this.session,
     required this.isHost,
+    this.localDurationSeconds = 0,
   });
 
-  static void show(BuildContext context, CallSessionEntity session, bool isHost) {
+  static void show(
+    BuildContext context,
+    CallSessionEntity session,
+    bool isHost, {
+    int localDurationSeconds = 0,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => CallSummaryDialog(
         session: session,
         isHost: isHost,
+        localDurationSeconds: localDurationSeconds,
       ),
     );
   }
@@ -164,6 +177,7 @@ class CallSummaryDialog extends StatelessWidget {
       create: (context) => CallSummaryCubit(
         session: session,
         isHost: isHost,
+        localDurationSeconds: localDurationSeconds,
       ),
       child: BlocBuilder<CallSummaryCubit, CallSummaryState>(
         builder: (context, state) {

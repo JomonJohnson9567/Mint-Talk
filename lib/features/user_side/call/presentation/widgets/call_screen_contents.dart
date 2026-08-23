@@ -16,21 +16,13 @@ import 'package:mint_talk/features/user_side/call/presentation/widgets/draggable
 import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/widgets/top_snackbar.dart';
 
+/// Display data (name, avatar, host/caller role) is read from
+/// [CallScreenCubit]'s state rather than passed in as constructor args — the
+/// cubit lives at the app root and outlives this widget, and a
+/// bubble-triggered restore re-mounts this widget with nothing else to
+/// source that data from.
 class CallScreenContents extends StatelessWidget {
-  final String displayName;
-  final CallType callType;
-  final String? hostAvatar;
-  final String? hostId;
-  final bool isHost;
-
-  const CallScreenContents({
-    super.key,
-    required this.displayName,
-    this.callType = CallType.audio,
-    this.hostAvatar,
-    this.hostId,
-    this.isHost = false,
-  });
+  const CallScreenContents({super.key});
 
   String _formatDuration(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -42,6 +34,9 @@ class CallScreenContents extends StatelessWidget {
   /// top-level [CallScreenStatus] — a mid-call blip (the common case) still
   /// happens while `status == active`, not just during the initial join.
   String _statusLabel(CallScreenState state) {
+    if (state.isCallEnded) {
+      return 'Call Ended';
+    }
     if (state.networkStatus.isLocalDeviceOffline) {
       return "You're offline. Trying to reconnect…";
     }
@@ -107,79 +102,10 @@ class CallScreenContents extends StatelessWidget {
         final enteredEnded = current.isCallEnded && !previous.isCallEnded;
         return enteredFailed || enteredEnded;
       },
-      listener: (context, state) {
-        if (state.status == CallScreenStatus.failed) {
-          final isBusy =
-              state.errorMessage.toLowerCase().contains('busy') ||
-              state.errorMessage.toLowerCase().contains('another call') ||
-              state.errorMessage.toLowerCase().contains('occupied') ||
-              state.errorMessage.toLowerCase().contains('400') ||
-              state.errorMessage.toLowerCase().contains('409');
-          if (isBusy) {
-            showTopSnackBar(
-              context,
-              "Host is busy right now. Please try again.",
-            );
-          } else if (state.errorMessage.isNotEmpty) {
-            showTopSnackBar(context, state.errorMessage);
-          }
-          Navigator.of(context).maybePop();
-          return;
-        }
-
-        if (state.isCallEnded) {
-          if (isHost) {
-            // The call screen route and the summary dialog share the same
-            // root Navigator (see NavigationService), so the dialog must be
-            // pushed only *after* the call screen has actually been popped —
-            // otherwise this deferred pop would land on top of the dialog
-            // and dismiss it instead of the call screen.
-            final shouldShowSummary =
-                (state.durationSeconds > 0 ||
-                    state.status == CallScreenStatus.insufficientBalance) &&
-                state.session != null;
-            final session = state.session;
-
-            // Pop after the current frame settles so this doesn't race the
-            // video surface teardown above (which is what previously left
-            // the host stuck on a frozen call screen instead of returning
-            // to the dashboard).
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              final navigator = Navigator.of(context);
-              if (navigator.canPop()) {
-                navigator.pop();
-              } else {
-                // No route to pop (e.g. call screen was the root route) —
-                // fall back to the app's navigator so the host isn't left
-                // stranded on a dead screen.
-                getIt<NavigationService>().navigatorKey.currentState?.popUntil(
-                  (route) => route.isFirst,
-                );
-              }
-
-              if (shouldShowSummary && session != null) {
-                final globalContext =
-                    getIt<NavigationService>().navigatorKey.currentContext;
-                if (globalContext != null) {
-                  CallSummaryDialog.show(globalContext, session, isHost);
-                }
-              }
-            });
-          } else {
-            if (state.durationSeconds > 0 ||
-                state.status == CallScreenStatus.insufficientBalance) {
-              _showCallSummaryDialog(context, state);
-            } else {
-              // Do NOT pop immediately on other ended states (e.g. caller cancelled, host declined),
-              // let it show the CallEndedControls!
-            }
-          }
-        }
-      },
+      listener: handleCallEndedTransition,
       builder: (context, state) {
         final cubit = context.read<CallScreenCubit>();
-        final isVideo = (state.session?.callType ?? callType).isVideo;
+        final isVideo = (state.session?.callType ?? CallType.audio).isVideo;
         final agoraEngine = cubit.agoraEngine;
         // The auto-hide toggle in state is only meaningful while a video
         // call is active (that's the only time CallScreenCubit schedules
@@ -287,8 +213,8 @@ class CallScreenContents extends StatelessWidget {
                           // Avatar (Audio calls only)
                           if (!isVideo)
                             CallProfileAvatar(
-                              imagePath: hostAvatar?.isNotEmpty == true
-                                  ? hostAvatar!
+                              imagePath: state.avatarUrl?.isNotEmpty == true
+                                  ? state.avatarUrl!
                                   : AppAssets.maleIcon,
                               isBreathingExpanded:
                                   state.status == CallScreenStatus.ringing,
@@ -323,21 +249,24 @@ class CallScreenContents extends StatelessWidget {
                           // straight back to their dashboard (see listener above),
                           // so nothing should render here for them.
                           if (state.isCallEnded)
-                            isHost
+                            state.isHost
                                 ? const SizedBox.shrink()
                                 : CallEndedControls(
                                     onCancel: () =>
                                         Navigator.of(context).maybePop(),
                                     onCallAgain: () {
                                       final targetHostId =
-                                          state.session?.hostId ?? hostId;
+                                          state.session?.hostId;
                                       final targetCallType =
-                                          state.session?.callType ?? callType;
+                                          state.session?.callType ??
+                                          CallType.audio;
                                       if (targetHostId != null &&
                                           targetHostId.isNotEmpty) {
                                         cubit.startOutgoingCall(
                                           hostId: targetHostId,
                                           callType: targetCallType,
+                                          displayName: state.displayName,
+                                          avatarUrl: state.avatarUrl,
                                         );
                                       } else {
                                         Navigator.of(context).maybePop();
@@ -374,8 +303,8 @@ class CallScreenContents extends StatelessWidget {
                         top: 20.h,
                         left: 20.w,
                         child: CallerIdentityChip(
-                          name: displayName,
-                          avatarPath: hostAvatar,
+                          name: state.displayName,
+                          avatarPath: state.avatarUrl,
                         ),
                       ),
 
@@ -491,11 +420,102 @@ class CallScreenContents extends StatelessWidget {
       },
     );
   }
+}
 
-  void _showCallSummaryDialog(BuildContext context, CallScreenState state) {
+/// Runs the call's "just ended/failed" side effects: a snackbar+pop for a
+/// failed call, or the pop-then-summary-dialog sequence for a genuinely
+/// ended call.
+///
+/// Called from two places: [CallScreenContents]'s own `BlocConsumer`
+/// listener, for a live transition while the screen is visible — and from
+/// [CallScreen] itself, when it mounts directly into an already-ended state
+/// (e.g. restored from the floating bubble after the call ended while
+/// minimized). flutter_bloc's `BlocListener` never replays a state that was
+/// already current at the time it subscribed, so that second call site is
+/// what covers this scenario — without it, a call ending while minimized
+/// would silently strand the user on a screen with no exit and no summary.
+void handleCallEndedTransition(BuildContext context, CallScreenState state) {
+  if (state.status == CallScreenStatus.failed) {
+    final isBusy =
+        state.errorMessage.toLowerCase().contains('busy') ||
+        state.errorMessage.toLowerCase().contains('another call') ||
+        state.errorMessage.toLowerCase().contains('occupied') ||
+        state.errorMessage.toLowerCase().contains('400') ||
+        state.errorMessage.toLowerCase().contains('409');
+    if (isBusy) {
+      showTopSnackBar(context, "Host is busy right now. Please try again.");
+    } else if (state.errorMessage.isNotEmpty) {
+      showTopSnackBar(context, state.errorMessage);
+    }
+    Navigator.of(context).maybePop();
+    return;
+  }
+
+  if (state.isCallEnded) {
+    if (state.isHost) {
+      // The call screen route and the summary dialog share the same
+      // root Navigator (see NavigationService), so the dialog must be
+      // pushed only *after* the call screen has actually been popped —
+      // otherwise this deferred pop would land on top of the dialog
+      // and dismiss it instead of the call screen.
+      final shouldShowSummary =
+          (state.durationSeconds > 0 ||
+              state.status == CallScreenStatus.insufficientBalance) &&
+          state.session != null;
+      final session = state.session;
+
+      // Pop after the current frame settles so this doesn't race the
+      // video surface teardown above (which is what previously left
+      // the host stuck on a frozen call screen instead of returning
+      // to the dashboard).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+        } else {
+          // No route to pop (e.g. call screen was the root route) —
+          // fall back to the app's navigator so the host isn't left
+          // stranded on a dead screen.
+          getIt<NavigationService>().navigatorKey.currentState?.popUntil(
+            (route) => route.isFirst,
+          );
+        }
+
+        if (shouldShowSummary && session != null) {
+          final globalContext =
+              getIt<NavigationService>().navigatorKey.currentContext;
+          if (globalContext != null) {
+            CallSummaryDialog.show(
+              globalContext,
+              session,
+              state.isHost,
+              localDurationSeconds: state.durationSeconds,
+            );
+          }
+        }
+      });
+    } else {
+      if (state.durationSeconds > 0 ||
+          state.status == CallScreenStatus.insufficientBalance) {
+        _showCallSummaryDialog(context, state);
+      } else {
+        // Do NOT pop immediately on other ended states (e.g. caller cancelled, host declined),
+        // let it show the CallEndedControls!
+      }
+    }
+  }
+}
+
+void _showCallSummaryDialog(BuildContext context, CallScreenState state) {
     final session = state.session;
     if (session != null) {
-      CallSummaryDialog.show(context, session, isHost);
+      CallSummaryDialog.show(
+        context,
+        session,
+        state.isHost,
+        localDurationSeconds: state.durationSeconds,
+      );
     } else {
       showDialog(
         context: context,
@@ -583,4 +603,4 @@ class CallScreenContents extends StatelessWidget {
       );
     }
   }
-}
+

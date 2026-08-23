@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/rate_formatter.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 import 'package:mint_talk/features/user_side/online_users/presentation/models/video_call_online_user.dart';
 
 class VideoCallOnlineUserCard extends StatelessWidget {
@@ -11,6 +14,7 @@ class VideoCallOnlineUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final billingUnit = context.watch<SystemConfigCubit>().state.billingUnit;
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -116,7 +120,7 @@ class VideoCallOnlineUserCard extends StatelessWidget {
               ),
               _InfoChip(
                 icon: Icons.currency_rupee_rounded,
-                label: '${user.ratePerMinute}/min',
+                label: RateFormatter.label(user.ratePerMinute, billingUnit, unit: ''),
                 color: AppColors.onlineIndicator,
               ),
             ],

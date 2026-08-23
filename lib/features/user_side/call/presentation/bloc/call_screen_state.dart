@@ -85,6 +85,18 @@ class CallScreenState extends Equatable {
   final CallNetworkStatus networkStatus;
   final bool controlsVisible;
 
+  /// True while the call is minimized to the floating bubble (back was
+  /// pressed mid-call) — the call itself (Agora session, timers, sockets)
+  /// keeps running underneath regardless of this flag.
+  final bool isMinimized;
+
+  /// Display data for the other participant. Owned by state (not passed as
+  /// widget constructor args) so a bubble-triggered restore, which re-pushes
+  /// [CallScreen] with no arguments, can still render the right name/avatar.
+  final String displayName;
+  final String? avatarUrl;
+  final bool isHost;
+
   const CallScreenState({
     this.status = CallScreenStatus.initial,
     this.mediaStatus = CallMediaStatus.idle,
@@ -99,6 +111,10 @@ class CallScreenState extends Equatable {
     this.waveStep = 0,
     this.networkStatus = const CallNetworkStatus(),
     this.controlsVisible = true,
+    this.isMinimized = false,
+    this.displayName = '',
+    this.avatarUrl,
+    this.isHost = false,
   });
 
   bool get isCallActive => status == CallScreenStatus.active;
@@ -121,6 +137,10 @@ class CallScreenState extends Equatable {
     int? waveStep,
     CallNetworkStatus? networkStatus,
     bool? controlsVisible,
+    bool? isMinimized,
+    String? displayName,
+    String? avatarUrl,
+    bool? isHost,
   }) {
     return CallScreenState(
       status: status ?? this.status,
@@ -136,6 +156,10 @@ class CallScreenState extends Equatable {
       waveStep: waveStep ?? this.waveStep,
       networkStatus: networkStatus ?? this.networkStatus,
       controlsVisible: controlsVisible ?? this.controlsVisible,
+      isMinimized: isMinimized ?? this.isMinimized,
+      displayName: displayName ?? this.displayName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      isHost: isHost ?? this.isHost,
     );
   }
 
@@ -154,5 +178,9 @@ class CallScreenState extends Equatable {
     waveStep,
     networkStatus,
     controlsVisible,
+    isMinimized,
+    displayName,
+    avatarUrl,
+    isHost,
   ];
 }

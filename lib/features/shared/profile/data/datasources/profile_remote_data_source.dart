@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
@@ -32,7 +33,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       );
 
       if (response['success'] == true || response['data'] != null) {
-        return ProfileImageDto.fromJson(response);
+        final dto = ProfileImageDto.fromJson(response);
+        // The backend serves the avatar from a stable per-user URL, so a
+        // re-upload keeps the same URL with new bytes. Evict it so every
+        // CachedNetworkImage showing this user's avatar (e.g. the "Hosts
+        // Online" grid) re-fetches the new image instead of the stale one.
+        if (dto.avatarUrl.isNotEmpty) {
+          await CachedNetworkImage.evictFromCache(dto.avatarUrl);
+        }
+        return dto;
       }
       throw ServerException(
         message: response['message'] ?? 'Failed to upload profile image',

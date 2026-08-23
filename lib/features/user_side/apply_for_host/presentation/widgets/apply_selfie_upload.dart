@@ -46,7 +46,7 @@ class ApplySelfieUpload extends StatelessWidget {
                   GestureDetector(
                     onTap: hasSelfie || state.isUploadingSelfie
                         ? null
-                        : () => _pickImage(context, (path) {
+                        : () => _captureSelfie((path) {
                             cubit.selfieChanged(path);
                             cubit.uploadSelfie(path);
                           }),
@@ -164,62 +164,18 @@ class ApplySelfieUpload extends StatelessWidget {
     );
   }
 
-  void _pickImage(BuildContext context, Function(String) onImagePicked) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      backgroundColor: AppColors.white,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(AppIcons.camera, color: AppColors.primaryColor),
-                title: Text(
-                  'Take Photo',
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-                ),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  final picker = ImagePicker();
-                  final picked = await picker.pickImage(
-                    source: ImageSource.camera,
-                    preferredCameraDevice: CameraDevice.front,
-                    imageQuality: 80,
-                  );
-                  if (picked != null) {
-                    onImagePicked(picked.path);
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_outlined,
-                  color: AppColors.primaryColor,
-                ),
-                title: Text(
-                  'Choose from Gallery',
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-                ),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  final picker = ImagePicker();
-                  final picked = await picker.pickImage(
-                    source: ImageSource.gallery,
-                    imageQuality: 80,
-                  );
-                  if (picked != null) {
-                    onImagePicked(picked.path);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+  /// KYC selfies must be captured live — picking an existing photo from the
+  /// gallery would defeat the identity-verification purpose, so this only
+  /// ever opens the front camera.
+  Future<void> _captureSelfie(Function(String) onImageCaptured) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 80,
     );
+    if (picked != null) {
+      onImageCaptured(picked.path);
+    }
   }
 }

@@ -17,7 +17,6 @@ class AppRoutes {
   static const String profileScreen = '/profileScreen';
   static const String settingsScreen = '/settingsScreen';
   static const String hostProfileScreen = '/hostProfileScreen';
-  static const String callScreen = '/callScreen';
   static const String rechargePlansScreen = '/rechargePlansScreen';
   static const String userRechargeHistory = '/userRechargeHistory';
   static const String referralStatusScreen = '/referralStatusScreen';

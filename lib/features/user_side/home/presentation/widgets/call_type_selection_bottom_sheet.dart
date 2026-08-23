@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/rate_formatter.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
@@ -38,6 +41,7 @@ class CallTypeSelectionBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final billingUnit = context.watch<SystemConfigCubit>().state.billingUnit;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -145,7 +149,9 @@ class CallTypeSelectionBottomSheet extends StatelessWidget {
             icon: Icons.phone_in_talk_rounded,
             title: 'Audio Call',
             subtitle: 'Crystal clear voice conversation',
-            rateText: host.audioRate > 0 ? '${host.audioRate} pts/min' : null,
+            rateText: host.audioRate > 0
+                ? RateFormatter.label(host.audioRate, billingUnit)
+                : null,
             color: AppColors.primaryColor,
             onTap: () => _onSelectCallType(context, CallType.audio),
           ),
@@ -157,7 +163,9 @@ class CallTypeSelectionBottomSheet extends StatelessWidget {
             icon: Icons.videocam_rounded,
             title: 'Video Call',
             subtitle: 'HD face-to-face video stream',
-            rateText: host.videoRate > 0 ? '${host.videoRate} pts/min' : null,
+            rateText: host.videoRate > 0
+                ? RateFormatter.label(host.videoRate, billingUnit)
+                : null,
             color: const Color(0xFF6C5CE7),
             onTap: () => _onSelectCallType(context, CallType.video),
           ),

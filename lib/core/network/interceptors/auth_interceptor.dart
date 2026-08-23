@@ -57,7 +57,15 @@ class AuthInterceptor extends Interceptor {
     final response = err.response;
     final statusCode = response?.statusCode;
 
-    if (statusCode == 401) {
+    // Only treat a 401 as a session expiry when it came from a request that
+    // actually required auth. Pre-auth endpoints (send-otp, verify-otp) pass
+    // `requiresAuth: false` and can legitimately return 401 for things like
+    // a wrong OTP — that must surface as a normal failure to the caller
+    // (e.g. so the OTP screen can show an inline error and let the user
+    // retry) instead of clearing tokens and redirecting to the phone number
+    // screen.
+    final requiredAuth = err.requestOptions.extra['requiresAuth'] == true;
+    if (statusCode == 401 && requiredAuth) {
       final tokenManager = getIt<TokenManager>();
 
       // Avoid infinite loop if the refresh attempt itself or the retried request fails again

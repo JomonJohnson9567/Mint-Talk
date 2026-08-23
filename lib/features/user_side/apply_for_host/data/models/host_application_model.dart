@@ -29,9 +29,24 @@ class HostApplicationModel extends HostApplicationEntity {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'dob': dob,
+      'dob': _isoDob(dob),
       'bio': bio,
       'selfieUrl': selfieUrl,
     };
+  }
+
+  /// Converts the UI's `d/M/yyyy` dob string to `yyyy-MM-dd` for the API.
+  static String _isoDob(String dob) {
+    final parts = dob.split('/');
+    if (parts.length != 3) return dob;
+
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return dob;
+
+    return '${year.toString().padLeft(4, '0')}-'
+        '${month.toString().padLeft(2, '0')}-'
+        '${day.toString().padLeft(2, '0')}';
   }
 }

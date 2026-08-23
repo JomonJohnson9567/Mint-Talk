@@ -16,6 +16,14 @@ class AgoraService implements IAgoraService {
   bool _isJoining = false;
   bool _isJoined = false;
 
+  // Bounds every native engine call made during teardown. Without this, a
+  // hung stopPreview()/leaveChannel()/release() (seen in practice on some
+  // devices) leaves `_isDisposing` stuck true forever, which then wedges
+  // initialize()'s wait loop below and permanently freezes every call after
+  // it at the "initializing" stage — since this service is a
+  // process-lifetime singleton reused across calls, not a fresh instance.
+  static const _nativeCallTimeout = Duration(seconds: 3);
+
   @override
   Stream<AgoraCallEvent> get events =>
       _eventController?.stream ?? const Stream.empty();
@@ -209,8 +217,21 @@ class AgoraService implements IAgoraService {
     if (_engine == null) return;
     _logger.d('[AgoraService] Leaving channel...');
     try {
-      await _engine!.stopPreview();
-      await _engine!.leaveChannel();
+      // Isolated from leaveChannel() below: audio-only calls never call
+      // enableVideo()/startPreview() (see joinChannel, which calls
+      // disableVideo() instead), so stopPreview() can throw here since the
+      // video module was never active. That must never block the
+      // leaveChannel() call below — that's the call that actually notifies
+      // Agora's servers this user left voluntarily
+      // (UserOfflineReasonType.userOfflineQuit). If it's skipped, the peer
+      // never gets the graceful "quit" signal and falls back to the much
+      // slower network-drop timeout detection instead.
+      await _engine!.stopPreview().timeout(_nativeCallTimeout);
+    } catch (e) {
+      _logger.w('[AgoraService] stopPreview failed (expected for audio-only calls): $e');
+    }
+    try {
+      await _engine!.leaveChannel().timeout(_nativeCallTimeout);
     } catch (e) {
       _logger.e('[AgoraService] Error leaving channel: $e');
     } finally {
@@ -286,7 +307,14 @@ class AgoraService implements IAgoraService {
     try {
       await leaveChannel();
       if (_engine != null) {
-        await _engine!.release();
+        try {
+          await _engine!.release().timeout(_nativeCallTimeout);
+        } catch (e) {
+          _logger.e('[AgoraService] Error releasing engine: $e');
+        }
+        // Drop the reference regardless of whether release() above
+        // succeeded, failed, or timed out — a zombie engine reused by the
+        // next initialize() is worse than a leaked native handle.
         _engine = null;
       }
       await _eventController?.close();

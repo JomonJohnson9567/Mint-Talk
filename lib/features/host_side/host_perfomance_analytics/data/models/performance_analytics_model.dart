@@ -78,10 +78,10 @@ class PerformanceAnalyticsModel extends PerformanceAnalyticsEntity {
       todayAudioPercentage: (json['todayAudioPercentage'] as num? ?? 0.0).toDouble(),
       todayTargetMet: json['todayTargetMet'] as bool? ?? false,
       achievementRate: (json['achievementRate'] as num? ?? 0.0).toDouble(),
-      achievementDays: json['achievementDays'] as int? ?? 0,
-      totalDays: json['totalDays'] as int? ?? 0,
-      totalVideoMinutes: json['totalVideoMinutes'] as int? ?? 0,
-      totalAudioMinutes: json['totalAudioMinutes'] as int? ?? 0,
+      achievementDays: (json['achievementDays'] as num?)?.toInt() ?? 0,
+      totalDays: (json['totalDays'] as num?)?.toInt() ?? 0,
+      totalVideoMinutes: (json['totalVideoMinutes'] as num?)?.toInt() ?? 0,
+      totalAudioMinutes: (json['totalAudioMinutes'] as num?)?.toInt() ?? 0,
       dailyHistory: historyList,
     );
   }

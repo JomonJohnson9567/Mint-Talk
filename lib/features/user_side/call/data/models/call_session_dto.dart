@@ -1,3 +1,4 @@
+import 'package:mint_talk/core/utils/json_number_parser.dart';
 import '../../domain/entities/call_session_entity.dart';
 import '../../domain/entities/call_type.dart';
 
@@ -42,18 +43,10 @@ class CallSessionDto {
           data['rtcToken']?.toString(),
       status: (data['status'] ?? 'ringing').toString(),
       callType: CallType.fromString(rawCallType),
-      duration: data['duration'] is int
-          ? data['duration']
-          : int.tryParse(data['duration']?.toString() ?? ''),
-      billedMinutes: data['billedMinutes'] is int
-          ? data['billedMinutes']
-          : int.tryParse(data['billedMinutes']?.toString() ?? ''),
-      totalPointsDebited: data['totalPointsDebited'] is int
-          ? data['totalPointsDebited']
-          : int.tryParse(data['totalPointsDebited']?.toString() ?? ''),
-      ratePerMinute: data['ratePerMinute'] is int
-          ? data['ratePerMinute']
-          : int.tryParse(data['ratePerMinute']?.toString() ?? ''),
+      duration: JsonNumberParser.parseInt(data['duration']),
+      billedMinutes: JsonNumberParser.parseInt(data['billedMinutes']),
+      totalPointsDebited: JsonNumberParser.parseInt(data['totalPointsDebited']),
+      ratePerMinute: JsonNumberParser.parseInt(data['ratePerMinute']),
       endReason: data['endReason']?.toString(),
       hostId: data['hostId']?.toString(),
       callerId: data['callerId']?.toString(),

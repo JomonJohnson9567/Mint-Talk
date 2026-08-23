@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 class HostProfileEntity extends Equatable {
   final String id;
   final String fullName;
-  final String email;
   final String phone;
   final String idNumber;
   final String dob;
@@ -17,7 +16,6 @@ class HostProfileEntity extends Equatable {
   const HostProfileEntity({
     required this.id,
     required this.fullName,
-    required this.email,
     required this.phone,
     required this.idNumber,
     required this.dob,
@@ -30,7 +28,6 @@ class HostProfileEntity extends Equatable {
   HostProfileEntity copyWith({
     String? id,
     String? fullName,
-    String? email,
     String? phone,
     String? idNumber,
     String? dob,
@@ -42,7 +39,6 @@ class HostProfileEntity extends Equatable {
     return HostProfileEntity(
       id: id ?? this.id,
       fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
       phone: phone ?? this.phone,
       idNumber: idNumber ?? this.idNumber,
       dob: dob ?? this.dob,
@@ -57,7 +53,6 @@ class HostProfileEntity extends Equatable {
   List<Object?> get props => [
         id,
         fullName,
-        email,
         phone,
         idNumber,
         dob,

@@ -59,6 +59,18 @@ class PresenceSocketService implements IPresenceSocketService {
   bool? _pendingAudioAvailable;
   bool? _pendingVideoAvailable;
 
+  /// Call IDs the app has asked the server to push events for. Unlike
+  /// [updateAvailability] (buffered) or [subscribeFavorites] (re-emitted on
+  /// every connect handler run), a plain emit()-on-connected subscribeCall
+  /// only reaches the server if the socket happens to already be connected
+  /// at the moment it's called — and any reconnect (screen off, a brief
+  /// network drop, both routine mid-call) creates a new server-side socket
+  /// session that has never subscribed to this callId, so server-pushed
+  /// events like `call_ended` silently stop arriving for the rest of the
+  /// call. Tracking the active set here and replaying subscribe_call for
+  /// each one on every successful connect closes that gap.
+  final Set<String> _subscribedCallIds = {};
+
   /// Prevents concurrent reconnect attempts.
   bool _isReconnecting = false;
 
@@ -84,7 +96,13 @@ class PresenceSocketService implements IPresenceSocketService {
   /// refreshed token that the socket server keeps rejecting (backend bug,
   /// clock skew, a refresh token that doesn't actually rotate — any of
   /// these) sends this handler into an unbounded refresh→reconnect→fail
-  /// loop that never lets the user reach a real login screen.
+  /// loop. Once the cap is hit, the socket gives up quietly rather than
+  /// forcing a logout — REST calls on the very same token routinely keep
+  /// succeeding while the socket rejects it (observed in practice: the
+  /// socket's auth check appears to race a session-version bump that REST
+  /// doesn't check), so treating repeated *socket-only* rejection as proof
+  /// the whole session is dead would log a still-validly-authenticated user
+  /// out from under them.
   static const int _maxAuthRefreshAttempts = 3;
   int _authRefreshAttempts = 0;
 
@@ -171,9 +189,19 @@ class PresenceSocketService implements IPresenceSocketService {
           .setExtraHeaders({'Authorization': 'Bearer $accessToken'})
           // Graceful exponential backoff instead of hammering the network
           // every ~1s while the phone is asleep / briefly offline (which is
-          // what produced the repeated "Failed host lookup" log spam).
-          .setReconnectionDelay(2000)
-          .setReconnectionDelayMax(20000)
+          // what produced the repeated "Failed host lookup" log spam) — but
+          // capped well under the backend's own 15s grace period for an
+          // active call (per the API docs: the server force-ends an active
+          // call if this socket doesn't reconnect within 15s, independent
+          // of whether Agora's own media connection is still healthy). The
+          // previous 20s ceiling could let the gap between two reconnect
+          // attempts exceed that window after only a couple of failures —
+          // e.g. a video call's heavier bandwidth/CPU use getting briefly
+          // throttled while backgrounded — silently losing an otherwise-
+          // fine call to the server's own watchdog, not Agora's. 1s/8s
+          // keeps every retry gap comfortably inside the 15s budget.
+          .setReconnectionDelay(1000)
+          .setReconnectionDelayMax(8000)
           .setRandomizationFactor(0.5)
           .build(),
     );
@@ -191,6 +219,9 @@ class PresenceSocketService implements IPresenceSocketService {
       _socket!.emit(_SocketEvents.getPresenceSnapshot);
     }
   }
+
+  @override
+  void requestPresenceSnapshot() => _requestSnapshot();
 
   @override
   void subscribeFavorites() {
@@ -232,14 +263,18 @@ class PresenceSocketService implements IPresenceSocketService {
 
   @override
   void subscribeCall(String callId) {
+    _subscribedCallIds.add(callId);
     if (_socket != null && _socket!.connected) {
       _logger.d('[PresenceSocket] Emitting subscribe_call for callId: $callId');
       _socket!.emit(_SocketEvents.subscribeCall, {'callId': callId});
     }
+    // If not connected yet, the connect handler below flushes it once the
+    // handshake completes — and re-flushes it again on every reconnect.
   }
 
   @override
   void unsubscribeCall(String callId) {
+    _subscribedCallIds.remove(callId);
     if (_socket != null && _socket!.connected) {
       _logger.d('[PresenceSocket] Emitting unsubscribe_call for callId: $callId');
       _socket!.emit(_SocketEvents.unsubscribeCall, {'callId': callId});
@@ -259,6 +294,7 @@ class PresenceSocketService implements IPresenceSocketService {
   void dispose() {
     _logger.d('[PresenceSocket] Disposing.');
     _connectInFlight = false;
+    _subscribedCallIds.clear();
     _socket?.dispose();
     _socket = null;
     _controller?.close();
@@ -335,6 +371,17 @@ class PresenceSocketService implements IPresenceSocketService {
         // Ask the server to include favorited-host updates in this same
         // push channel — re-emitted automatically on every reconnect.
         subscribeFavorites();
+
+        // Re-subscribe to every call still in progress — a fresh reconnect
+        // is a brand new server-side socket session that has no memory of
+        // subscribe_call requests made before the drop, so without this a
+        // reconnect mid-call (screen off, brief network blip) silently cuts
+        // off server-pushed events (call_ended, etc.) for the rest of the
+        // call.
+        for (final callId in _subscribedCallIds) {
+          _logger.d('[PresenceSocket] Re-subscribing to call: $callId');
+          _socket!.emit(_SocketEvents.subscribeCall, {'callId': callId});
+        }
       } catch (e) {
         _logger.e('[PresenceSocket] Error in connect handler: $e');
       }
@@ -529,20 +576,22 @@ class PresenceSocketService implements IPresenceSocketService {
         if (isAuthError && !_isReconnecting) {
           if (_authRefreshAttempts >= _maxAuthRefreshAttempts) {
             // The refreshed token has failed at the socket layer
-            // _maxAuthRefreshAttempts times in a row — refreshing again
-            // isn't going to fix it (backend issue, clock skew, a refresh
-            // token that isn't actually rotating, etc.). Stop looping and
-            // force a real logout instead of retrying forever.
+            // _maxAuthRefreshAttempts times in a row while the same token
+            // keeps working for REST — refreshing again isn't going to fix
+            // it, but the REST session is demonstrably still valid, so
+            // forcing a logout would be wrong. Give up on the real-time
+            // channel only: presence/call-signaling goes stale until the
+            // next explicit connect() (next screen visit, pull-to-refresh,
+            // app resume), and the retry budget resets for that attempt.
             _logger.e(
               '[PresenceSocket] Auth refresh retry limit reached '
-              '($_maxAuthRefreshAttempts attempts) — logging out.',
+              '($_maxAuthRefreshAttempts attempts) — giving up on the '
+              'socket without logging out; REST session may still be valid.',
             );
+            _authRefreshAttempts = 0;
+            _isReconnecting = false;
             _connectInFlight = false;
-            await _tokenManager.clearAll();
-            getIt<NavigationService>().navigateAndRemoveUntil(
-              AppRoutes.phoneNumber,
-              arguments: {'message': 'Session expired. Please log in again.'},
-            );
+            _socket?.disconnect();
             return;
           }
 

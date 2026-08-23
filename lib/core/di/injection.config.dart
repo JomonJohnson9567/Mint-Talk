@@ -183,6 +183,16 @@ import '../../features/shared/profile/domain/usecases/upload_profile_image_useca
     as _i32;
 import '../../features/shared/profile/presentation/cubit/profile_image_cubit.dart'
     as _i62;
+import '../../features/shared/system_config/data/datasources/system_config_remote_datasource.dart'
+    as _i381;
+import '../../features/shared/system_config/data/repositories/system_config_repository_impl.dart'
+    as _i935;
+import '../../features/shared/system_config/domain/repositories/system_config_repository.dart'
+    as _i962;
+import '../../features/shared/system_config/domain/usecases/get_system_config_usecase.dart'
+    as _i563;
+import '../../features/shared/system_config/presentation/cubit/system_config_cubit.dart'
+    as _i510;
 import '../../features/user_side/apply_for_host/data/datasources/host_application_local_datasource.dart'
     as _i327;
 import '../../features/user_side/apply_for_host/data/datasources/host_application_remote_datasource.dart'
@@ -463,6 +473,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i507.LeaveRemoteDataSource>(
       () => _i507.LeaveRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
+    gh.lazySingleton<_i381.SystemConfigRemoteDataSource>(
+      () => _i381.SystemConfigRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
     gh.lazySingleton<_i449.ICallRemoteDataSource>(
       () => _i449.CallRemoteDataSource(gh<_i557.ApiClient>()),
     );
@@ -556,6 +569,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i586.HostWalletRepository>(
       () => _i572.HostWalletRepositoryImpl(
         gh<_i960.HostWalletRemoteDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i962.SystemConfigRepository>(
+      () => _i935.SystemConfigRepositoryImpl(
+        gh<_i381.SystemConfigRemoteDataSource>(),
       ),
     );
     gh.factory<_i790.GetReferralStatusUseCase>(
@@ -654,6 +672,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i381.PlanDetailCubit>(
       () => _i381.PlanDetailCubit(gh<_i523.GetPlanByIdUseCase>()),
     );
+    gh.factory<_i563.GetSystemConfigUseCase>(
+      () => _i563.GetSystemConfigUseCase(gh<_i962.SystemConfigRepository>()),
+    );
     gh.factory<_i668.BlockedUsersCubit>(
       () => _i668.BlockedUsersCubit(
         getBlockedListUseCase: gh<_i266.GetBlockedListUseCase>(),
@@ -699,6 +720,22 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i224.WatchNewMessagesUseCase>(
       () => _i224.WatchNewMessagesUseCase(gh<_i562.ChatRepository>()),
     );
+    gh.factory<_i559.CallScreenCubit>(
+      () => _i559.CallScreenCubit(
+        gh<_i866.InitiateCallUseCase>(),
+        gh<_i106.AcceptCallUseCase>(),
+        gh<_i415.ActivateCallUseCase>(),
+        gh<_i1018.EndCallUseCase>(),
+        gh<_i692.CancelCallUseCase>(),
+        gh<_i10.IAgoraService>(),
+        gh<_i294.ICallRepository>(),
+        gh<_i145.EnvConfig>(),
+        gh<_i405.ICallPermissionService>(),
+        gh<_i787.AuthRepository>(),
+        gh<_i1015.IConnectivityService>(),
+        gh<_i541.IPresenceSocketService>(),
+      ),
+    );
     gh.lazySingleton<_i456.HostApplicationRepository>(
       () => _i234.HostApplicationRepositoryImpl(
         gh<_i199.HostApplicationRemoteDataSource>(),
@@ -739,14 +776,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i945.CallReportCubit>(
       () => _i945.CallReportCubit(
         reportCallMisconductUseCase: gh<_i75.ReportCallMisconductUseCase>(),
-      ),
-    );
-    gh.factory<_i986.HostDashCubit>(
-      () => _i986.HostDashCubit(
-        gh<_i57.GetHostDashboardDataUseCase>(),
-        gh<_i787.AuthRepository>(),
-        gh<_i541.IPresenceSocketService>(),
-        gh<_i833.TokenManager>(),
       ),
     );
     gh.factory<_i253.ProfileCubit>(
@@ -795,21 +824,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i663.GetHostsUseCase>(
       () => _i663.GetHostsUseCase(gh<_i136.HostRepository>()),
     );
-    gh.factory<_i559.CallScreenCubit>(
-      () => _i559.CallScreenCubit(
-        gh<_i866.InitiateCallUseCase>(),
-        gh<_i106.AcceptCallUseCase>(),
-        gh<_i415.ActivateCallUseCase>(),
-        gh<_i1018.EndCallUseCase>(),
-        gh<_i692.CancelCallUseCase>(),
-        gh<_i10.IAgoraService>(),
-        gh<_i294.ICallRepository>(),
-        gh<_i145.EnvConfig>(),
-        gh<_i405.ICallPermissionService>(),
-        gh<_i787.AuthRepository>(),
-        gh<_i1015.IConnectivityService>(),
-      ),
-    );
     gh.factory<_i663.SendOtpUseCase>(
       () => _i663.SendOtpUseCase(gh<_i787.AuthRepository>()),
     );
@@ -818,6 +832,15 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i48.LogoutUseCase>(
       () => _i48.LogoutUseCase(gh<_i787.AuthRepository>()),
+    );
+    gh.factory<_i986.HostDashCubit>(
+      () => _i986.HostDashCubit(
+        gh<_i57.GetHostDashboardDataUseCase>(),
+        gh<_i663.GetHostsUseCase>(),
+        gh<_i787.AuthRepository>(),
+        gh<_i541.IPresenceSocketService>(),
+        gh<_i833.TokenManager>(),
+      ),
     );
     gh.factory<_i891.ApplyForHostCubit>(
       () => _i891.ApplyForHostCubit(
@@ -873,6 +896,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i381.AddFavoriteUseCase>(),
         gh<_i193.RemoveFavoriteUseCase>(),
       ),
+    );
+    gh.factory<_i510.SystemConfigCubit>(
+      () => _i510.SystemConfigCubit(gh<_i563.GetSystemConfigUseCase>()),
     );
     gh.factory<_i32.UploadProfileImageUseCase>(
       () => _i32.UploadProfileImageUseCase(gh<_i418.ProfileRepository>()),

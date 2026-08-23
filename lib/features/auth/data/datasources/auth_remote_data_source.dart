@@ -28,7 +28,7 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
 
   const AuthRemoteDataSourceImpl(this._apiClient, this._tokenManager);
 
-  /// POST /auth/send-otp (MUTED FOR TESTING)
+  /// POST /auth/send-otp
   ///
   /// Sends an OTP to the given phone number.
   @override
@@ -36,8 +36,20 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
     required String phone,
     required String countryCode,
   }) async {
-    // Muted for testing purposes: return immediately without calling backend API.
-    return;
+    final response = await _apiClient.post(
+      ApiEndpoints.sendOtp,
+      body: {'phone': phone, 'countryCode': countryCode},
+    );
+
+    appLogger.d('[AuthRemoteDataSource] sendOtp response received');
+
+    final isSuccess =
+        response['success'] == true || response['status'] == 'success';
+    if (!isSuccess) {
+      throw ServerException(
+        message: response['message'] as String? ?? 'Failed to send OTP',
+      );
+    }
   }
 
   /// POST /auth/verify-otp
@@ -81,12 +93,18 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
       );
     }
 
-    // ── Extract refresh token from Set-Cookie header ──────────────────
-    final setCookieHeader = response.headers.value('set-cookie');
-    if (setCookieHeader != null) {
-      final refreshToken = _extractRefreshToken(setCookieHeader);
-      if (refreshToken != null) {
-        await _tokenManager.saveRefreshToken(refreshToken);
+    // ── Extract refresh token from Set-Cookie header(s) ────────────────
+    // A response can carry more than one Set-Cookie header (refresh token
+    // alongside a session/CSRF cookie, etc.) — `Headers.value()` throws in
+    // that case, so read the raw list instead of the single-value helper.
+    final setCookieHeaders = response.headers['set-cookie'];
+    if (setCookieHeaders != null) {
+      for (final header in setCookieHeaders) {
+        final refreshToken = _extractRefreshToken(header);
+        if (refreshToken != null) {
+          await _tokenManager.saveRefreshToken(refreshToken);
+          break;
+        }
       }
     }
 

@@ -16,8 +16,8 @@ class HostEarningsLedgerSummaryModel extends HostEarningsLedgerSummaryEntity {
       totalCommissionInr: (json['totalCommissionINR'] as num? ?? 0).toDouble(),
       totalTdsInr: (json['totalTdsINR'] as num? ?? 0).toDouble(),
       totalNetInr: (json['totalNetINR'] as num? ?? 0).toDouble(),
-      totalBilledPoints: json['totalBilledPoints'] as int? ?? 0,
-      totalCalls: json['totalCalls'] as int? ?? 0,
+      totalBilledPoints: (json['totalBilledPoints'] as num?)?.toInt() ?? 0,
+      totalCalls: (json['totalCalls'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -34,7 +34,7 @@ class HostEarningCallInfoModel extends HostEarningCallInfoEntity {
     return HostEarningCallInfoModel(
       id: json['_id'] as String? ?? json['id'] as String? ?? '',
       callType: json['callType'] as String? ?? '',
-      duration: json['duration'] as int? ?? 0,
+      duration: (json['duration'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? '',
     );
   }
@@ -76,9 +76,9 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
       taxDeductedInr: (json['taxDeductedINR'] as num? ?? 0).toDouble(),
       netEarningInr: (json['netEarningINR'] as num? ?? 0).toDouble(),
       billingPolicy: json['billingPolicy'] as String? ?? '',
-      ratePerMinute: json['ratePerMinute'] as int?,
-      billedMinutes: json['billedMinutes'] as int?,
-      billedPoints: json['billedPoints'] as int?,
+      ratePerMinute: (json['ratePerMinute'] as num?)?.toInt(),
+      billedMinutes: (json['billedMinutes'] as num?)?.toInt(),
+      billedPoints: (json['billedPoints'] as num?)?.toInt(),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       callInfo: callJson is Map<String, dynamic>
@@ -113,9 +113,9 @@ class HostEarningsLedgerModel extends HostEarningsLedgerEntity {
     return HostEarningsLedgerModel(
       summary: summary,
       earnings: earnings,
-      page: data['page'] as int? ?? 1,
-      limit: data['limit'] as int? ?? earnings.length,
-      total: data['total'] as int? ?? earnings.length,
+      page: (data['page'] as num?)?.toInt() ?? 1,
+      limit: (data['limit'] as num?)?.toInt() ?? earnings.length,
+      total: (data['total'] as num?)?.toInt() ?? earnings.length,
     );
   }
 }

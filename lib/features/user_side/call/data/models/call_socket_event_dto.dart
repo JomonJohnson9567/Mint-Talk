@@ -1,3 +1,4 @@
+import 'package:mint_talk/core/utils/json_number_parser.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_socket_event.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
 
@@ -43,15 +44,9 @@ class CallSocketEventDto {
           (json['agoraChannel'] ?? json['channelName'])?.toString(),
       agoraToken: (json['agoraToken'] ?? json['rtcToken'] ?? json['token'])
           ?.toString(),
-      duration: json['duration'] is int
-          ? json['duration']
-          : int.tryParse(json['duration']?.toString() ?? ''),
-      billedMinutes: json['billedMinutes'] is int
-          ? json['billedMinutes']
-          : int.tryParse(json['billedMinutes']?.toString() ?? ''),
-      totalPointsDebited: json['totalPointsDebited'] is int
-          ? json['totalPointsDebited']
-          : int.tryParse(json['totalPointsDebited']?.toString() ?? ''),
+      duration: JsonNumberParser.parseInt(json['duration']),
+      billedMinutes: JsonNumberParser.parseInt(json['billedMinutes']),
+      totalPointsDebited: JsonNumberParser.parseInt(json['totalPointsDebited']),
       endReason: json['endReason']?.toString(),
       hostId: json['hostId']?.toString(),
       callerId: json['callerId']?.toString(),

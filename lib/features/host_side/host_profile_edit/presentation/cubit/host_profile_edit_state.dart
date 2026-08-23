@@ -4,7 +4,6 @@ enum HostProfileEditStatus { initial, loading, loaded, saving, success, failure 
 
 class HostProfileEditState extends Equatable {
   final String name;
-  final String email;
   final String phone;
   final String idNumber;
   final String dob;
@@ -16,7 +15,6 @@ class HostProfileEditState extends Equatable {
 
   const HostProfileEditState({
     this.name = '',
-    this.email = '',
     this.phone = '',
     this.idNumber = '',
     this.dob = '',
@@ -29,7 +27,6 @@ class HostProfileEditState extends Equatable {
 
   HostProfileEditState copyWith({
     String? name,
-    String? email,
     String? phone,
     String? idNumber,
     String? dob,
@@ -41,7 +38,6 @@ class HostProfileEditState extends Equatable {
   }) {
     return HostProfileEditState(
       name: name ?? this.name,
-      email: email ?? this.email,
       phone: phone ?? this.phone,
       idNumber: idNumber ?? this.idNumber,
       dob: dob ?? this.dob,
@@ -56,7 +52,6 @@ class HostProfileEditState extends Equatable {
   @override
   List<Object?> get props => [
         name,
-        email,
         phone,
         idNumber,
         dob,

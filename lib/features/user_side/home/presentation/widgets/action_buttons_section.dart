@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/rate_formatter.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
 import 'package:mint_talk/features/user_side/home/presentation/bloc/home_state.dart';
 
@@ -12,6 +14,7 @@ class ActionButtonsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final billingUnit = context.watch<SystemConfigCubit>().state.billingUnit;
     return BlocBuilder<HomeCubit, HomeState>(
       buildWhen: (previous, current) =>
           previous.audioRate != current.audioRate ||
@@ -57,7 +60,7 @@ class ActionButtonsSection extends StatelessWidget {
                       child: _CallCard(
                         icon: Icons.video_call,
                         title: AppTexts.videoCall,
-                        subtitle: _rateLabel(state.videoRate),
+                        subtitle: _rateLabel(state.videoRate, billingUnit),
                       ),
                     ),
                   ),
@@ -73,7 +76,7 @@ class ActionButtonsSection extends StatelessWidget {
                       child: _CallCard(
                         icon: Icons.call,
                         title: AppTexts.audioCall,
-                        subtitle: _rateLabel(state.audioRate),
+                        subtitle: _rateLabel(state.audioRate, billingUnit),
                       ),
                     ),
                   ),
@@ -86,9 +89,8 @@ class ActionButtonsSection extends StatelessWidget {
     );
   }
 
-  String _rateLabel(int? rate) => rate == null
-      ? '-- ${AppTexts.coinsPerMin}'
-      : '$rate ${AppTexts.coinsPerMin}';
+  String _rateLabel(int? rate, String billingUnit) =>
+      RateFormatter.label(rate, billingUnit, unit: 'coins');
 }
 
 class _CallCard extends StatelessWidget {

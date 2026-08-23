@@ -61,10 +61,9 @@ class HostApplicationRemoteDataSourceImpl
     );
 
     final response = await apiClient.postMultipart(
-      ApiEndpoints.verifyKYC,
+      ApiEndpoints.profileImage,
       requiresAuth: true,
       body: {
-        'key': key,
         'image': file,
       },
     );
@@ -78,7 +77,8 @@ class HostApplicationRemoteDataSourceImpl
     }
 
     final data = response['data'] is Map ? response['data'] as Map : response;
-    final url = (data['url'] ??
+    final url = (data['avatarUrl'] ??
+            data['url'] ??
             data['imageUrl'] ??
             data['fileUrl'] ??
             data[key] ??

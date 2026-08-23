@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_cubit.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_state.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_action_bottom_sheet.dart';
 import '../cubit/host_application_status_cubit.dart';
 import '../cubit/host_application_status_state.dart';
 import '../widgets/host_application_details_card.dart';
@@ -17,76 +22,118 @@ class HostApplicationStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.softBlue,
-      appBar: CustomAppBar(
-        title: 'Application Status',
-        automaticallyImplyLeading: true,
-        actions: [
-          IconButton(
-            tooltip: 'Terms & Conditions',
-            icon: Icon(
-              Icons.description_rounded,
-              color: AppColors.primaryColor,
-              size: 24.sp,
-            ),
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.termsAndConditionsForHost,
-                arguments: true,
-              );
-            },
+    return BlocProvider(
+      create: (_) => getIt<LogoutCubit>(),
+      child: BlocListener<LogoutCubit, LogoutState>(
+        listener: _onLogoutStateChanged,
+        child: Scaffold(
+          backgroundColor: AppColors.softBlue,
+          appBar: CustomAppBar(
+            title: 'Application Status',
+            automaticallyImplyLeading: true,
+            actions: [
+              IconButton(
+                tooltip: 'Terms & Conditions',
+                icon: Icon(
+                  Icons.description_rounded,
+                  color: AppColors.primaryColor,
+                  size: 24.sp,
+                ),
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.termsAndConditionsForHost,
+                    arguments: true,
+                  );
+                },
+              ),
+              SizedBox(width: 8.w),
+            ],
           ),
-          SizedBox(width: 8.w),
-        ],
-      ),
-      body: SafeArea(
-        child:
-            BlocBuilder<HostApplicationStatusCubit, HostApplicationStatusState>(
-              builder: (context, state) {
-                switch (state.view) {
-                  case HostApplicationStatusView.initial:
-                  case HostApplicationStatusView.loading:
-                    return const HostApplicationStatusSkeleton();
-                  case HostApplicationStatusView.failure:
-                    return _StatusError(message: state.errorMessage);
-                  case HostApplicationStatusView.loaded:
-                    final application = state.application;
-                    if (application == null) {
-                      return const _StatusError(
-                        message: 'Application details are unavailable.',
-                      );
-                    }
-                    return RefreshIndicator(
-                      color: AppColors.primaryColor,
-                      onRefresh: context
-                          .read<HostApplicationStatusCubit>()
-                          .loadStatus,
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 32.h),
-                        children: [
-                          HostStatusCard(status: application.status),
-                          SizedBox(height: 20.h),
-                          HostApplicationDetailsCard(application: application),
-                          if (application.rejectionReason?.trim().isNotEmpty ==
-                              true) ...[
-                            SizedBox(height: 20.h),
-                            _RejectionReason(
-                              reason: application.rejectionReason!,
+          body: SafeArea(
+            child:
+                BlocBuilder<
+                  HostApplicationStatusCubit,
+                  HostApplicationStatusState
+                >(
+                  builder: (context, state) {
+                    switch (state.view) {
+                      case HostApplicationStatusView.initial:
+                      case HostApplicationStatusView.loading:
+                        return const HostApplicationStatusSkeleton();
+                      case HostApplicationStatusView.failure:
+                        return _StatusError(message: state.errorMessage);
+                      case HostApplicationStatusView.loaded:
+                        final application = state.application;
+                        if (application == null) {
+                          return const _StatusError(
+                            message: 'Application details are unavailable.',
+                          );
+                        }
+                        final isApproved =
+                            application.status.toLowerCase() == 'approved';
+                        return RefreshIndicator(
+                          color: AppColors.primaryColor,
+                          onRefresh: context
+                              .read<HostApplicationStatusCubit>()
+                              .loadStatus,
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(
+                              20.w,
+                              24.h,
+                              20.w,
+                              32.h,
                             ),
-                          ],
-                          SizedBox(height: 20.h),
-                          const _ReviewNote(),
-                        ],
-                      ),
-                    );
-                }
-              },
-            ),
+                            children: [
+                              HostStatusCard(status: application.status),
+                              SizedBox(height: 20.h),
+                              HostApplicationDetailsCard(
+                                application: application,
+                              ),
+                              if (application.rejectionReason
+                                      ?.trim()
+                                      .isNotEmpty ==
+                                  true) ...[
+                                SizedBox(height: 20.h),
+                                _RejectionReason(
+                                  reason: application.rejectionReason!,
+                                ),
+                              ],
+                              SizedBox(height: 20.h),
+                              if (isApproved) ...[
+                                const _ReLoginAsHostPrompt(),
+                                SizedBox(height: 20.h),
+                              ] else
+                                const _ReviewNote(),
+                            ],
+                          ),
+                        );
+                    }
+                  },
+                ),
+          ),
+        ),
       ),
     );
+  }
+
+  void _onLogoutStateChanged(BuildContext context, LogoutState state) {
+    if (state.status == LogoutStatus.failure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage ?? 'Failed to logout'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (state.status == LogoutStatus.success) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.phoneNumber,
+        (route) => false,
+      );
+    }
   }
 }
 
@@ -183,6 +230,79 @@ class _RejectionReason extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _ReLoginAsHostPrompt extends StatelessWidget {
+  const _ReLoginAsHostPrompt();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withAlpha(15),
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: AppColors.primaryColor.withAlpha(45)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.primaryColor,
+                size: 22.sp,
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppTexts.reLoginRequiredTitle,
+                      style: GoogleFonts.manrope(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      AppTexts.reLoginRequiredMessage,
+                      style: GoogleFonts.manrope(
+                        fontSize: 13.sp,
+                        height: 1.5,
+                        color: AppColors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16.h),
+        BlocBuilder<LogoutCubit, LogoutState>(
+          builder: (context, state) {
+            final isLoading = state.status == LogoutStatus.loading;
+            return PrimaryButton(
+              text: AppTexts.logout,
+              backgroundColor: AppColors.favIcon,
+              isLoading: isLoading,
+              onPressed: isLoading
+                  ? null
+                  : () => SettingsActionBottomSheetPresenter.showLogout(
+                      context,
+                      onConfirm: () => context.read<LogoutCubit>().logout(),
+                    ),
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
 class _ReviewNote extends StatelessWidget {

@@ -27,8 +27,6 @@ import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/terms_and_conditions_for_host.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/host_application_status.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/host_application_status_cubit.dart';
-import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
-import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_list_screen.dart';
 import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/features/user_side/profile_screen/presentation/screen/profile_screen.dart';
@@ -178,12 +176,6 @@ class AppRouter {
         final host = RouteArgs.require<HostEntity>(settings);
         return HostProfileScreen(host: host);
       },
-    ),
-    AppRoutes.callScreen: RouteConfig(
-      builder: (_) => BlocProvider(
-        create: (_) => getIt<CallScreenCubit>(),
-        child: const CallScreen(),
-      ),
     ),
     AppRoutes.hostDashScreen: RouteConfig(
       builder: (_) => BlocProvider(
