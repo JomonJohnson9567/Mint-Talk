@@ -331,8 +331,11 @@ void main() {
     await pumpEventQueue();
     expect(cubit.state.status, CallScreenStatus.active);
 
+    // The `ended` status must be immediate — the HTTP /end call below is
+    // now fire-and-forget, reconciled with the server in the background.
     await cubit.endCall();
     expect(cubit.state.status, CallScreenStatus.ended);
+    await pumpEventQueue();
     verify(() => endCallUseCase('call-1')).called(1);
     verifyNever(() => cancelCallUseCase(any()));
 
@@ -341,6 +344,74 @@ void main() {
     await cubit.endCall();
     verifyNever(() => endCallUseCase('call-1'));
   });
+
+  test(
+    'endCall retries once after a failed /end attempt and still reaches ended',
+    () async {
+      when(() => initiateCallUseCase(any())).thenAnswer((_) async => Right(_session()));
+      when(() => activateCallUseCase(any())).thenAnswer((_) async => Right(_session(status: 'active')));
+
+      var callCount = 0;
+      when(() => endCallUseCase(any())).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) {
+          return const Left(ServerFailure(message: 'timeout'));
+        }
+        return Right(_session(status: 'ended'));
+      });
+
+      await cubit.startOutgoingCall(hostId: 'host-1', callType: CallType.audio);
+      await pumpEventQueue();
+      agoraEvents.add(const AgoraLocalJoinSuccess());
+      agoraEvents.add(const AgoraRemoteUserJoined(42));
+      await pumpEventQueue();
+      expect(cubit.state.status, CallScreenStatus.active);
+
+      // `ended` is emitted immediately, before the HTTP retry below even
+      // starts — the retry is a background server reconciliation now, not
+      // something the call-ending transition waits on.
+      await cubit.endCall();
+      expect(cubit.state.status, CallScreenStatus.ended);
+
+      // The retry backs off 1s (see _endCallWithRetry's retryDelay) — wait
+      // past it for the second, successful attempt to fire.
+      await Future<void>.delayed(const Duration(seconds: 1, milliseconds: 300));
+      await pumpEventQueue();
+
+      verify(() => endCallUseCase('call-1')).called(2);
+      verify(() => agoraService.leaveChannel()).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  test(
+    'endCall reaches ended (not stuck) even when every /end attempt fails',
+    () async {
+      when(() => initiateCallUseCase(any())).thenAnswer((_) async => Right(_session()));
+      when(() => activateCallUseCase(any())).thenAnswer((_) async => Right(_session(status: 'active')));
+      when(() => endCallUseCase(any())).thenAnswer(
+        (_) async => const Left(ServerFailure(message: 'network down')),
+      );
+
+      await cubit.startOutgoingCall(hostId: 'host-1', callType: CallType.audio);
+      await pumpEventQueue();
+      agoraEvents.add(const AgoraLocalJoinSuccess());
+      agoraEvents.add(const AgoraRemoteUserJoined(42));
+      await pumpEventQueue();
+      expect(cubit.state.status, CallScreenStatus.active);
+
+      // Even with the backend unreachable on every attempt, the call must
+      // still end locally right away — nothing about the ended transition
+      // depends on the billing call being confirmed.
+      await cubit.endCall();
+      expect(cubit.state.status, CallScreenStatus.ended);
+
+      await Future<void>.delayed(const Duration(seconds: 1, milliseconds: 300));
+      await pumpEventQueue();
+
+      verify(() => endCallUseCase('call-1')).called(2);
+      verify(() => agoraService.leaveChannel()).called(greaterThanOrEqualTo(1));
+    },
+  );
 
   test('endCall while still ringing cancels instead of ending', () async {
     when(() => initiateCallUseCase(any())).thenAnswer((_) async => Right(_session()));
@@ -351,8 +422,9 @@ void main() {
     expect(cubit.state.status, CallScreenStatus.ringing);
 
     await cubit.endCall();
-
     expect(cubit.state.status, CallScreenStatus.ended);
+
+    await pumpEventQueue();
     verify(() => cancelCallUseCase('call-1')).called(1);
     verifyNever(() => endCallUseCase(any()));
   });
@@ -436,9 +508,10 @@ void main() {
       // User taps "End Call" before either the socket event or the 25s
       // local timeout resolves things on their own.
       await cubit.endCall();
-
       expect(cubit.state.status, CallScreenStatus.ended);
       expect(cubit.state.networkStatus.isRemoteReconnecting, isFalse);
+
+      await pumpEventQueue();
       verify(() => callRepository.getCallDetails('call-1')).called(1);
       // Must NOT fire a second, redundant /end against an already-ended
       // call — that's what was producing a bogus near-zero duration.
@@ -466,8 +539,9 @@ void main() {
       await pumpEventQueue();
 
       await cubit.endCall();
-
       expect(cubit.state.status, CallScreenStatus.ended);
+
+      await pumpEventQueue();
       verify(() => callRepository.getCallDetails('call-1')).called(1);
       verify(() => endCallUseCase('call-1')).called(1);
     },

@@ -17,6 +17,11 @@ class CallActionButton extends StatelessWidget {
   /// controls) while still needing a name for accessibility.
   final String? semanticLabel;
 
+  /// Swaps the icon for a small spinner and disables taps — used by the
+  /// end-call button while endCall() is in flight, so a slow request reads
+  /// as "in progress" instead of looking unresponsive.
+  final bool isLoading;
+
   const CallActionButton({
     super.key,
     required this.icon,
@@ -29,6 +34,7 @@ class CallActionButton extends StatelessWidget {
     this.labelStyle,
     this.boxShadow,
     this.semanticLabel,
+    this.isLoading = false,
   });
 
   @override
@@ -43,8 +49,17 @@ class CallActionButton extends StatelessWidget {
       ),
       child: IconButton(
         tooltip: semanticLabel ?? label,
-        onPressed: onTap,
-        icon: Icon(icon, color: iconColor, size: iconSize.sp),
+        onPressed: isLoading ? null : onTap,
+        icon: isLoading
+            ? SizedBox(
+                width: iconSize.sp,
+                height: iconSize.sp,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                ),
+              )
+            : Icon(icon, color: iconColor, size: iconSize.sp),
       ),
     );
 

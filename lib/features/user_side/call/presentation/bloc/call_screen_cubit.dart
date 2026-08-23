@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:bloc/bloc.dart';
+import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:mint_talk/config/agora/agora_config.dart';
 import 'package:mint_talk/config/env/env_config.dart';
+import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/services/agora/i_agora_service.dart';
 import 'package:mint_talk/core/services/connectivity/connectivity_service.dart';
 import 'package:mint_talk/core/services/permissions/call_permission_service.dart';
@@ -482,22 +484,17 @@ class CallScreenCubit extends Cubit<CallScreenState> {
             // The peer left the channel voluntarily — this is Agora's own
             // signal that they tapped "End Call", not a dropped connection,
             // so there's no reason to show a "reconnecting" banner or wait
-            // the full network-blip grace period. Give the authoritative
-            // server-pushed `ended` socket event (handled in
-            // _handleCallTerminated) a short window to land first — it
-            // carries the real final billing numbers — and only if it
-            // doesn't arrive in time, finalize locally by fetching the
-            // latest call details from the server so the summary screen
-            // never shows stale duration/points.
+            // for the server-pushed `ended` socket event before reflecting
+            // it here: end the call on this device immediately. Final
+            // billing numbers (duration/billedMinutes/points) don't need to
+            // ride along with this transition — CallSummaryCubit fetches
+            // and retries for those independently once the summary dialog
+            // opens, using whatever `session` is already on hand as the
+            // first-paint value.
             appLogger.d(
-              '📴 [CallCubit] Remote participant left voluntarily. '
-              'Waiting briefly for server confirmation.',
+              '📴 [CallCubit] Remote participant left voluntarily. Ending call.',
             );
-            _remoteReconnectTimer?.cancel();
-            _remoteReconnectTimer = Timer(const Duration(seconds: 4), () {
-              if (isClosed || _hasTerminated) return;
-              unawaited(_finalizeVoluntaryRemoteLeave());
-            });
+            _finalizeVoluntaryRemoteLeave();
             break;
           }
 
@@ -1034,61 +1031,30 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     _remoteReconnectTimer?.cancel();
     _remoteReconnectTimer = null;
 
-    // The billing/duration numbers shown in the post-call summary come from
-    // this same call's server response (or the socket event, for the peer).
-    // Emitting `ended` before this HTTP call resolves let the summary
-    // dialog's own fetch race the server's billing finalization — the
-    // dialog would ask for final numbers before the server had finished
-    // computing them. So the finalized numbers are folded in *before* the
-    // `ended` status is emitted, not after.
-    //
-    // The /end and /cancel responses only carry the billing fields, not the
-    // call's identity fields (callId, hostId, callerId, agoraChannel/token,
-    // callType come back empty) — merge just the billing fields onto the
-    // existing session instead of replacing it outright, otherwise the
-    // summary dialog fetches call details using an empty callId and 404s.
-    var finalSession = session;
+    // Leave the Agora channel and stop the local timer immediately, in
+    // parallel with (not gated behind) the HTTP call below. The peer's own
+    // Agora SDK reports this as onUserOffline(quit) the moment this fires
+    // (see AgoraService.leaveChannel's comment), which is what actually ends
+    // the call on their screen — every other termination path in this class
+    // (_handleCallTerminated, _handleInsufficientBalance, the 25s reconnect
+    // timeouts) already leaves eagerly like this. Previously endCall() alone
+    // deferred it until after the HTTP /end or /cancel call resolved, so a
+    // slow or hung backend request (up to the 60s Dio timeout) left this
+    // device's mic/camera streaming AND the peer's call running for just as
+    // long, even though this user had already tapped "end call".
+    unawaited(_agoraService.leaveChannel());
+    _stopTimer();
 
-    // If the server already ended the call (socket event), skip the HTTP call
-    // to avoid a redundant POST /end after the peer already triggered it.
-    if (!_serverEndedCall && session != null) {
-      if (awaitingRemoteConfirmation) {
-        final detailsResult = await _callRepository.getCallDetails(session.callId);
-        final alreadyEnded = detailsResult.fold(
-          (_) => false,
-          (s) => s.status.toLowerCase() == 'ended',
-        );
-        if (alreadyEnded) {
-          detailsResult.fold(
-            (_) {},
-            (updated) => finalSession = _mergeBillingFields(session, updated),
-          );
-        } else {
-          // Agora's offline report was a real network blip, not a hangup —
-          // the server still thinks the call is active, so actually end it.
-          final result = await _endCallUseCase(session.callId);
-          result.fold((_) {}, (updated) => finalSession = _mergeBillingFields(session, updated));
-        }
-      } else if (currentStatus == CallScreenStatus.ringing ||
-          currentStatus == CallScreenStatus.initiating) {
-        // User cancelled before host answered — HTTP cancel
-        final result = await _cancelCallUseCase(session.callId);
-        result.fold((_) {}, (updated) => finalSession = _mergeBillingFields(session, updated));
-      } else if (currentStatus == CallScreenStatus.active ||
-          currentStatus == CallScreenStatus.connecting) {
-        // Active call ended locally — HTTP end triggers billing + push to peer
-        final result = await _endCallUseCase(session.callId);
-        result.fold((_) {}, (updated) => finalSession = _mergeBillingFields(session, updated));
-      }
-    }
-
-    if (isClosed) return;
-
+    // End the call on this device immediately — nothing here waits on the
+    // server. CallSummaryCubit independently fetches and retries for the
+    // final duration/billedMinutes/points once the summary dialog opens,
+    // using whatever `session` is on hand as the first-paint value, so
+    // there's no reason to hold the `ended` transition (or show a loader)
+    // for the HTTP round-trip below.
     emit(
       state.copyWith(
         status: CallScreenStatus.ended,
         isRemoteUserJoined: false,
-        session: finalSession,
         // Clears a stale `isRemoteReconnecting`/quality banner left over
         // from right before this end — otherwise the status label keeps
         // showing "reconnecting" forever even though the call has ended,
@@ -1098,6 +1064,94 @@ class CallScreenCubit extends Cubit<CallScreenState> {
     );
 
     _cleanupResources();
+
+    // Tell the server in the background, so it actually finalizes billing —
+    // if the server already ended the call (socket event), skip this to
+    // avoid a redundant POST /end after the peer already triggered it.
+    if (!_serverEndedCall && session != null) {
+      unawaited(
+        _reconcileCallEndWithServer(
+          session: session,
+          currentStatus: currentStatus,
+          awaitingRemoteConfirmation: awaitingRemoteConfirmation,
+        ),
+      );
+    }
+  }
+
+  /// Talks to the server to actually end/cancel the call and returns the
+  /// session with whatever billing fields it reports back merged in. Split
+  /// out of [endCall] so that call site can wrap it in a single hard
+  /// `.timeout()` backstop rather than relying solely on the per-request
+  /// timeouts configured on each branch below.
+  Future<CallSessionEntity> _reconcileCallEndWithServer({
+    required CallSessionEntity session,
+    required CallScreenStatus currentStatus,
+    required bool awaitingRemoteConfirmation,
+  }) async {
+    if (awaitingRemoteConfirmation) {
+      final detailsResult = await _callRepository.getCallDetails(session.callId);
+      final alreadyEnded = detailsResult.fold(
+        (_) => false,
+        (s) => s.status.toLowerCase() == 'ended',
+      );
+      if (alreadyEnded) {
+        return detailsResult.fold(
+          (_) => session,
+          (updated) => _mergeBillingFields(session, updated),
+        );
+      }
+      // Agora's offline report was a real network blip, not a hangup — the
+      // server still thinks the call is active, so actually end it.
+      final result = await _endCallWithRetry(() => _endCallUseCase(session.callId));
+      return result.fold(
+        (_) => session,
+        (updated) => _mergeBillingFields(session, updated),
+      );
+    } else if (currentStatus == CallScreenStatus.ringing ||
+        currentStatus == CallScreenStatus.initiating) {
+      // User cancelled before host answered — HTTP cancel
+      final result = await _endCallWithRetry(() => _cancelCallUseCase(session.callId));
+      return result.fold(
+        (_) => session,
+        (updated) => _mergeBillingFields(session, updated),
+      );
+    } else if (currentStatus == CallScreenStatus.active ||
+        currentStatus == CallScreenStatus.connecting) {
+      // Active call ended locally — HTTP end triggers billing + push to peer
+      final result = await _endCallWithRetry(() => _endCallUseCase(session.callId));
+      return result.fold(
+        (_) => session,
+        (updated) => _mergeBillingFields(session, updated),
+      );
+    }
+    return session;
+  }
+
+  /// Runs an /end or /cancel HTTP call, retrying once more (with a short
+  /// fixed delay, and a shorter per-attempt timeout set at the datasource
+  /// level — see [CallRemoteDataSource.endCall]) if the first attempt fails.
+  /// End-call is a short, idempotent, state-changing request — worth a quick
+  /// retry rather than accepting the first transient failure and silently
+  /// leaving the server thinking the call is still active/billing, even
+  /// though this device has already left the Agora channel above.
+  Future<Either<Failure, CallSessionEntity>> _endCallWithRetry(
+    Future<Either<Failure, CallSessionEntity>> Function() action,
+  ) async {
+    const maxAttempts = 2;
+    const retryDelay = Duration(seconds: 1);
+
+    var result = await action();
+    for (var attempt = 1; attempt < maxAttempts && result.isLeft(); attempt++) {
+      if (isClosed) break;
+      appLogger.d(
+        '⚠️ [CallCubit] End/cancel call attempt $attempt failed — retrying.',
+      );
+      await Future.delayed(retryDelay);
+      if (isClosed) break;
+      result = await action();
+    }
+    return result;
   }
 
   /// Merges only the billing/duration fields from an /end or /cancel
@@ -1172,41 +1226,21 @@ class CallScreenCubit extends Cubit<CallScreenState> {
   // Private Helpers
   // ---------------------------------------------------------------------------
 
-  /// Finalizes the call after the remote participant voluntarily left the
-  /// Agora channel (a genuine hang-up) but the authoritative server-pushed
-  /// `ended` socket event didn't land within the short grace window. Fetches
-  /// the latest call details via HTTP so the final duration/billed
-  /// minutes/points reflect what the server actually recorded, instead of
-  /// guessing from whatever was last synced locally.
-  Future<void> _finalizeVoluntaryRemoteLeave() async {
+  /// Finalizes the call immediately after the remote participant voluntarily
+  /// left the Agora channel (a genuine hang-up), using whatever [session]
+  /// data is already held locally — no server round-trip gates this
+  /// transition. CallSummaryCubit independently fetches and retries for the
+  /// final duration/billedMinutes/points once the summary dialog opens.
+  void _finalizeVoluntaryRemoteLeave() {
     if (_hasTerminated) return;
     _hasTerminated = true;
 
     _stopTimer();
-
-    final session = state.session;
-    var finalSession = session;
-    if (session != null) {
-      final result = await _callRepository.getCallDetails(session.callId);
-      if (isClosed) return;
-      result.fold(
-        (failure) => appLogger.d(
-          '❌ [CallCubit] Failed to fetch final call details after remote '
-          'hang-up: ${failure.message}',
-        ),
-        (updated) => finalSession = _mergeBillingFields(session, updated),
-      );
-    }
-
-    if (isClosed) return;
-
-    appLogger.d('🔴 [CallCubit] Remote left voluntarily. Ending call.');
     emit(
       state.copyWith(
         status: CallScreenStatus.ended,
         mediaStatus: CallMediaStatus.ended,
         isRemoteUserJoined: false,
-        session: finalSession,
         networkStatus: const CallNetworkStatus(),
       ),
     );

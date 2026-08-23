@@ -64,9 +64,16 @@ class CallRemoteDataSource implements ICallRemoteDataSource {
 
   @override
   Future<CallSessionDto> cancelCall(String callId) async {
+    // Shorter than the default 60s: this is retried by CallScreenCubit's
+    // endCall(), so a stalled attempt should fail fast enough for that
+    // retry to still happen while the user is watching, rather than leaving
+    // the "ending…" button stuck for up to a minute.
     final response = await _apiClient.post(
       '/calls/$callId/cancel',
       requiresAuth: true,
+      connectTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
     );
     return CallSessionDto.fromJson(response);
   }
@@ -82,18 +89,30 @@ class CallRemoteDataSource implements ICallRemoteDataSource {
 
   @override
   Future<CallSessionDto> endCall(String callId) async {
+    // See cancelCall above for why this overrides the default timeout.
     final response = await _apiClient.post(
       '/calls/$callId/end',
       requiresAuth: true,
+      connectTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
     );
     return CallSessionDto.fromJson(response);
   }
 
   @override
   Future<CallSessionDto> getCallDetails(String callId) async {
+    // Also shortened: CallScreenCubit falls back to this call to reconcile
+    // call state on both the ending party (endCall's awaitingRemoteConfirmation
+    // branch) and the peer (_finalizeVoluntaryRemoteLeave, fired once Agora
+    // reports the remote party left) — both are on the critical path for
+    // actually ending the call on screen, so this must fail fast too rather
+    // than inheriting the 60s default.
     final response = await _apiClient.get(
       '/calls/$callId',
       requiresAuth: true,
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
     );
     return CallSessionDto.fromJson(response);
   }
