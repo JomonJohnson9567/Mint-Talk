@@ -3,8 +3,6 @@ import '../../domain/entities/host_earnings_ledger_entity.dart';
 class HostEarningsLedgerSummaryModel extends HostEarningsLedgerSummaryEntity {
   const HostEarningsLedgerSummaryModel({
     required super.totalGrossInr,
-    required super.totalCommissionInr,
-    required super.totalTdsInr,
     required super.totalNetInr,
     required super.totalBilledPoints,
     required super.totalCalls,
@@ -16,8 +14,6 @@ class HostEarningsLedgerSummaryModel extends HostEarningsLedgerSummaryEntity {
     return HostEarningsLedgerSummaryModel(
       totalGrossInr: ((json['totalGrossINR'] ?? json['totalGrossEarningsINR']) as num? ?? 0)
           .toDouble(),
-      totalCommissionInr: (json['totalCommissionINR'] as num? ?? 0).toDouble(),
-      totalTdsInr: (json['totalTdsINR'] as num? ?? 0).toDouble(),
       totalNetInr: ((json['totalNetINR'] ?? json['totalNetEarningsINR']) as num? ?? 0)
           .toDouble(),
       totalBilledPoints: (json['totalBilledPoints'] as num?)?.toInt() ?? 0,
@@ -50,10 +46,6 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
     required super.hostId,
     required super.earningType,
     required super.grossEarningInr,
-    required super.platformCommissionRate,
-    required super.platformCommissionInr,
-    required super.tdsRate,
-    required super.taxDeductedInr,
     required super.netEarningInr,
     required super.billingPolicy,
     required super.createdAt,
@@ -90,12 +82,6 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
       hostId: json['hostId'] as String? ?? '',
       earningType: json['earningType'] as String? ?? '',
       grossEarningInr: (json['grossEarningINR'] as num? ?? 0).toDouble(),
-      platformCommissionRate:
-          (json['platformCommissionRate'] as num? ?? 0).toDouble(),
-      platformCommissionInr:
-          (json['platformCommissionINR'] as num? ?? 0).toDouble(),
-      tdsRate: (json['tdsRate'] as num? ?? 0).toDouble(),
-      taxDeductedInr: (json['taxDeductedINR'] as num? ?? 0).toDouble(),
       netEarningInr: (json['netEarningINR'] as num? ?? 0).toDouble(),
       billingPolicy: json['billingPolicy'] as String? ?? '',
       ratePerMinute: (json['ratePerMinute'] as num?)?.toInt(),

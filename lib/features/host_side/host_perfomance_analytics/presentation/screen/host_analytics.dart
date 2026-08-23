@@ -108,23 +108,6 @@ class HostAnalytics extends StatelessWidget {
                           iconColor: AppColors.onlineIndicator,
                           iconBgColor: AppColors.onlineIndicator.withAlpha(20),
                         ),
-                        LedgerSummaryCard(
-                          title: 'Commission',
-                          valueText:
-                              '₹ ${ledger.summary.totalCommissionInr.toStringAsFixed(0)}',
-                          subtitle: 'Platform share',
-                          icon: Icons.percent_rounded,
-                          iconColor: AppColors.orange,
-                          iconBgColor: AppColors.orange.withAlpha(20),
-                        ),
-                        LedgerSummaryCard(
-                          title: 'TDS',
-                          valueText: '₹ ${ledger.summary.totalTdsInr.toStringAsFixed(0)}',
-                          subtitle: 'Tax deducted',
-                          icon: Icons.receipt_long_rounded,
-                          iconColor: AppColors.callEndedStatus,
-                          iconBgColor: AppColors.callEndedStatus.withAlpha(20),
-                        ),
                       ],
                     ),
                     SizedBox(height: 20.h),
@@ -255,7 +238,7 @@ class HostAnalytics extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
               Text(
-                'Track host revenue, commissions, and billed earnings',
+                'Track host revenue and billed earnings',
                 style: GoogleFonts.manrope(
                   fontSize: 11.sp,
                   fontWeight: FontWeight.w500,

@@ -2,16 +2,12 @@ import 'package:equatable/equatable.dart';
 
 class HostEarningsLedgerSummaryEntity extends Equatable {
   final double totalGrossInr;
-  final double totalCommissionInr;
-  final double totalTdsInr;
   final double totalNetInr;
   final int totalBilledPoints;
   final int totalCalls;
 
   const HostEarningsLedgerSummaryEntity({
     required this.totalGrossInr,
-    required this.totalCommissionInr,
-    required this.totalTdsInr,
     required this.totalNetInr,
     required this.totalBilledPoints,
     required this.totalCalls,
@@ -20,8 +16,6 @@ class HostEarningsLedgerSummaryEntity extends Equatable {
   @override
   List<Object?> get props => [
         totalGrossInr,
-        totalCommissionInr,
-        totalTdsInr,
         totalNetInr,
         totalBilledPoints,
         totalCalls,
@@ -50,10 +44,6 @@ class HostEarningEntryEntity extends Equatable {
   final String hostId;
   final String earningType;
   final double grossEarningInr;
-  final double platformCommissionRate;
-  final double platformCommissionInr;
-  final double tdsRate;
-  final double taxDeductedInr;
   final double netEarningInr;
   final String billingPolicy;
   final int? ratePerMinute;
@@ -68,10 +58,6 @@ class HostEarningEntryEntity extends Equatable {
     required this.hostId,
     required this.earningType,
     required this.grossEarningInr,
-    required this.platformCommissionRate,
-    required this.platformCommissionInr,
-    required this.tdsRate,
-    required this.taxDeductedInr,
     required this.netEarningInr,
     required this.billingPolicy,
     required this.createdAt,
@@ -91,10 +77,6 @@ class HostEarningEntryEntity extends Equatable {
         hostId,
         earningType,
         grossEarningInr,
-        platformCommissionRate,
-        platformCommissionInr,
-        tdsRate,
-        taxDeductedInr,
         netEarningInr,
         billingPolicy,
         ratePerMinute,

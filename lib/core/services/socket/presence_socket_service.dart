@@ -523,6 +523,12 @@ class PresenceSocketService implements IPresenceSocketService {
       mapData['status'] = 'missed';
       _handleCallStatusData(mapData);
     });
+    _socket!.on('call_insufficient_balance', (data) {
+      final mapData =
+          data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      mapData['status'] = 'insufficient_balance';
+      _handleCallStatusData(mapData);
+    });
 
     _socket!.on(_SocketEvents.sessionTerminated, (data) async {
       try {

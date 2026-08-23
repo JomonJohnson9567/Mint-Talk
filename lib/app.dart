@@ -43,9 +43,24 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             initialRoute: AppRoutes.splash,
             onGenerateRoute: AppRouter.onGenerateRoute,
-            builder: (context, child) => SecureAppOverlay(
-              child: Stack(children: [?child, const FloatingCallBubble()]),
-            ),
+            // App-wide, independent of whether CallScreen or the minimized
+            // FloatingCallBubble is what's currently visible (or neither, if
+            // the call ended while some other screen was on top) — the
+            // server debits/credits points as part of ending the call, so
+            // WalletCubit's balance is stale from that moment until this
+            // re-fetches it.
+            builder: (context, child) =>
+                BlocListener<CallScreenCubit, CallScreenState>(
+                  listenWhen: (previous, current) =>
+                      current.isCallEnded && !previous.isCallEnded,
+                  listener: (context, state) =>
+                      context.read<WalletCubit>().fetchBalance(),
+                  child: SecureAppOverlay(
+                    child: Stack(
+                      children: [?child, const FloatingCallBubble()],
+                    ),
+                  ),
+                ),
           ),
         );
       },

@@ -85,8 +85,6 @@ class LedgerEntryCard extends StatelessWidget {
             runSpacing: 8.h,
             children: [
               _InfoChip(label: 'Gross', value: _formatCurrency(earning.grossEarningInr)),
-              _InfoChip(label: 'Commission', value: _formatCurrency(earning.platformCommissionInr)),
-              _InfoChip(label: 'TDS', value: _formatCurrency(earning.taxDeductedInr)),
               if (earning.billedMinutes != null)
                 _InfoChip(label: billedUnitLabel, value: '${earning.billedMinutes}'),
               if (earning.billedPoints != null)

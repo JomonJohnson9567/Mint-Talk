@@ -219,26 +219,31 @@ class _BubbleContent extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: isVideo ? 8.h : 4.h,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatDuration(state.durationSeconds),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.white,
-                      shadows: const [
-                        Shadow(color: Colors.black54, blurRadius: 3),
-                      ],
+              // FittedBox guarantees this shrinks to fit the square instead
+              // of ever overflowing it, regardless of exact bubble size.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _formatDuration(state.durationSeconds),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 3),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (isVideo) ...[
-                    SizedBox(height: 4.h),
-                    _EndCallBadge(onTap: onEndCall),
+                    if (isVideo) ...[
+                      SizedBox(height: 4.h),
+                      _EndCallBadge(onTap: onEndCall),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
