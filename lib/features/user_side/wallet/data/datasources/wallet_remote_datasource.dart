@@ -131,14 +131,14 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     if (walletData != null && walletData is Map<String, dynamic>) {
       final balance = walletData['balance'];
       if (balance != null) {
-        return int.tryParse(balance.toString()) ?? 0;
+        return _parseBalance(balance);
       }
     }
 
     // Fallback: look for balance at top level
     final topLevelBalance = response['balance'] ?? response['newBalance'];
     if (topLevelBalance != null) {
-      return int.tryParse(topLevelBalance.toString()) ?? 0;
+      return _parseBalance(topLevelBalance);
     }
 
     appLogger.w(
@@ -200,4 +200,12 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
     throw const ServerException(message: 'Plan data not found in response');
   }
+}
+
+/// Backend balances can be fractional (e.g. per-second billing debits
+/// partial points), so parse as num and round rather than `int.tryParse`,
+/// which returns null for a decimal string like "79940.4952999999".
+int _parseBalance(dynamic value) {
+  if (value is num) return value.round();
+  return num.tryParse(value.toString())?.round() ?? 0;
 }

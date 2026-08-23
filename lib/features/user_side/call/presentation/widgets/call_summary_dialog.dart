@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 import '../../domain/entities/call_session_entity.dart';
 import '../bloc/call_summary_cubit.dart';
 import '../bloc/call_summary_state.dart';
@@ -173,6 +174,16 @@ class CallSummaryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Billed amount is reported by the server in whichever granularity the
+    // app is currently configured for (SystemConfigCubit.billingUnit) — the
+    // same flag RateFormatter already uses to render "/min" vs "/sec" rate
+    // labels elsewhere. Without checking it here, a per-second deployment's
+    // billed-seconds count got mislabeled as minutes (e.g. "6 min" for a
+    // 6-second call actually billed 6 seconds).
+    final isPerSecondBilling =
+        context.watch<SystemConfigCubit>().state.billingUnit == 'second';
+    final billedUnitLabel = isPerSecondBilling ? 'Billed Sec' : 'Billed Min';
+    final billedUnitSuffix = isPerSecondBilling ? 'sec' : 'min';
     return BlocProvider(
       create: (context) => CallSummaryCubit(
         session: session,
@@ -282,8 +293,8 @@ class CallSummaryDialog extends StatelessWidget {
                                     child: _StatCard(
                                       icon: Icons.confirmation_number_outlined,
                                       iconColor: Colors.teal,
-                                      label: 'Billed Min',
-                                      value: '${state.billedMinutes} min',
+                                      label: billedUnitLabel,
+                                      value: '${state.billedMinutes} $billedUnitSuffix',
                                     ),
                                   ),
                                 ],

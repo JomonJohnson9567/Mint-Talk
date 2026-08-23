@@ -11,6 +11,9 @@ import 'package:mint_talk/features/user_side/call/presentation/cubit/floating_ca
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
 
 const double _kBubbleSize = 64;
+// Video calls float as a larger square so the remote video thumbnail stays
+// legible instead of being clipped down into a tiny circle.
+const double _kVideoBubbleSize = 120;
 const double _kBubbleMargin = 16;
 
 /// App-wide floating "in call" bubble — shown whenever [CallScreenCubit]'s
@@ -59,10 +62,12 @@ class FloatingCallBubble extends StatelessWidget {
 
         final cubit = context.read<CallScreenCubit>();
         final screenSize = MediaQuery.of(context).size;
+        final isVideo = state.session?.callType.isVideo ?? false;
+        final bubbleSize = (isVideo ? _kVideoBubbleSize : _kBubbleSize).w;
 
         return BlocProvider(
           create: (_) => FloatingCallBubbleCubit(
-            size: _kBubbleSize.w,
+            size: bubbleSize,
             boundaryWidth: screenSize.width,
             boundaryHeight: screenSize.height,
             margin: _kBubbleMargin.w,
@@ -70,7 +75,7 @@ class FloatingCallBubble extends StatelessWidget {
           child: Builder(
             builder: (context) {
               context.read<FloatingCallBubbleCubit>().syncBoundary(
-                size: _kBubbleSize.w,
+                size: bubbleSize,
                 boundaryWidth: screenSize.width,
                 boundaryHeight: screenSize.height,
                 margin: _kBubbleMargin.w,
@@ -89,8 +94,8 @@ class FloatingCallBubble extends StatelessWidget {
                     curve: Curves.easeOut,
                     left: dragState.offset.dx,
                     top: dragState.offset.dy,
-                    width: _kBubbleSize.w,
-                    height: _kBubbleSize.w,
+                    width: bubbleSize,
+                    height: bubbleSize,
                     child: GestureDetector(
                       onPanStart: (_) => dragCubit.dragStart(),
                       onPanUpdate: (details) =>
@@ -100,12 +105,23 @@ class FloatingCallBubble extends StatelessWidget {
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          _BubbleContent(state: state, cubit: cubit),
-                          Positioned(
-                            right: -4.w,
-                            bottom: -4.w,
-                            child: _EndCallBadge(onTap: cubit.endCall),
+                          _BubbleContent(
+                            state: state,
+                            cubit: cubit,
+                            size: bubbleSize,
+                            isVideo: isVideo,
+                            onEndCall: cubit.endCall,
                           ),
+                          // Video's square bubble instead shows the end-call
+                          // button stacked under the duration inside the
+                          // square (see _BubbleContent) — the corner badge is
+                          // only for the small round audio bubble.
+                          if (!isVideo)
+                            Positioned(
+                              right: -4.w,
+                              bottom: -4.w,
+                              child: _EndCallBadge(onTap: cubit.endCall),
+                            ),
                         ],
                       ),
                     ),
@@ -123,8 +139,17 @@ class FloatingCallBubble extends StatelessWidget {
 class _BubbleContent extends StatelessWidget {
   final CallScreenState state;
   final CallScreenCubit cubit;
+  final double size;
+  final bool isVideo;
+  final VoidCallback onEndCall;
 
-  const _BubbleContent({required this.state, required this.cubit});
+  const _BubbleContent({
+    required this.state,
+    required this.cubit,
+    required this.size,
+    required this.isVideo,
+    required this.onEndCall,
+  });
 
   String _formatDuration(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -134,14 +159,15 @@ class _BubbleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isVideo = state.session?.callType.isVideo ?? false;
     final agoraEngine = cubit.agoraEngine;
+    final radius = isVideo ? BorderRadius.circular(16.r) : BorderRadius.circular(size / 2);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(_kBubbleSize.w / 2),
+      borderRadius: radius,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          shape: isVideo ? BoxShape.rectangle : BoxShape.circle,
+          borderRadius: isVideo ? radius : null,
           color: AppColors.callBackground,
           border: Border.all(color: AppColors.white, width: 2),
           boxShadow: [
@@ -173,7 +199,7 @@ class _BubbleContent extends StatelessWidget {
             else
               Center(
                 child: CircleAvatar(
-                  radius: _kBubbleSize.w / 2,
+                  radius: size / 2,
                   backgroundColor: AppColors.lightGrey,
                   backgroundImage:
                       state.avatarUrl?.isNotEmpty == true
@@ -186,22 +212,33 @@ class _BubbleContent extends StatelessWidget {
               ),
 
             // Running duration, overlaid at the bottom so it reads on top of
-            // either the avatar or the live video thumbnail.
+            // either the avatar or the live video thumbnail. The video
+            // square additionally stacks the end-call button right under it
+            // instead of the corner badge used on the small audio circle.
             Positioned(
               left: 0,
               right: 0,
-              bottom: 4.h,
-              child: Text(
-                _formatDuration(state.durationSeconds),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 9.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
-                  shadows: const [
-                    Shadow(color: Colors.black54, blurRadius: 3),
+              bottom: isVideo ? 8.h : 4.h,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatDuration(state.durationSeconds),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.white,
+                      shadows: const [
+                        Shadow(color: Colors.black54, blurRadius: 3),
+                      ],
+                    ),
+                  ),
+                  if (isVideo) ...[
+                    SizedBox(height: 4.h),
+                    _EndCallBadge(onTap: onEndCall),
                   ],
-                ),
+                ],
               ),
             ),
           ],

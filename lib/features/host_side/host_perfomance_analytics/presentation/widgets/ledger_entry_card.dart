@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/domain/entities/host_earnings_ledger_entity.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 
 class LedgerEntryCard extends StatelessWidget {
   final HostEarningEntryEntity earning;
@@ -13,6 +15,11 @@ class LedgerEntryCard extends StatelessWidget {
     final dateLabel = _formatDate(earning.createdAt);
     final typeLabel = earning.isReferral ? 'Referral' : 'Call';
     final accentColor = earning.isReferral ? AppColors.orange : AppColors.primaryColor;
+    // Same billing-granularity flag CallSummaryDialog uses: earning.billedMinutes
+    // holds billed seconds, not minutes, when the app is on per-second billing.
+    final isPerSecondBilling =
+        context.watch<SystemConfigCubit>().state.billingUnit == 'second';
+    final billedUnitLabel = isPerSecondBilling ? 'Seconds' : 'Minutes';
 
     return Container(
       padding: EdgeInsets.all(14.w),
@@ -81,7 +88,7 @@ class LedgerEntryCard extends StatelessWidget {
               _InfoChip(label: 'Commission', value: _formatCurrency(earning.platformCommissionInr)),
               _InfoChip(label: 'TDS', value: _formatCurrency(earning.taxDeductedInr)),
               if (earning.billedMinutes != null)
-                _InfoChip(label: 'Minutes', value: '${earning.billedMinutes}'),
+                _InfoChip(label: billedUnitLabel, value: '${earning.billedMinutes}'),
               if (earning.billedPoints != null)
                 _InfoChip(label: 'Points', value: '${earning.billedPoints}'),
             ],

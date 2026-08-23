@@ -242,22 +242,38 @@ class WalletCubit extends Cubit<WalletState> {
       transactionId: transactionId,
     );
 
-    result.fold(
-      (failure) => emit(
+    await result.fold(
+      (failure) async => emit(
         state.copyWith(
           status: WalletStatus.paymentFailure,
           errorMessage: failure.message,
         ),
       ),
-      (newBalance) {
+      (verifiedBalance) async {
+        // The balance parsed out of the verify-payment response can be
+        // stale or missing depending on the backend's response shape, so
+        // re-fetch from the wallet endpoint (the same source fetchBalance()
+        // uses) and only fall back to the verify response if that fails.
+        var balance = verifiedBalance;
+        final userId = await authRepository.getUserId();
+        if (userId != null) {
+          final balanceResult = await getWalletBalanceUseCase(userId);
+          balanceResult.fold(
+            (failure) => appLogger.w(
+              'WalletCubit: Post-payment balance refresh failed, using verify response balance. ${failure.message}',
+            ),
+            (wallet) => balance = wallet.balance,
+          );
+        }
+
         emit(
           state.copyWith(
             status: WalletStatus.paymentSuccess,
-            balance: newBalance,
+            balance: balance,
           ),
         );
         // Also emit loaded state to update UI
-        emit(state.copyWith(status: WalletStatus.loaded, balance: newBalance));
+        emit(state.copyWith(status: WalletStatus.loaded, balance: balance));
       },
     );
   }

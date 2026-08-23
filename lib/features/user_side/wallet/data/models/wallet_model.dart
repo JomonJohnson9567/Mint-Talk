@@ -11,7 +11,10 @@ class WalletModel {
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     return WalletModel(
-      balance: json['balance'] ?? 0,
+      // Backend balances can be fractional (e.g. per-second billing debits
+      // partial points), so parse as num and round rather than casting
+      // straight to int, which throws on a double value.
+      balance: (json['balance'] as num?)?.round() ?? 0,
       status: json['status'] ?? '',
     );
   }

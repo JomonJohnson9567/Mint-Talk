@@ -11,11 +11,15 @@ class HostEarningsLedgerSummaryModel extends HostEarningsLedgerSummaryEntity {
   });
 
   factory HostEarningsLedgerSummaryModel.fromJson(Map<String, dynamic> json) {
+    // Some API doc samples use totalGrossEarningsINR/totalNetEarningsINR
+    // instead of totalGrossINR/totalNetINR — accept either.
     return HostEarningsLedgerSummaryModel(
-      totalGrossInr: (json['totalGrossINR'] as num? ?? 0).toDouble(),
+      totalGrossInr: ((json['totalGrossINR'] ?? json['totalGrossEarningsINR']) as num? ?? 0)
+          .toDouble(),
       totalCommissionInr: (json['totalCommissionINR'] as num? ?? 0).toDouble(),
       totalTdsInr: (json['totalTdsINR'] as num? ?? 0).toDouble(),
-      totalNetInr: (json['totalNetINR'] as num? ?? 0).toDouble(),
+      totalNetInr: ((json['totalNetINR'] ?? json['totalNetEarningsINR']) as num? ?? 0)
+          .toDouble(),
       totalBilledPoints: (json['totalBilledPoints'] as num?)?.toInt() ?? 0,
       totalCalls: (json['totalCalls'] as num?)?.toInt() ?? 0,
     );
@@ -63,8 +67,26 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
   factory HostEarningEntryModel.fromJson(Map<String, dynamic> json) {
     final callJson = json['callId'];
     final metadata = json['metadata'];
+    // Flat doc-sample shape reports duration/callId at the top level
+    // instead of nesting it under a populated callId object.
+    final flatDuration = (json['duration'] as num?)?.toInt();
+
+    HostEarningCallInfoModel? callInfo;
+    if (callJson is Map<String, dynamic>) {
+      callInfo = HostEarningCallInfoModel.fromJson(callJson);
+    } else if (flatDuration != null) {
+      callInfo = HostEarningCallInfoModel(
+        id: callJson?.toString() ?? '',
+        callType: json['callType'] as String? ?? '',
+        duration: flatDuration,
+        status: json['status'] as String? ?? '',
+      );
+    }
+
     return HostEarningEntryModel(
-      id: json['_id'] as String? ?? '',
+      id: json['_id'] as String? ??
+          json['id'] as String? ??
+          (callJson is String ? callJson : ''),
       hostId: json['hostId'] as String? ?? '',
       earningType: json['earningType'] as String? ?? '',
       grossEarningInr: (json['grossEarningINR'] as num? ?? 0).toDouble(),
@@ -77,13 +99,11 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
       netEarningInr: (json['netEarningINR'] as num? ?? 0).toDouble(),
       billingPolicy: json['billingPolicy'] as String? ?? '',
       ratePerMinute: (json['ratePerMinute'] as num?)?.toInt(),
-      billedMinutes: (json['billedMinutes'] as num?)?.toInt(),
+      billedMinutes: (json['billedMinutes'] as num?)?.toInt() ?? flatDuration,
       billedPoints: (json['billedPoints'] as num?)?.toInt(),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      callInfo: callJson is Map<String, dynamic>
-          ? HostEarningCallInfoModel.fromJson(callJson)
-          : null,
+      callInfo: callInfo,
       metadata: metadata is Map<String, dynamic>
           ? Map<String, dynamic>.from(metadata)
           : null,
@@ -105,7 +125,10 @@ class HostEarningsLedgerModel extends HostEarningsLedgerEntity {
     final summary = HostEarningsLedgerSummaryModel.fromJson(
       data['summary'] as Map<String, dynamic>? ?? const {},
     );
-    final earnings = (data['earnings'] as List? ?? const [])
+    // Some API doc samples key the list as "items" instead of "earnings".
+    final earningsJson =
+        (data['earnings'] as List?) ?? (data['items'] as List?) ?? const [];
+    final earnings = earningsJson
         .whereType<Map<String, dynamic>>()
         .map(HostEarningEntryModel.fromJson)
         .toList();
