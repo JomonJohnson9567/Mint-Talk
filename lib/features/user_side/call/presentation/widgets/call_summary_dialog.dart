@@ -294,7 +294,9 @@ class CallSummaryDialog extends StatelessWidget {
                                       icon: Icons.confirmation_number_outlined,
                                       iconColor: Colors.teal,
                                       label: billedUnitLabel,
-                                      value: '${state.billedMinutes} $billedUnitSuffix',
+                                      value: state.billedMinutes != null
+                                          ? '${state.billedMinutes} $billedUnitSuffix'
+                                          : null,
                                     ),
                                   ),
                                 ],
@@ -304,7 +306,7 @@ class CallSummaryDialog extends StatelessWidget {
                                 icon: Icons.monetization_on_rounded,
                                 iconColor: AppColors.ratingGold,
                                 label: state.pointsLabel,
-                                value: '${state.pointsValue} pts',
+                                value: state.pointsValue != null ? '${state.pointsValue} pts' : null,
                                 isWide: true,
                               ),
                               SizedBox(height: 24.h),
@@ -404,7 +406,11 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String label;
-  final String value;
+
+  /// Null while this stat's real value hasn't been confirmed from the
+  /// server yet — rendered as a shimmering skeleton in its place rather
+  /// than a fabricated or fallback number.
+  final String? value;
   final bool isWide;
 
   const _StatCard({
@@ -451,28 +457,44 @@ class _StatCard extends StatelessWidget {
                   ),
                   if (!isWide) ...[
                     SizedBox(height: 2.h),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.black,
-                      ),
-                    ),
+                    value != null
+                        ? Text(
+                            value!,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.black,
+                            ),
+                          )
+                        : SkeletonShimmer(
+                            child: SkeletonBox(
+                              width: 44.w,
+                              height: 12.h,
+                              borderRadius: BorderRadius.circular(3.r),
+                            ),
+                          ),
                   ]
                 ],
               ),
             ],
           ),
           if (isWide)
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.black,
-              ),
-            ),
+            value != null
+                ? Text(
+                    value!,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.black,
+                    ),
+                  )
+                : SkeletonShimmer(
+                    child: SkeletonBox(
+                      width: 56.w,
+                      height: 13.h,
+                      borderRadius: BorderRadius.circular(3.r),
+                    ),
+                  ),
         ],
       ),
     );

@@ -5,9 +5,20 @@ class CallSummaryState extends Equatable {
   final bool isHost;
   final String title;
   final String motivationMessage;
-  final String durationText;
-  final int billedMinutes;
-  final int pointsValue;
+
+  /// Null until the server's duration has been confirmed trustworthy (or
+  /// the retry window gives up and reveals it anyway) — the dialog renders
+  /// a skeleton in the Duration stat card while this is null, rather than
+  /// ever substituting a value that didn't come from the server.
+  final String? durationText;
+
+  /// Null until the server has reported real billing data (or the retry
+  /// window gives up) — see [durationText].
+  final int? billedMinutes;
+
+  /// See [billedMinutes].
+  final int? pointsValue;
+
   final String pointsLabel;
   final String talkLevel;
   final Color talkLevelColor;
@@ -18,9 +29,9 @@ class CallSummaryState extends Equatable {
     required this.isHost,
     required this.title,
     required this.motivationMessage,
-    required this.durationText,
-    required this.billedMinutes,
-    required this.pointsValue,
+    this.durationText,
+    this.billedMinutes,
+    this.pointsValue,
     required this.pointsLabel,
     required this.talkLevel,
     required this.talkLevelColor,
@@ -33,9 +44,6 @@ class CallSummaryState extends Equatable {
       isHost: isHost,
       title: '',
       motivationMessage: '',
-      durationText: '',
-      billedMinutes: 0,
-      pointsValue: 0,
       pointsLabel: '',
       talkLevel: '',
       talkLevelColor: Colors.grey,
@@ -48,9 +56,6 @@ class CallSummaryState extends Equatable {
       isHost: isHost,
       title: 'Failed to load details',
       motivationMessage: errorMessage,
-      durationText: '',
-      billedMinutes: 0,
-      pointsValue: 0,
       pointsLabel: '',
       talkLevel: '',
       talkLevelColor: Colors.grey,

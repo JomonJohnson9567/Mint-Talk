@@ -1,11 +1,10 @@
 // Regression safety net for CallSummaryCubit's post-call numbers. This
 // dialog is the only place billing/duration numbers are ever shown to the
-// user, so it must never silently show 0 for a call that plainly ran, nor
-// re-query the server so eagerly that it catches an in-progress billing
-// calculation and shows a bogus, too-small duration — and it must never
-// block the whole popup behind a loading skeleton for several seconds on
-// the hope a retry will help, since some backend billing bugs are
-// permanent (re-querying never helps) rather than a timing lag.
+// user, so each of duration/billedMinutes/points must only ever display a
+// real value that actually came from the server — never a locally guessed
+// substitute. While a field hasn't been confirmed yet it stays null (the
+// dialog renders a skeleton for it) rather than showing something that
+// didn't come from the response.
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_session_entity.dart';
@@ -66,9 +65,8 @@ void main() {
   );
 
   test(
-    'shows the best data on hand immediately even when it is not yet '
-    'finalized, instead of blocking behind a loading skeleton while it '
-    'polls in the background',
+    'shows a skeleton (null) for duration and billing while the passed-in '
+    'session has no data yet, instead of fabricating a number',
     () async {
       when(() => getCallDetailsUseCase(any()))
           .thenAnswer((_) async => Right(_session()));
@@ -80,26 +78,31 @@ void main() {
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
 
-      // Must already be showing something useful right away — never stuck
-      // on isLoading while the background refinement runs.
+      // Header copy is available immediately (from the local tally), but
+      // the numeric stats must stay null (skeleton) until the server
+      // actually confirms them — never substituted with the local value.
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.durationText, '2m 10s');
+      expect(cubit.state.title, isNotEmpty);
+      expect(cubit.state.durationText, isNull);
+      expect(cubit.state.billedMinutes, isNull);
+      expect(cubit.state.pointsValue, isNull);
 
       await cubit.close();
     },
   );
 
   test(
-    'silently upgrades the displayed numbers in the background once the '
-    'server catches up, without ever re-showing a loading state',
+    'reveals duration and billing independently, as soon as each one '
+    'individually looks trustworthy, without waiting on the other',
     () async {
       var attempt = 0;
       when(() => getCallDetailsUseCase(any())).thenAnswer((_) async {
         attempt++;
-        // Simulate the backend's async billing computation finishing on
-        // the second poll.
-        if (attempt < 2) {
-          return Right(_session());
+        // Billing arrives on the first retry; duration only catches up on
+        // the second — reproduces the reported bug where billedMinutes/
+        // points update but duration does not, in the same response cycle.
+        if (attempt == 1) {
+          return Right(_session(billedMinutes: 3, totalPointsDebited: 30));
         }
         return Right(_session(duration: 130, billedMinutes: 3, totalPointsDebited: 30));
       });
@@ -111,16 +114,18 @@ void main() {
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
 
-      expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.billedMinutes, 0);
+      expect(cubit.state.durationText, isNull);
+      expect(cubit.state.billedMinutes, isNull);
 
-      // First retry fires after 1s, second after another 2s.
-      await Future<void>.delayed(const Duration(seconds: 3, milliseconds: 500));
-
-      expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.durationText, '2m 10s');
+      // First retry (1s) resolves billing but not duration.
+      await Future<void>.delayed(const Duration(seconds: 1, milliseconds: 300));
       expect(cubit.state.billedMinutes, 3);
       expect(cubit.state.pointsValue, 30);
+      expect(cubit.state.durationText, isNull);
+
+      // Second retry (another 2s) resolves duration too.
+      await Future<void>.delayed(const Duration(seconds: 2, milliseconds: 300));
+      expect(cubit.state.durationText, '2m 10s');
       expect(attempt, 2);
 
       await cubit.close();
@@ -128,8 +133,9 @@ void main() {
   );
 
   test(
-    'falls back to this device\'s own tracked duration instead of showing '
-    '0s when the server never catches up within the retry window',
+    'never substitutes the locally tracked duration for the server value — '
+    'keeps showing a skeleton until the retry window gives up, then reveals '
+    'the real (possibly zero) response as-is',
     () async {
       when(() => getCallDetailsUseCase(any()))
           .thenAnswer((_) async => Right(_session()));
@@ -141,18 +147,16 @@ void main() {
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
 
-      // Duration falls back to the locally-tracked value instead of "0s"
-      // immediately — no need to wait for retries to see it.
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.durationText, '1m 35s');
+      expect(cubit.state.durationText, isNull);
 
       // All three retries (1s + 2s + 3s) must be exhausted before giving up.
       await Future<void>.delayed(const Duration(seconds: 6, milliseconds: 500));
 
+      // The server never reported a real duration — shown honestly as 0s,
+      // never silently swapped for the local 95s tally.
       expect(cubit.state.isLoading, isFalse);
-      // billedMinutes/points can't be guessed locally, so those stay
-      // honest about what the server actually reported (0).
-      expect(cubit.state.durationText, '1m 35s');
+      expect(cubit.state.durationText, '0s');
       expect(cubit.state.billedMinutes, 0);
       expect(cubit.state.pointsValue, 0);
       verify(() => getCallDetailsUseCase('call-1')).called(3);
@@ -163,16 +167,14 @@ void main() {
 
   test(
     'a real 1-minute call whose /end response reports an implausibly small '
-    'non-zero duration (e.g. "7s") is shown using the device\'s own '
-    'tracked duration immediately, and stays that way if the server never '
-    'corrects it',
+    'non-zero duration (e.g. "7s") stays a skeleton through the retry '
+    'window, then reveals that 7s response as-is once retries give up',
     () async {
       // Reproduces the exact reported bug: call ran a full minute
       // (localDurationSeconds: 60), but the passed-in session — and every
       // subsequent refetch — reports only 7s. A naive ">0" check would
-      // accept "7" as already finalized on the very first look and show it
-      // immediately; it must instead be recognized as implausible and
-      // substituted with the locally tracked duration right away.
+      // accept "7" as already finalized on the very first look; it must
+      // instead be recognized as implausible and held back as a skeleton.
       when(() => getCallDetailsUseCase(any()))
           .thenAnswer((_) async => Right(_session(duration: 7)));
 
@@ -183,14 +185,16 @@ void main() {
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
 
-      // The implausible "7s" must never be shown, not even for a moment.
+      // The implausible "7s" must never be shown while retries remain.
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.durationText, '1m 0s');
+      expect(cubit.state.durationText, isNull);
 
       await Future<void>.delayed(const Duration(seconds: 6, milliseconds: 500));
 
+      // Retries exhausted — the server's real (if implausible) answer is
+      // revealed as-is, never the local 60s tally.
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.durationText, '1m 0s');
+      expect(cubit.state.durationText, '7s');
       verify(() => getCallDetailsUseCase('call-1')).called(3);
 
       await cubit.close();
@@ -199,7 +203,7 @@ void main() {
 
   test(
     'a server duration that later self-corrects to match the tracked '
-    'duration is trusted once it catches up',
+    'duration is revealed once it catches up',
     () async {
       var attempt = 0;
       when(() => getCallDetailsUseCase(any())).thenAnswer((_) async {
@@ -255,11 +259,11 @@ void main() {
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
 
-      // Duration is already correct, so it shows immediately — billing is
-      // still 0 until the background refinement catches up.
+      // Duration is already correct, so it shows immediately — billing
+      // stays a skeleton until the background refinement catches up.
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, 0);
+      expect(cubit.state.billedMinutes, isNull);
 
       await Future<void>.delayed(const Duration(seconds: 3, milliseconds: 500));
 
@@ -276,9 +280,8 @@ void main() {
   test(
     'if the server never computes billedMinutes/points within the retry '
     'window (a permanent backend bug, not a timing lag), the correct '
-    'duration is still shown honestly alongside 0 billing — it does not '
-    'fabricate numbers it cannot know, and never leaves the popup blank '
-    'while it tries',
+    'duration is still shown immediately alongside a billing skeleton, '
+    'which then reveals 0 once the retry window gives up',
     () async {
       when(() => getCallDetailsUseCase(any()))
           .thenAnswer((_) async => Right(_session(duration: 240)));
@@ -292,7 +295,7 @@ void main() {
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, 0);
+      expect(cubit.state.billedMinutes, isNull);
 
       await Future<void>.delayed(const Duration(seconds: 6, milliseconds: 500));
 
