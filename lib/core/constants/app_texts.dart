@@ -187,9 +187,10 @@ class AppTexts {
   static const String stayLoggedIn = 'Stay Logged In';
 
   //Host Application Status Screen
-  static const String reLoginRequiredTitle = 'Login Again as Host';
-  static const String reLoginRequiredMessage =
-      'Please logout and login again with your registered mobile number to activate your host account and start receiving calls.';
+  static const String hostApprovedTitle = 'You\'re Approved!';
+  static const String hostApprovedMessage =
+      'Your host application has been approved. Tap below to activate your host account and start receiving calls.';
+  static const String joinAsHost = 'Join as Host';
 
   //Host Profile Screen
   static const String profileDetails = 'Profile Details';

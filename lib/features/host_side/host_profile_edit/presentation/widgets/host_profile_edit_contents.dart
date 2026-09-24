@@ -73,16 +73,10 @@ class _HostProfileFormFields extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Full Name
-        ProfileField(
-          key: ValueKey('name_${state.name}'),
-          label: 'FULL NAME',
-          hintText: 'Enter your name',
-          labelColor: AppColors.primaryColor,
-          initialValue: state.name,
+        _NameField(
+          name: state.name,
+          showError: state.showErrors,
           onChanged: cubit.nameChanged,
-          errorText: state.showErrors && state.name.trim().isEmpty
-              ? 'Name is required'
-              : null,
         ),
         SizedBox(height: 20.h),
 
@@ -145,6 +139,68 @@ class _HostProfileFormFields extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Owns the name field's [TextEditingController] itself instead of relying
+/// on [ProfileField]'s `initialValue`, which only ever seeds the field on
+/// its very first build. `initialValue` alone can't reflect the name
+/// arriving later from [HostProfileEditCubit.loadProfile]'s async fetch, so
+/// this used to be keyed off `state.name` to force a remount whenever it
+/// changed — which also remounted (and stole focus from) the field on
+/// every single keystroke, since `onChanged` emits a new `state.name` on
+/// every character. Syncing the controller in [didUpdateWidget] instead
+/// picks up the async-loaded name without ever touching focus while typing.
+class _NameField extends StatefulWidget {
+  final String name;
+  final bool showError;
+  final ValueChanged<String> onChanged;
+
+  const _NameField({
+    required this.name,
+    required this.showError,
+    required this.onChanged,
+  });
+
+  @override
+  State<_NameField> createState() => _NameFieldState();
+}
+
+class _NameFieldState extends State<_NameField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.name,
+  );
+
+  @override
+  void didUpdateWidget(covariant _NameField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only external changes (the async profile load) land here — typing
+    // routes through onChanged -> cubit -> this same widget.name, so it
+    // already matches _controller.text by the time this runs and this is
+    // a no-op, leaving focus/cursor untouched.
+    if (widget.name != _controller.text) {
+      _controller.text = widget.name;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProfileField(
+      label: 'FULL NAME',
+      hintText: 'Enter your name',
+      labelColor: AppColors.primaryColor,
+      controller: _controller,
+      onChanged: widget.onChanged,
+      errorText: widget.showError && widget.name.trim().isEmpty
+          ? 'Name is required'
+          : null,
     );
   }
 }

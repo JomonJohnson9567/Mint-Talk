@@ -4,6 +4,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import '../cubit/host_dash_state.dart';
+import 'pulsing_online_border.dart';
 
 class SelectCallCard extends StatelessWidget {
   final HostDashCallFlowMode callFlowMode;
@@ -11,6 +12,7 @@ class SelectCallCard extends StatelessWidget {
   final bool isAudioSelected;
   final bool isAnyCallSelected;
   final bool isStartingCall;
+  final bool isSocketConnected;
   final String selectedCallLabel;
   final VoidCallback onVideoToggle;
   final VoidCallback onAudioToggle;
@@ -18,6 +20,7 @@ class SelectCallCard extends StatelessWidget {
   final VoidCallback onPickupTapped;
   final VoidCallback onDeclineTapped;
   final VoidCallback onStopWaitingTapped;
+  final VoidCallback onReconnectTapped;
 
   const SelectCallCard({
     super.key,
@@ -26,6 +29,7 @@ class SelectCallCard extends StatelessWidget {
     required this.isAudioSelected,
     required this.isAnyCallSelected,
     required this.isStartingCall,
+    required this.isSocketConnected,
     required this.selectedCallLabel,
     required this.onVideoToggle,
     required this.onAudioToggle,
@@ -33,6 +37,7 @@ class SelectCallCard extends StatelessWidget {
     required this.onPickupTapped,
     required this.onDeclineTapped,
     required this.onStopWaitingTapped,
+    required this.onReconnectTapped,
   });
 
   @override
@@ -50,6 +55,8 @@ class SelectCallCard extends StatelessWidget {
       content = _WaitingCallView(
         key: const ValueKey('waiting'),
         onStopWaitingTapped: onStopWaitingTapped,
+        isSocketConnected: isSocketConnected,
+        onReconnectTapped: onReconnectTapped,
       );
     } else {
       content = _SelectionView(
@@ -407,11 +414,20 @@ class _IncomingCallView extends StatelessWidget {
 
 class _WaitingCallView extends StatelessWidget {
   final VoidCallback onStopWaitingTapped;
+  final bool isSocketConnected;
+  final VoidCallback onReconnectTapped;
 
-  const _WaitingCallView({super.key, required this.onStopWaitingTapped});
+  const _WaitingCallView({
+    super.key,
+    required this.onStopWaitingTapped,
+    required this.isSocketConnected,
+    required this.onReconnectTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final double cardRadius = 28.r;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableHeight = constraints.hasBoundedHeight
@@ -428,11 +444,11 @@ class _WaitingCallView extends StatelessWidget {
           13.0,
         );
 
-        return Container(
+        final Widget card = Container(
           constraints: BoxConstraints(minHeight: 220.h),
           padding: EdgeInsets.all(14.w),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28.r),
+            borderRadius: BorderRadius.circular(cardRadius),
             gradient: const LinearGradient(
               colors: [Color(0xFF0E2A66), Color(0xFF07204A), Color(0xFF04142F)],
               begin: Alignment.topLeft,
@@ -511,7 +527,78 @@ class _WaitingCallView extends StatelessWidget {
             ],
           ),
         );
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!isSocketConnected) ...[
+              _ReconnectBanner(onReconnectTapped: onReconnectTapped),
+              SizedBox(height: 10.h),
+            ],
+            isSocketConnected
+                ? PulsingOnlineBorder(borderRadius: cardRadius, child: card)
+                : card,
+          ],
+        );
       },
+    );
+  }
+}
+
+class _ReconnectBanner extends StatelessWidget {
+  final VoidCallback onReconnectTapped;
+
+  const _ReconnectBanner({required this.onReconnectTapped});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4E5),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFF5C87A), width: 1.w),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            color: const Color(0xFFB8710A),
+            size: 18.sp,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              "Not connected — you're not receiving calls right now.",
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF8A5A00),
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          GestureDetector(
+            onTap: onReconnectTapped,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB8710A),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                'Reconnect',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

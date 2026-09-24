@@ -6,6 +6,7 @@ import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mint_talk/features/auth/data/models/user_model.dart';
 import 'package:mint_talk/features/auth/domain/entities/auth_response_entity.dart';
+import 'package:mint_talk/features/auth/domain/entities/user_entity.dart';
 
 
 /// Remote data source for auth-related API calls.
@@ -17,6 +18,13 @@ abstract class IAuthRemoteDataSource {
     required String countryCode,
     required String otp,
   });
+
+  /// GET /user/me — the current user's live profile. Called on app launch
+  /// to detect a role change (e.g. a host application approved while the
+  /// app was closed) instead of trusting a possibly-stale cached role.
+  /// If the backend rotated the access token (it does when the role
+  /// changes), this saves it via [TokenManager] as a side effect.
+  Future<UserEntity> getCurrentUser();
 
   Future<void> logout();
 }
@@ -117,6 +125,38 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
     final user = UserModel.fromJson(userJson);
 
     return AuthResponseEntity(user: user, accessToken: accessToken);
+  }
+
+  /// GET /user/me
+  ///
+  /// Returns the caller's current profile. If the backend rotated the
+  /// access token (it does when the role just changed), saves it here.
+  @override
+  Future<UserEntity> getCurrentUser() async {
+    final response = await _apiClient.get(
+      ApiEndpoints.currentUser,
+      requiresAuth: true,
+    );
+
+    appLogger.d('[AuthRemoteDataSource] getCurrentUser response received');
+
+    final isSuccess =
+        response['success'] == true || response['status'] == 'success';
+    if (!isSuccess || response['data'] is! Map) {
+      throw ServerException(
+        message: response['message'] as String? ?? 'Failed to load profile',
+      );
+    }
+
+    final userJson = Map<String, dynamic>.from(response['data'] as Map);
+    final user = UserModel.fromJson(userJson);
+
+    final newAccessToken = response['accessToken'] as String?;
+    if (newAccessToken != null && newAccessToken.isNotEmpty) {
+      _tokenManager.saveAccessToken(newAccessToken);
+    }
+
+    return user;
   }
 
   /// POST /auth/logout

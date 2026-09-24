@@ -22,6 +22,13 @@ class HostDashState extends Equatable {
   final List<HostOnlineItemEntity> onlineHosts;
   final bool isHostsLoading;
 
+  /// Whether the presence socket is currently connected. Drives the
+  /// "not connected, tap to reconnect" banner on the waiting-for-call
+  /// card — false by default since the socket hasn't had a chance to
+  /// finish its handshake yet when the cubit is first created; it flips
+  /// true only once a real `connect` event has been observed.
+  final bool isSocketConnected;
+
   const HostDashState({
     this.status = HostDashStatus.initial,
     this.preferenceUpdateStatus = HostPreferenceUpdateStatus.initial,
@@ -34,6 +41,7 @@ class HostDashState extends Equatable {
     this.errorMessage,
     this.onlineHosts = const [],
     this.isHostsLoading = false,
+    this.isSocketConnected = false,
   });
 
   HostDashState copyWith({
@@ -48,6 +56,7 @@ class HostDashState extends Equatable {
     String? errorMessage,
     List<HostOnlineItemEntity>? onlineHosts,
     bool? isHostsLoading,
+    bool? isSocketConnected,
   }) {
     return HostDashState(
       status: status ?? this.status,
@@ -62,6 +71,7 @@ class HostDashState extends Equatable {
       errorMessage: errorMessage ?? this.errorMessage,
       onlineHosts: onlineHosts ?? this.onlineHosts,
       isHostsLoading: isHostsLoading ?? this.isHostsLoading,
+      isSocketConnected: isSocketConnected ?? this.isSocketConnected,
     );
   }
 
@@ -90,6 +100,7 @@ class HostDashState extends Equatable {
     errorMessage,
     onlineHosts,
     isHostsLoading,
+    isSocketConnected,
   ];
 }
 

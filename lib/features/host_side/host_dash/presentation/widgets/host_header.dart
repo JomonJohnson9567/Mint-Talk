@@ -8,7 +8,6 @@ import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
-import 'package:mint_talk/features/shared/notifications/presentation/widgets/notification_bell_icon.dart';
 
 class HostHeader extends StatelessWidget {
   const HostHeader({super.key});
@@ -20,52 +19,48 @@ class HostHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top Left Logo + App Name
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                AppAssets.logo,
-                height: 32.h,
-                width: 32.w,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox.shrink(),
-              ),
-              SizedBox(width: 6.w),
-              Text(
-                'MintTalk',
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primaryColor,
+          // Top Left Logo + App Name — flexible so it truncates instead of
+          // pushing the rate capsule off-screen on narrow devices.
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  AppAssets.logo,
+                  height: 32.h,
+                  width: 32.w,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox.shrink(),
                 ),
-              ),
-            ],
+                SizedBox(width: 6.w),
+              Flexible(
+                  child: Text(
+                    'MintTalk',
+                    overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryColor,
+                  ),
+  ),
+                ),
+              ],
+            ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              NotificationBellIcon(
-                onTap: () =>
-                    getIt<NavigationService>().navigateTo(AppRoutes.hostNotificationsScreen),
-              ),
-              SizedBox(width: 10.w),
-              BlocSelector<
-                HostProfileCubit,
-                HostProfileState,
-                ({int? audioRate, int? videoRate})
-              >(
-                selector: (state) =>
-                    (audioRate: state.audioRate, videoRate: state.videoRate),
-                builder: (context, rates) {
-                  return _HostRateCapsule(
-                    audioRate: rates.audioRate,
-                    videoRate: rates.videoRate,
-                  );
-                },
-              ),
-            ],
+          BlocSelector<
+            HostProfileCubit,
+            HostProfileState,
+            ({int? audioRate, int? videoRate})
+          >(
+            selector: (state) =>
+                (audioRate: state.audioRate, videoRate: state.videoRate),
+            builder: (context, rates) {
+              return _HostRateCapsule(
+                audioRate: rates.audioRate,
+                videoRate: rates.videoRate,
+              );
+            },
           ),
         ],
       ),

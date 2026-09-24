@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mint_talk/core/errors/exceptions.dart';
+import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
@@ -35,14 +36,10 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _remoteDataSource.sendOtp(phone: phone, countryCode: countryCode);
       return const Right(null);
-    } on RateLimitException catch (e) {
-      return Left(RateLimitFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on DioException catch (e) {
+      return Left(
+        mapDioExceptionToFailure(e, fallbackMessage: 'Failed to send OTP'),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -81,14 +78,10 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return Right(result);
-    } on RateLimitException catch (e) {
-      return Left(RateLimitFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
-    } on UnauthorizedException catch (e) {
-      return Left(UnauthorizedFailure(message: e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on DioException catch (e) {
+      return Left(
+        mapDioExceptionToFailure(e, fallbackMessage: 'OTP verification failed'),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -126,12 +119,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, String?>> getCachedUserRole() async {
+  Future<Either<Failure, String?>> syncCurrentUserRole() async {
     try {
-      final role = await _localDataSource.getRole();
-      return Right(role);
+      final user = await _remoteDataSource.getCurrentUser();
+      await _localDataSource.saveRole(user.role);
+      return Right(user.role);
     } catch (e) {
-      return Left(CacheFailure(message: 'Failed to check user role: $e'));
+      // Offline, or a transient server error — don't block launch; fall
+      // back to whatever role was cached from the last successful login.
+      try {
+        return Right(await _localDataSource.getRole());
+      } catch (e2) {
+        return Left(CacheFailure(message: 'Failed to sync user role: $e2'));
+      }
     }
   }
 

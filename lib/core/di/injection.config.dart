@@ -207,6 +207,8 @@ import '../../features/user_side/apply_for_host/domain/usecases/check_host_appli
     as _i200;
 import '../../features/user_side/apply_for_host/domain/usecases/get_host_application_status_usecase.dart'
     as _i1032;
+import '../../features/user_side/apply_for_host/domain/usecases/join_as_host_usecase.dart'
+    as _i102;
 import '../../features/user_side/apply_for_host/domain/usecases/submit_host_application_usecase.dart'
     as _i211;
 import '../../features/user_side/apply_for_host/domain/usecases/upload_image_usecase.dart'
@@ -215,6 +217,8 @@ import '../../features/user_side/apply_for_host/presentation/cubit/apply_for_hos
     as _i891;
 import '../../features/user_side/apply_for_host/presentation/cubit/host_application_status_cubit.dart'
     as _i821;
+import '../../features/user_side/apply_for_host/presentation/cubit/join_as_host/join_as_host_cubit.dart'
+    as _i216;
 import '../../features/user_side/call/data/datasources/call_remote_data_source.dart'
     as _i449;
 import '../../features/user_side/call/data/repositories/call_repository_impl.dart'
@@ -636,6 +640,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i494.LeaveRepository>(
       () => _i507.LeaveRepositoryImpl(gh<_i507.LeaveRemoteDataSource>()),
     );
+    gh.lazySingleton<_i456.HostApplicationRepository>(
+      () => _i234.HostApplicationRepositoryImpl(
+        gh<_i199.HostApplicationRemoteDataSource>(),
+        gh<_i327.HostApplicationLocalDataSource>(),
+        gh<_i852.IAuthLocalDataSource>(),
+        gh<_i833.TokenManager>(),
+      ),
+    );
     gh.lazySingleton<_i581.ProfileRepository>(
       () => _i388.ProfileRepositoryImpl(gh<_i1000.ProfileRemoteDataSource>()),
     );
@@ -736,12 +748,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i541.IPresenceSocketService>(),
       ),
     );
-    gh.lazySingleton<_i456.HostApplicationRepository>(
-      () => _i234.HostApplicationRepositoryImpl(
-        gh<_i199.HostApplicationRemoteDataSource>(),
-        gh<_i327.HostApplicationLocalDataSource>(),
-      ),
-    );
     gh.lazySingleton<_i271.CallLogRepository>(
       () => _i493.CallLogRepositoryImpl(gh<_i554.CallLogRemoteDataSource>()),
     );
@@ -812,6 +818,9 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i1032.GetHostApplicationStatusUseCase(
         gh<_i456.HostApplicationRepository>(),
       ),
+    );
+    gh.factory<_i102.JoinAsHostUseCase>(
+      () => _i102.JoinAsHostUseCase(gh<_i456.HostApplicationRepository>()),
     );
     gh.factory<_i211.SubmitHostApplicationUseCase>(
       () => _i211.SubmitHostApplicationUseCase(
@@ -977,6 +986,9 @@ extension GetItInjectableX on _i174.GetIt {
         getUserCallLogsUseCase: gh<_i67.GetUserCallLogsUseCase>(),
         getHostCallLogsUseCase: gh<_i148.GetHostCallLogsUseCase>(),
       ),
+    );
+    gh.factory<_i216.JoinAsHostCubit>(
+      () => _i216.JoinAsHostCubit(gh<_i102.JoinAsHostUseCase>()),
     );
     gh.factory<_i1036.UserProfileEditCubit>(
       () => _i1036.UserProfileEditCubit(

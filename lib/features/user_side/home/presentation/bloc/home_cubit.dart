@@ -338,7 +338,7 @@ class HomeCubit extends Cubit<HomeState> {
         return all
             .where((h) =>
                 h.presence == null ||
-                h.presence?.status == 'online' ||
+                h.presence!.isAvailableForCalls ||
                 h.presence?.busy == true ||
                 h.presence?.state == 'busy')
             .toList();
@@ -349,7 +349,8 @@ class HomeCubit extends Cubit<HomeState> {
       case HomeTab.offline:
         return all
             .where((h) =>
-                h.presence?.status == 'offline' &&
+                h.presence != null &&
+                !h.presence!.isAvailableForCalls &&
                 h.presence?.busy != true &&
                 h.presence?.state != 'busy')
             .toList();

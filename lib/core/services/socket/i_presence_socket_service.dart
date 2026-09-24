@@ -32,6 +32,15 @@ abstract class IPresenceSocketService {
   /// [newNotifications] (no per-conversation subscribe call needed).
   Stream<Map<String, dynamic>> get newChatMessages;
 
+  /// Emits `true` the moment the underlying socket handshake completes and
+  /// `false` the moment it drops (explicit disconnect, transport error, or a
+  /// connect attempt that failed outright) — de-duplicated so listeners only
+  /// see actual transitions, not every retry in a reconnect backoff streak.
+  /// Callers that need to reflect "am I actually live right now" in the UI
+  /// (e.g. a host waiting for calls) should use this instead of inferring it
+  /// from [presenceUpdates], which only carries *other* users' presence.
+  Stream<bool> get connectionStatus;
+
   /// Opens the socket connection with the given [accessToken].
   void connect(String accessToken);
 

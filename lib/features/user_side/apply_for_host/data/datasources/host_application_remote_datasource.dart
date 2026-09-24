@@ -4,6 +4,8 @@ import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/network/api_client.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
+import 'package:mint_talk/features/auth/data/models/user_model.dart';
+import 'package:mint_talk/features/auth/domain/entities/auth_response_entity.dart';
 import '../models/host_application_model.dart';
 import '../models/host_application_status_model.dart';
 
@@ -11,6 +13,10 @@ abstract class HostApplicationRemoteDataSource {
   Future<bool> submitApplication(HostApplicationModel model);
   Future<String> uploadImage(String imagePath, String key);
   Future<HostApplicationStatusModel> getApplicationStatus();
+
+  /// POST /host-applications/join — activates host status for an approved
+  /// application. Returns the updated user + a fresh access token.
+  Future<AuthResponseEntity> joinAsHost();
 }
 
 @LazySingleton(as: HostApplicationRemoteDataSource)
@@ -108,5 +114,42 @@ class HostApplicationRemoteDataSourceImpl
     return HostApplicationStatusModel.fromJson(
       Map<String, dynamic>.from(response['data'] as Map),
     );
+  }
+
+  @override
+  Future<AuthResponseEntity> joinAsHost() async {
+    final response = await apiClient.post(
+      ApiEndpoints.hostApplicationJoin,
+      requiresAuth: true,
+    );
+
+    final isSuccess =
+        response['success'] == true || response['status'] == 'success';
+    if (!isSuccess) {
+      throw ServerException(
+        message:
+            response['message']?.toString() ??
+            'Unable to activate your host account',
+      );
+    }
+
+    // Same defensive unwrap as uploadImage() above — accept the user/token
+    // nested under `data` or sitting at the top level.
+    final container = response['data'] is Map
+        ? Map<String, dynamic>.from(response['data'] as Map)
+        : response;
+
+    final userJson = container['user'];
+    final accessToken = (container['accessToken'] ?? response['accessToken'])
+        ?.toString();
+
+    if (userJson is! Map || accessToken == null || accessToken.isEmpty) {
+      throw ServerException(
+        message: 'Unexpected response while activating your host account',
+      );
+    }
+
+    final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+    return AuthResponseEntity(user: user, accessToken: accessToken);
   }
 }

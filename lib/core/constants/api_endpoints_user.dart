@@ -19,6 +19,9 @@ class ApiEndpoints {
   // ── User / Profile ───────────────────────────────────────────────────
   static const String updateProfile = '/user/profile';
   static const String referralVerify = '/user/referral-verify';
+  /// Current user's live profile — used to sync role on app launch
+  /// (verified: GET /api/v1/user/me, not the plural /users/me some docs use).
+  static const String currentUser = '/user/me';
 
   // ── Plans ─────────────────────────────────────────────────────────────
   static const String plans = '/plans';
@@ -42,6 +45,9 @@ class ApiEndpoints {
   static const String applyForHost = '/host-applications/apply';
   static const String verifyKYC = '/host-applications/kyc';
   static const String hostApplicationStatus = '/host-applications/my-status';
+  /// Activates host status once an application is approved (verified live:
+  /// POST /api/v1/host-applications/join).
+  static const String hostApplicationJoin = '/host-applications/join';
 
   // ── Host ─────────────────────────────────────────────────────────────
   static const String hostMyEarningsLedger = '/earnings/my-ledger';

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/core/widgets/dob_picker_bottom_sheet.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/profile_field.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_cubit.dart';
@@ -86,12 +85,8 @@ class _ProfileFormCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24.h),
-          ProfileField(
-            key: ValueKey('name-${state.fullName}'),
-            label: 'FULL NAME',
-            hintText: 'Enter your full name',
-            labelColor: AppColors.primaryColor,
-            initialValue: state.fullName,
+          _NameField(
+            name: state.fullName,
             errorText: state.fieldErrors['fullName'],
             onChanged: cubit.fullNameChanged,
           ),
@@ -128,13 +123,18 @@ class _ProfileFormCard extends StatelessWidget {
             readOnly: true,
             errorText: state.fieldErrors['dob'],
             suffixIcon: const Icon(
-              Icons.calendar_month_outlined,
+              Icons.lock_outline,
               color: AppColors.subtitleText,
             ),
-            onTap: () => DobPickerBottomSheet.show(
-              context: context,
-              currentDob: state.dob,
-              onDateSelected: cubit.dobChanged,
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: 6.h, left: 4.w),
+            child: Text(
+              'Date of birth cannot be changed after registration.',
+              style: GoogleFonts.manrope(
+                fontSize: 11.sp,
+                color: AppColors.subtitleText,
+              ),
             ),
           ),
           SizedBox(height: 18.h),
@@ -164,6 +164,66 @@ class _ProfileFormCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Owns the name field's [TextEditingController] itself instead of relying
+/// on [ProfileField]'s `initialValue`, which only ever seeds the field on
+/// its very first build. `initialValue` alone can't reflect a name arriving
+/// later from the cubit's async profile load, so this used to be keyed off
+/// `state.fullName` to force a remount whenever it changed — which also
+/// remounted (and stole focus from) the field on every single keystroke,
+/// since `onChanged` emits a new `state.fullName` on every character.
+/// Syncing the controller in [didUpdateWidget] instead picks up the
+/// async-loaded name without ever touching focus while typing.
+class _NameField extends StatefulWidget {
+  final String name;
+  final String? errorText;
+  final ValueChanged<String> onChanged;
+
+  const _NameField({
+    required this.name,
+    required this.errorText,
+    required this.onChanged,
+  });
+
+  @override
+  State<_NameField> createState() => _NameFieldState();
+}
+
+class _NameFieldState extends State<_NameField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.name,
+  );
+
+  @override
+  void didUpdateWidget(covariant _NameField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only external changes (the async profile load) land here — typing
+    // routes through onChanged -> cubit -> this same widget.name, so it
+    // already matches _controller.text by the time this runs and this is
+    // a no-op, leaving focus/cursor untouched.
+    if (widget.name != _controller.text) {
+      _controller.text = widget.name;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProfileField(
+      label: 'FULL NAME',
+      hintText: 'Enter your full name',
+      labelColor: AppColors.primaryColor,
+      controller: _controller,
+      onChanged: widget.onChanged,
+      errorText: widget.errorText,
     );
   }
 }

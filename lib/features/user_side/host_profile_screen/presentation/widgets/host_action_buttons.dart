@@ -25,8 +25,7 @@ class HostActionButtons extends StatelessWidget {
   void _handleCall(BuildContext context) {
     final isBusy =
         host.presence?.busy == true || host.presence?.state == 'busy';
-    final isOnline =
-        host.presence?.status == 'online' && !isBusy;
+    final isOnline = host.presence?.isAvailableForCalls ?? false;
     if (isBusy) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

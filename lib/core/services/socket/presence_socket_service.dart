@@ -54,6 +54,12 @@ class PresenceSocketService implements IPresenceSocketService {
   StreamController<Map<String, dynamic>>? _callStatusController;
   StreamController<Map<String, dynamic>>? _newNotificationController;
   StreamController<Map<String, dynamic>>? _newChatMessageController;
+  StreamController<bool>? _connectionStatusController;
+
+  /// Last value pushed to [connectionStatus] — lets [_emitConnectionStatus]
+  /// drop no-op repeats (e.g. one per backoff retry while offline) so
+  /// listeners only ever see real transitions.
+  bool _lastConnectionStatus = false;
 
   /// Buffered availability update — flushed automatically on the next connect.
   bool? _pendingAudioAvailable;
@@ -139,6 +145,23 @@ class PresenceSocketService implements IPresenceSocketService {
   }
 
   @override
+  Stream<bool> get connectionStatus {
+    _connectionStatusController ??= StreamController<bool>.broadcast();
+    return _connectionStatusController!.stream;
+  }
+
+  /// Pushes a connection-status transition, dropping repeats of the same
+  /// value (e.g. one connect_error per backoff retry while offline).
+  void _emitConnectionStatus(bool connected) {
+    if (_lastConnectionStatus == connected) return;
+    _lastConnectionStatus = connected;
+    if (_connectionStatusController != null &&
+        !_connectionStatusController!.isClosed) {
+      _connectionStatusController!.add(connected);
+    }
+  }
+
+  @override
   void connect(String accessToken) {
     // Ensure the stream controllers are alive before registering listeners.
     if (_controller == null || _controller!.isClosed) {
@@ -155,6 +178,9 @@ class PresenceSocketService implements IPresenceSocketService {
     }
     if (_newChatMessageController == null || _newChatMessageController!.isClosed) {
       _newChatMessageController = StreamController<Map<String, dynamic>>.broadcast();
+    }
+    if (_connectionStatusController == null || _connectionStatusController!.isClosed) {
+      _connectionStatusController = StreamController<bool>.broadcast();
     }
 
     if (_socket != null) {
@@ -307,6 +333,9 @@ class PresenceSocketService implements IPresenceSocketService {
     _newNotificationController = null;
     _newChatMessageController?.close();
     _newChatMessageController = null;
+    _connectionStatusController?.close();
+    _connectionStatusController = null;
+    _lastConnectionStatus = false;
   }
 
   // ---------------------------------------------------------------------------
@@ -349,6 +378,7 @@ class PresenceSocketService implements IPresenceSocketService {
         _consecutiveConnectErrors = 0;
         _authRefreshAttempts = 0;
         _connectInFlight = false;
+        _emitConnectionStatus(true);
 
         // Flush any buffered availability update that arrived before the
         // handshake completed.
@@ -554,6 +584,7 @@ class PresenceSocketService implements IPresenceSocketService {
       try {
         final errMsg = err?.toString() ?? '';
         _consecutiveConnectErrors++;
+        _emitConnectionStatus(false);
 
         // The socket's own reconnection loop retries on a backoff timer
         // (see setReconnectionDelay/Max above) — that's expected and normal
@@ -660,6 +691,7 @@ class PresenceSocketService implements IPresenceSocketService {
     _socket!.on(_SocketEvents.disconnect, (reason) {
       try {
         _logger.w('[PresenceSocket] Disconnected — reason: $reason');
+        _emitConnectionStatus(false);
       } catch (e) {
         // Safe guard against callback errors
       }

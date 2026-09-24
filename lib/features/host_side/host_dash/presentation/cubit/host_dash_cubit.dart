@@ -49,6 +49,7 @@ class HostDashCubit extends Cubit<HostDashState> {
   String _selfAvatarUrl = '';
 
   StreamSubscription<HostPresenceEntity>? _presenceSub;
+  StreamSubscription<bool>? _connectionStatusSub;
 
   HostDashCubit(
     this.getHostDashboardDataUseCase,
@@ -68,6 +69,7 @@ class HostDashCubit extends Cubit<HostDashState> {
     // Subscribe to the presence stream BEFORE connecting so we never miss
     // events emitted during the handshake burst.
     _subscribeToPresence();
+    _subscribeToConnectionStatus();
     _connectSocket();
     _loadCurrentUserId();
     unawaited(_loadSelfProfile());
@@ -94,6 +96,35 @@ class HostDashCubit extends Cubit<HostDashState> {
     }
     appLogger.d('🔌 [HostDashCubit] Connecting presence socket...');
     presenceSocketService.connect(token);
+  }
+
+  /// Waits for the socket to actually finish its handshake, up to [timeout].
+  ///
+  /// [presenceSocketService.connect] is fire-and-forget — it kicks off the
+  /// handshake but returns immediately, it never waits for the `connect`
+  /// event. Right after a cold app start (token fetch + TLS + auth can
+  /// easily take a second or two) that handshake may still be in flight
+  /// when the host taps "Ready", so calling [IPresenceSocketService.updateAvailability]
+  /// right after `await _connectSocket()` was firing before the socket was
+  /// actually connected — it would silently buffer, and the UI would flip
+  /// to "Waiting for the call" as if the host were live even though the
+  /// backend was never told they're available. This gives the handshake a
+  /// bounded window to finish first; the caller still proceeds either way
+  /// once it returns (never blocks the host indefinitely), but on a
+  /// timeout [HostDashState.isSocketConnected] is left false so the
+  /// waiting card's reconnect banner correctly reflects reality instead of
+  /// silently lying.
+  Future<bool> _waitUntilSocketConnected({
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    if (state.isSocketConnected) return true;
+    try {
+      return await presenceSocketService.connectionStatus
+          .firstWhere((isConnected) => isConnected)
+          .timeout(timeout, onTimeout: () => false);
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -128,6 +159,39 @@ class HostDashCubit extends Cubit<HostDashState> {
         appLogger.d('❌ [HostDashCubit] Presence socket error: $e');
       },
     );
+  }
+
+  /// Tracks whether the socket is actually live right now — surfaced to the
+  /// UI as the "connection lost, tap to reconnect" banner on the waiting
+  /// card. A host relying on their own card showing in "Hosts Online" as a
+  /// health signal doesn't work once that card is (correctly) excluded from
+  /// their own grid, so this reads the real transport state instead.
+  void _subscribeToConnectionStatus() {
+    _connectionStatusSub = presenceSocketService.connectionStatus.listen(
+      _onConnectionStatusChanged,
+    );
+  }
+
+  void _onConnectionStatusChanged(bool isConnected) {
+    if (isClosed || state.isSocketConnected == isConnected) return;
+
+    appLogger.d(
+      '🔌 [HostDashCubit] Socket connection status changed: '
+      '${isConnected ? 'connected' : 'disconnected'}',
+    );
+    emit(state.copyWith(isSocketConnected: isConnected));
+
+    // A reconnect is a brand-new server-side socket session — if the host
+    // was still waiting for calls when the drop happened, re-assert
+    // availability and re-sync the online-hosts grid rather than leaving
+    // both silently stale until the next manual pull-to-refresh.
+    if (isConnected && state.callFlowMode == HostDashCallFlowMode.waitingForNextCall) {
+      presenceSocketService.updateAvailability(
+        audioAvailable: state.isAudioSelected,
+        videoAvailable: state.isVideoSelected,
+      );
+      presenceSocketService.requestPresenceSnapshot();
+    }
   }
 
   /// Fetches the host roster via REST purely to resolve display name/avatar
@@ -368,6 +432,21 @@ class HostDashCubit extends Cubit<HostDashState> {
 
     if (isClosed) return;
 
+    // Give the handshake a bounded window to actually finish — see
+    // _waitUntilSocketConnected doc for why this matters right after a
+    // cold app start.
+    final isConnected = await _waitUntilSocketConnected();
+    if (isClosed) return;
+
+    if (!isConnected) {
+      appLogger.d(
+        '⚠️ [HostDashCubit] Still not connected after waiting to go '
+        'online — proceeding anyway; update_availability will flush once '
+        'the socket connects, and the waiting card will show the '
+        'reconnect banner in the meantime.',
+      );
+    }
+
     // Emit socket update_availability
     presenceSocketService.updateAvailability(
       audioAvailable: state.isAudioSelected,
@@ -401,6 +480,16 @@ class HostDashCubit extends Cubit<HostDashState> {
         preferences: updatedPreferences,
       ),
     );
+  }
+
+  /// Manually re-opens the socket after a drop — bound to the "Reconnect"
+  /// tap on the waiting card's connection-lost banner. No-op if already
+  /// connected; [_connectSocket] itself guards against a duplicate in-flight
+  /// attempt, so this is safe to tap repeatedly.
+  Future<void> retryConnection() async {
+    if (state.isSocketConnected) return;
+    appLogger.d('🔁 [HostDashCubit] Manual reconnect requested.');
+    await _connectSocket();
   }
 
   void pickupIncomingCall() {
@@ -471,6 +560,7 @@ class HostDashCubit extends Cubit<HostDashState> {
   @override
   Future<void> close() async {
     await _presenceSub?.cancel();
+    await _connectionStatusSub?.cancel();
     // Disconnect the socket — backend automatically marks host as offline.
     presenceSocketService.disconnect();
     appLogger.d('🔴 [HostDashCubit] Socket disconnected — host marked offline.');

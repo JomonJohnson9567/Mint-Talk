@@ -43,7 +43,7 @@ class ScreenContents extends StatelessWidget {
             SizedBox(height: 10.h),
             HostProfileHeader(
               name: host.fullName,
-              isOnline: host.presence?.status == 'online',
+              isOnline: host.presence?.isAvailableForCalls ?? false,
               imageUrl: host.avatarUrl,
             ),
             SizedBox(height: 24.h),

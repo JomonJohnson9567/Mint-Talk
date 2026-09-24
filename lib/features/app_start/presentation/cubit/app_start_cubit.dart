@@ -56,13 +56,13 @@ class AppStartCubit extends Cubit<AppStartState> {
     if (state is AppStartError) return;
 
     if (isProfileComplete) {
-      final roleResult = await _authRepository.getCachedUserRole();
+      final roleResult = await _authRepository.syncCurrentUserRole();
       String? role;
 
       roleResult.fold((failure) {
         emit(AppStartError(message: failure.message));
         return;
-      }, (cachedRole) => role = cachedRole);
+      }, (freshRole) => role = freshRole);
 
       if (state is AppStartError) return;
 

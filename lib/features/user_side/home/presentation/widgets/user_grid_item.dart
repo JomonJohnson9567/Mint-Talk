@@ -22,10 +22,7 @@ class UserGridItem extends StatelessWidget {
 
   // ── Derived presence helpers ─────────────────────────────────────────────
 
-  bool get _isOnline =>
-      host.presence?.status == 'online' &&
-      host.presence?.busy != true &&
-      host.presence?.state != 'busy';
+  bool get _isOnline => host.presence?.isAvailableForCalls ?? false;
   bool get _isBusy =>
       host.presence?.busy == true || host.presence?.state == 'busy';
   bool get _isOffline => !_isOnline && !_isBusy;
