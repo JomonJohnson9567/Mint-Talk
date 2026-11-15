@@ -1,35 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/indian_number_format.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/cubit/host_wallet_cubit.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/cubit/host_wallet_state.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/host_wallet_bottom_sheet_presenter.dart';
+import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/payout_account_tile.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_sheet_handle.dart';
-import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/bank_account_card.dart';
-import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_text_field.dart';
 
+/// Amount entry + choice among the host's admin-verified payout accounts.
+/// No bank/UPI details are entered here — only `amount` and the chosen
+/// account's `payoutMethod` are sent.
 class WithdrawAmountBottomSheet extends StatelessWidget {
   final BuildContext rootContext;
 
-  const WithdrawAmountBottomSheet({
-    super.key,
-    required this.rootContext,
-  });
+  const WithdrawAmountBottomSheet({super.key, required this.rootContext});
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Container(
           width: double.infinity,
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.92,
+          ),
           padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+            color: AppColors.cardWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -38,205 +44,33 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
               const WalletSheetHandle(),
               SizedBox(height: 18.h),
               Text(
-                'Withdraw Amount',
+                AppTexts.withdrawAmountTitle,
                 style: TextStyle(
                   fontSize: 24.sp,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryColor,
+                  color: AppColors.plumDeep,
                 ),
               ),
               SizedBox(height: 6.h),
               Text(
-                'Enter the amount you want to withdraw.',
+                AppTexts.withdrawAmountSubtitle,
                 style: TextStyle(
                   fontSize: 13.sp,
                   height: 1.4,
-                  color: AppColors.subtitleText,
+                  color: AppColors.hostSubtitle,
                 ),
               ),
               SizedBox(height: 16.h),
               const Divider(height: 1),
               SizedBox(height: 16.h),
-              Expanded(
+              Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: BlocBuilder<HostWalletCubit, HostWalletState>(
-                    builder: (context, state) {
-                      final selectedBank = state.selectedBankAccount;
-                      final isUpi = state.payoutMethod == 'upi';
-                      final amountText = state.withdrawalAmount.trim();
-                      final amount = double.tryParse(amountText) ?? 0.0;
-                      final hasValidDestination =
-                          isUpi ? state.upiId.trim().isNotEmpty : selectedBank != null;
-                      final isButtonEnabled = amount >= 500 &&
-                          amount <= state.availableBalance &&
-                          hasValidDestination &&
-                          state.requestStatus != HostWalletRequestStatus.submitting;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Withdrawal Amount',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.black,
-                            ),
-                          ),
-                          SizedBox(height: 10.h),
-                          TextFormField(
-                            initialValue: state.withdrawalAmount,
-                            keyboardType: TextInputType.number,
-                            onChanged: context.read<HostWalletCubit>().updateWithdrawalAmount,
-                            decoration: InputDecoration(
-                              hintText: 'Enter amount',
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 16.h,
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF7F7F7),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(18.r),
-                                borderSide: BorderSide(color: AppColors.borderSoft, width: 1.2),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(18.r),
-                                borderSide: BorderSide(color: AppColors.borderSoft, width: 1.2),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(18.r),
-                                borderSide: const BorderSide(color: AppColors.primaryColor, width: 1.4),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 8.h),
-                          _buildAmountTagMessage(state, amount),
-                          SizedBox(height: 16.h),
-                          Text(
-                            'Withdraw To',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.black,
-                            ),
-                          ),
-                          SizedBox(height: 10.h),
-                          _PayoutMethodToggle(
-                            selectedMethod: state.payoutMethod,
-                            onChanged: context.read<HostWalletCubit>().selectPayoutMethod,
-                          ),
-                          SizedBox(height: 14.h),
-                          if (isUpi)
-                            WalletTextField(
-                              label: 'UPI ID',
-                              hintText: 'e.g. yourname@upi',
-                              initialValue: state.upiId,
-                              onChanged: context.read<HostWalletCubit>().updateUpiId,
-                            )
-                          else ...[
-                            if (selectedBank != null)
-                              BankAccountCard(
-                                bankAccount: selectedBank,
-                                isSelected: true,
-                                onTap: () {},
-                              )
-                            else
-                              _NoBankSelected(onChangeBank: () => _changeBank(context)),
-                            SizedBox(height: 14.h),
-                            TextButton(
-                              onPressed: () => _changeBank(context),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                foregroundColor: AppColors.primaryColor,
-                              ),
-                              child: Text(
-                                'Change Bank Account',
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                          SizedBox(height: 18.h),
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF0D9),
-                              borderRadius: BorderRadius.circular(14.r),
-                              border: Border.all(color: const Color(0xFFF6C36A)),
-                            ),
-                            child: Text(
-                              'Available Balance: ₹ ${state.availableBalance}',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFEE7A22),
-                              ),
-                            ),
-                          ),
-                          if (state.errorMessage.isNotEmpty) ...[
-                            SizedBox(height: 14.h),
-                            _ErrorBanner(message: state.errorMessage),
-                          ],
-                          SizedBox(height: 20.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: Size.fromHeight(54.h),
-                                    side: const BorderSide(color: Color(0xFFBFBFBF)),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18.r),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Cancel',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 14.w),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: isButtonEnabled
-                                      ? () => _submitWithdrawal(context)
-                                      : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryColor,
-                                    foregroundColor: AppColors.white,
-                                    disabledBackgroundColor: AppColors.grey.withValues(alpha: 0.2),
-                                    disabledForegroundColor: AppColors.subtitleText,
-                                    minimumSize: Size.fromHeight(54.h),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18.r),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: Text(
-                                    'Withdraw',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
+                    builder: (context, state) => _SheetBody(
+                      state: state,
+                      onSubmit: () => _submitWithdrawal(context),
+                    ),
                   ),
                 ),
               ),
@@ -247,20 +81,9 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
     );
   }
 
-  void _changeBank(BuildContext context) {
-    Navigator.of(context).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (rootContext.mounted) {
-        HostWalletBottomSheetPresenter.showSelectBankSheet(rootContext);
-      }
-    });
-  }
-
   Future<void> _submitWithdrawal(BuildContext context) async {
-    final submitted = await context.read<HostWalletCubit>().submitWithdrawalRequest();
-    if (!submitted || !context.mounted) {
-      return;
-    }
+    final submitted = await context.read<HostWalletCubit>().submitWithdrawal();
+    if (!submitted || !context.mounted) return;
 
     Navigator.of(context).pop();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -269,69 +92,234 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
       }
     });
   }
+}
 
-  Widget _buildAmountTagMessage(HostWalletState state, double amount) {
-    if (state.withdrawalAmount.trim().isEmpty) {
-      return Row(
-        children: [
-          Icon(Icons.info_outline_rounded, size: 14.sp, color: AppColors.subtitleText),
-          SizedBox(width: 6.w),
-          Text(
-            'Minimum withdrawal amount is ₹500.',
+class _SheetBody extends StatelessWidget {
+  final HostWalletState state;
+  final VoidCallback onSubmit;
+
+  const _SheetBody({required this.state, required this.onSubmit});
+
+  /// Digits with at most one dot and two decimals.
+  static final _amountFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'^\d*\.?\d{0,2}'),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<HostWalletCubit>();
+    final accounts = state.payoutAccounts;
+    final hasSelectable = accounts.any((account) => account.isSelectable);
+    // The request carries only the method, so one account per method can
+    // be "the" selected one.
+    final selectedId = accounts
+        .where(
+          (account) =>
+              account.isSelectable &&
+              account.method == state.selectedPayoutMethod,
+        )
+        .map((account) => account.id)
+        .firstOrNull;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(AppTexts.withdrawalAmountLabel),
+        SizedBox(height: 10.h),
+        TextFormField(
+          initialValue: state.withdrawalAmount,
+          enabled: !state.isSubmitting,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [_amountFormatter],
+          onChanged: cubit.updateWithdrawalAmount,
+          decoration: InputDecoration(
+            hintText: AppTexts.enterAmountHint,
+            prefixText: '₹ ',
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.w,
+              vertical: 16.h,
+            ),
+            filled: true,
+            fillColor: AppColors.cardWhite,
+            border: _border(AppColors.lavenderBorder, 1.2),
+            enabledBorder: _border(AppColors.lavenderBorder, 1.2),
+            disabledBorder: _border(AppColors.lavenderBorder, 1.2),
+            focusedBorder: _border(AppColors.hostVideoAccent, 1.4),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _AmountHint(state: state),
+        SizedBox(height: 16.h),
+        _Label(AppTexts.withdrawTo),
+        SizedBox(height: 10.h),
+        for (final account in accounts) ...[
+          PayoutAccountTile(
+            account: account,
+            isSelected: account.id == selectedId,
+            onTap: state.isSubmitting
+                ? null
+                : () => cubit.selectPayoutMethod(account.method),
+          ),
+          SizedBox(height: 10.h),
+        ],
+        if (!hasSelectable)
+          const _InfoBox(message: AppTexts.withdrawBlockedNoVerifiedAccount),
+        SizedBox(height: 8.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: AppColors.hostToggleTrack,
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: AppColors.lavenderBorder),
+          ),
+          child: Text(
+            AppTexts.availableBalanceLine(
+              IndianNumberFormat.format(state.availableBalance),
+            ),
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11.sp,
-              color: AppColors.subtitleText,
-              fontWeight: FontWeight.w500,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.plumDeep,
             ),
           ),
+        ),
+        if (state.requestMessage.isNotEmpty) ...[
+          SizedBox(height: 14.h),
+          _ErrorBanner(message: state.requestMessage),
         ],
-      );
-    }
-
-    if (amount < 500) {
-      return Row(
-        children: [
-          Icon(Icons.warning_amber_rounded, size: 14.sp, color: AppColors.orange),
-          SizedBox(width: 6.w),
-          Text(
-            'Minimum withdrawal amount is ₹500.',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: AppColors.orange,
-              fontWeight: FontWeight.w600,
+        SizedBox(height: 20.h),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: Size.fromHeight(54.h),
+                  side: const BorderSide(color: AppColors.lavenderBorder),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.r),
+                  ),
+                ),
+                child: Text(
+                  AppTexts.cancel,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.plumDeep,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
-      );
-    }
-
-    if (amount > state.availableBalance) {
-      return Row(
-        children: [
-          Icon(Icons.error_outline_rounded, size: 14.sp, color: AppColors.red),
-          SizedBox(width: 6.w),
-          Text(
-            'Amount exceeds available balance of ₹${state.availableBalance}.',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: AppColors.red,
-              fontWeight: FontWeight.w600,
+            SizedBox(width: 14.w),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: state.canSubmit ? onSubmit : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: AppColors.white,
+                  disabledBackgroundColor: AppColors.hostToggleTrack,
+                  disabledForegroundColor: AppColors.hostSubtitle,
+                  minimumSize: Size.fromHeight(54.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.r),
+                  ),
+                  elevation: 0,
+                ),
+                child: state.isSubmitting
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.w,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: AppColors.primaryColor,
+                        ),
+                      )
+                    : Text(
+                        AppTexts.withdraw,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  static OutlineInputBorder _border(Color color, double width) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18.r),
+        borderSide: BorderSide(color: color, width: width),
       );
-    }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+
+  const _Label(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w600,
+        color: AppColors.plumDeep,
+      ),
+    );
+  }
+}
+
+/// Live feedback under the amount field, using the backend's minimum.
+class _AmountHint extends StatelessWidget {
+  final HostWalletState state;
+
+  const _AmountHint({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final error = amountErrorMessage(state);
+    final isEmpty = state.withdrawalAmount.trim().isEmpty;
+
+    final (IconData icon, Color color, String text) = switch (error) {
+      _ when isEmpty => (
+        Icons.info_outline_rounded,
+        AppColors.hostSubtitle,
+        state.minWithdrawalAmount > 0
+            ? AppTexts.amountErrorBelowMinimum(
+                IndianNumberFormat.format(state.minWithdrawalAmount),
+              )
+            : AppTexts.amountErrorEmpty,
+      ),
+      null => (
+        Icons.check_circle_outline_rounded,
+        AppColors.green,
+        AppTexts.amountValid,
+      ),
+      final message => (Icons.error_outline_rounded, AppColors.red, message),
+    };
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.check_circle_outline_rounded, size: 14.sp, color: AppColors.green),
+        Icon(icon, size: 14.sp, color: color),
         SizedBox(width: 6.w),
-        Text(
-          'Valid withdrawal amount.',
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: AppColors.green,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: color,
+              fontWeight: isEmpty ? FontWeight.w500 : FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -339,101 +327,28 @@ class WithdrawAmountBottomSheet extends StatelessWidget {
   }
 }
 
-class _PayoutMethodToggle extends StatelessWidget {
-  final String selectedMethod;
-  final ValueChanged<String> onChanged;
+class _InfoBox extends StatelessWidget {
+  final String message;
 
-  const _PayoutMethodToggle({required this.selectedMethod, required this.onChanged});
+  const _InfoBox({required this.message});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(4.w),
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: AppColors.borderSoft),
+        color: AppColors.hostAudioTileBg,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.audioBtnBg),
       ),
-      child: Row(
-        children: [
-          _PayoutMethodOption(
-            label: 'Bank Transfer',
-            isSelected: selectedMethod == 'bank_transfer',
-            onTap: () => onChanged('bank_transfer'),
-          ),
-          _PayoutMethodOption(
-            label: 'UPI',
-            isSelected: selectedMethod == 'upi',
-            onTap: () => onChanged('upi'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PayoutMethodOption extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PayoutMethodOption({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(vertical: 10.h),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryColor : AppColors.transparent,
-            borderRadius: BorderRadius.circular(10.r),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? AppColors.white : AppColors.subtitleText,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NoBankSelected extends StatelessWidget {
-  final VoidCallback onChangeBank;
-
-  const _NoBankSelected({required this.onChangeBank});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onChangeBank,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(16.w),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFFBF3),
-          borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(color: const Color(0xFFF1C26B)),
-        ),
-        child: Text(
-          'No bank account selected. Tap to choose one.',
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
+      child: Text(
+        message,
+        style: TextStyle(
+          fontSize: 12.5.sp,
+          fontWeight: FontWeight.w600,
+          color: AppColors.plumDeep,
+          height: 1.4,
         ),
       ),
     );

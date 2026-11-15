@@ -24,8 +24,7 @@ class HostProfileCubit extends Cubit<HostProfileState> {
         _authRepository.getProfileImagePath(),
         _authRepository.getAudioRate(),
         _authRepository.getVideoRate(),
-        _authRepository.getIsAudioAllowed(),
-        _authRepository.getIsVideoAllowed(),
+        _authRepository.getReferralCode(),
       ]);
 
       if (isClosed) return;
@@ -42,8 +41,7 @@ class HostProfileCubit extends Cubit<HostProfileState> {
           imagePath: values[6] as String?,
           audioRate: values[7] as int?,
           videoRate: values[8] as int?,
-          isAudioAllowed: values[9] as bool?,
-          isVideoAllowed: values[10] as bool?,
+          referralCode: values[9] as String?,
         ),
       );
     } catch (_) {
@@ -54,6 +52,39 @@ class HostProfileCubit extends Cubit<HostProfileState> {
           errorMessage: 'Unable to load your host profile.',
         ),
       );
+      return;
+    }
+
+    if (state.audioRate == null ||
+        state.videoRate == null ||
+        !state.hasReferralCode) {
+      await _syncMissingFields();
+    }
+  }
+
+  /// Fresh OTP logins skip the launch-time `/user/me` sync, so rates the
+  /// login response didn't carry would otherwise stay blank until the host
+  /// first goes online — and sessions cached before the backend sent
+  /// `referralCode` have no code at all. Fetches them in the background —
+  /// the cached profile stays on screen, and a failure just keeps it as is.
+  Future<void> _syncMissingFields() async {
+    try {
+      await _authRepository.syncCurrentUser();
+      final values = await Future.wait<Object?>([
+        _authRepository.getAudioRate(),
+        _authRepository.getVideoRate(),
+        _authRepository.getReferralCode(),
+      ]);
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          audioRate: values[0] as int?,
+          videoRate: values[1] as int?,
+          referralCode: values[2] as String?,
+        ),
+      );
+    } catch (_) {
+      // Keep the cached state.
     }
   }
 }

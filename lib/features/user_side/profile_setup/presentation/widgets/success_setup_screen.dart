@@ -108,12 +108,15 @@ class _BonusPointsBadge extends StatelessWidget {
         children: [
           Icon(Icons.stars_rounded, size: 16.sp, color: AppColors.primaryColor),
           SizedBox(width: 6.w),
-          Text(
-            '+${AppTexts.signupBonusPoints} Bonus Points added to your wallet',
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primaryColor,
+          Flexible(
+            child: Text(
+              '+${AppTexts.signupBonusPoints} Bonus Points added to your wallet',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryColor,
+              ),
             ),
           ),
         ],

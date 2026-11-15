@@ -5,21 +5,28 @@ import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import '../cubit/blocked_users_cubit.dart';
 import '../widgets/blocked_users_contents.dart';
+import 'blocked_list_kind.dart';
 
+/// Blocked list for both sides — "Blocked Hosts" for users, "Blocked Users"
+/// for hosts.
 class BlockedUsersScreen extends StatelessWidget {
-  const BlockedUsersScreen({super.key});
+  final BlockedListKind kind;
+
+  const BlockedUsersScreen({super.key, required this.kind});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<BlockedUsersCubit>()..loadBlockedUsers(),
-      child: const Scaffold(
-        backgroundColor: AppColors.white,
+      child: Scaffold(
+        backgroundColor: AppColors.rechargeBackground,
         appBar: CustomAppBar(
-          title: 'Blocked Users',
+          title: kind.title,
           automaticallyImplyLeading: true,
+          centerTitle: false,
+          foregroundColor: AppColors.plumDeep,
         ),
-        body: BlockedUsersContents(),
+        body: SafeArea(bottom: false, child: BlockedUsersContents(kind: kind)),
       ),
     );
   }

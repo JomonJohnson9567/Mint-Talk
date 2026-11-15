@@ -19,7 +19,12 @@ class SystemConfigRepositoryImpl implements SystemConfigRepository {
       final result = await remoteDataSource.getSystemConfig();
       return Right(result.toEntity());
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'System config request failed'));
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'System config request failed',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

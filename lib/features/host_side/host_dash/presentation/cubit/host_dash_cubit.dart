@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/user_role.dart';
+import 'package:mint_talk/core/services/incoming_call_alert/i_incoming_call_alert_service.dart';
+import 'package:mint_talk/core/services/permissions/call_permission_service.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/usecases/usecase.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
@@ -28,6 +31,11 @@ class HostDashCubit extends Cubit<HostDashState> {
   final IPresenceSocketService presenceSocketService;
   final TokenManager tokenManager;
 
+  /// Android: keeps the host reachable while the app is minimized (the
+  /// "You're online" foreground service) — see [startReceivingCalls].
+  final IIncomingCallAlertService incomingCallAlertService;
+  final ICallPermissionService callPermissionService;
+
   /// Tracks all online/on-call hosts seen from the socket, keyed by userId.
   final Map<String, HostOnlineItemEntity> _presenceHostMap = {};
 
@@ -51,12 +59,28 @@ class HostDashCubit extends Cubit<HostDashState> {
   StreamSubscription<HostPresenceEntity>? _presenceSub;
   StreamSubscription<bool>? _connectionStatusSub;
 
+  /// Gaps between automatic reconnect attempts while the host is waiting
+  /// for calls and the socket is stalled (see
+  /// [IPresenceSocketService.isStalled]). One attempt per entry; after the
+  /// last one the reconnect banner stays up for a manual tap. Overridable in
+  /// tests.
+  static List<Duration> recoveryDelays = const [
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+  ];
+
+  Timer? _recoveryTimer;
+  AppLifecycleListener? _lifecycleListener;
+
   HostDashCubit(
     this.getHostDashboardDataUseCase,
     this.getHostsUseCase,
     this.authRepository,
     this.presenceSocketService,
     this.tokenManager,
+    this.incomingCallAlertService,
+    this.callPermissionService,
   ) : super(const HostDashState()) {
     _init();
   }
@@ -70,6 +94,7 @@ class HostDashCubit extends Cubit<HostDashState> {
     // events emitted during the handshake burst.
     _subscribeToPresence();
     _subscribeToConnectionStatus();
+    _lifecycleListener = AppLifecycleListener(onResume: onAppResumed);
     _connectSocket();
     _loadCurrentUserId();
     unawaited(_loadSelfProfile());
@@ -91,7 +116,9 @@ class HostDashCubit extends Cubit<HostDashState> {
   Future<void> _connectSocket() async {
     final token = await tokenManager.getValidAccessToken();
     if (token == null || token.isEmpty) {
-      appLogger.d('⚠️ [HostDashCubit] Cannot connect socket — no access token.');
+      appLogger.d(
+        '⚠️ [HostDashCubit] Cannot connect socket — no access token.',
+      );
       return;
     }
     appLogger.d('🔌 [HostDashCubit] Connecting presence socket...');
@@ -117,7 +144,12 @@ class HostDashCubit extends Cubit<HostDashState> {
   Future<bool> _waitUntilSocketConnected({
     Duration timeout = const Duration(seconds: 6),
   }) async {
-    if (state.isSocketConnected) return true;
+    // Ask the service, not our own state: connectionStatus only carries
+    // transitions, so a socket that was already connected before this cubit
+    // subscribed never pushes `true` here. Waiting on the stream in that case
+    // stalled "Ready" for the full timeout and left the reconnect banner up
+    // over a perfectly healthy socket.
+    if (_syncConnectionStateFromService()) return true;
     try {
       return await presenceSocketService.connectionStatus
           .firstWhere((isConnected) => isConnected)
@@ -170,6 +202,20 @@ class HostDashCubit extends Cubit<HostDashState> {
     _connectionStatusSub = presenceSocketService.connectionStatus.listen(
       _onConnectionStatusChanged,
     );
+    // The stream doesn't replay, so seed from the real transport state. A
+    // socket already connected by an earlier screen would otherwise leave
+    // this cubit stuck on "disconnected" for its whole lifetime.
+    _syncConnectionStateFromService();
+  }
+
+  /// Brings [HostDashState.isSocketConnected] in line with the service's
+  /// actual transport state, running the same reconnect side effects as a
+  /// live `connectionStatus` event when it flips to connected. Returns
+  /// whether the socket is connected.
+  bool _syncConnectionStateFromService() {
+    final isConnected = presenceSocketService.isConnected;
+    _onConnectionStatusChanged(isConnected);
+    return isConnected;
   }
 
   void _onConnectionStatusChanged(bool isConnected) {
@@ -181,17 +227,85 @@ class HostDashCubit extends Cubit<HostDashState> {
     );
     emit(state.copyWith(isSocketConnected: isConnected));
 
+    if (isConnected) {
+      _cancelRecovery();
+    } else if (state.callFlowMode == HostDashCallFlowMode.waitingForNextCall) {
+      _scheduleRecovery();
+    }
+
     // A reconnect is a brand-new server-side socket session — if the host
     // was still waiting for calls when the drop happened, re-assert
     // availability and re-sync the online-hosts grid rather than leaving
     // both silently stale until the next manual pull-to-refresh.
-    if (isConnected && state.callFlowMode == HostDashCallFlowMode.waitingForNextCall) {
+    if (isConnected &&
+        state.callFlowMode == HostDashCallFlowMode.waitingForNextCall) {
       presenceSocketService.updateAvailability(
         audioAvailable: state.isAudioSelected,
         videoAvailable: state.isVideoSelected,
       );
       presenceSocketService.requestPresenceSnapshot();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-recovery while waiting for calls
+  // ---------------------------------------------------------------------------
+
+  /// Starts (or restarts) the recovery loop. The socket_io Manager already
+  /// retries transport drops by itself, but not a socket the server closed
+  /// or rejected — that one stays down until someone calls connect(), and a
+  /// host waiting for calls would silently be offline until they noticed
+  /// the banner. Each tick only spends an attempt when the service reports
+  /// [IPresenceSocketService.isStalled]; while the Manager is still backing
+  /// off on its own, the tick just checks again later.
+  void _scheduleRecovery({int attempt = 0, Duration? firstDelay}) {
+    _recoveryTimer?.cancel();
+    if (isClosed || attempt >= recoveryDelays.length) {
+      if (attempt >= recoveryDelays.length) {
+        appLogger.d(
+          '⚠️ [HostDashCubit] Auto-reconnect gave up after $attempt '
+          'attempt(s) — waiting for a manual Reconnect.',
+        );
+      }
+      return;
+    }
+    _recoveryTimer = Timer(firstDelay ?? recoveryDelays[attempt], () {
+      if (isClosed ||
+          state.callFlowMode != HostDashCallFlowMode.waitingForNextCall ||
+          _syncConnectionStateFromService()) {
+        return;
+      }
+      if (!presenceSocketService.isStalled) {
+        // The service is still recovering by itself — check again later
+        // without spending an attempt.
+        _scheduleRecovery(attempt: attempt);
+        return;
+      }
+      appLogger.d(
+        '🔁 [HostDashCubit] Socket stalled while waiting for calls — '
+        'auto-reconnect attempt ${attempt + 1}/${recoveryDelays.length}.',
+      );
+      unawaited(_connectSocket());
+      _scheduleRecovery(attempt: attempt + 1);
+    });
+  }
+
+  void _cancelRecovery() {
+    _recoveryTimer?.cancel();
+    _recoveryTimer = null;
+  }
+
+  /// App came back to the foreground. A long background stretch is when the
+  /// socket is most likely to have been closed under us, so re-check now
+  /// with a fresh attempt budget rather than waiting for the next tick.
+  @visibleForTesting
+  void onAppResumed() {
+    if (isClosed ||
+        state.callFlowMode != HostDashCallFlowMode.waitingForNextCall) {
+      return;
+    }
+    if (_syncConnectionStateFromService()) return;
+    _scheduleRecovery(firstDelay: Duration.zero);
   }
 
   /// Fetches the host roster via REST purely to resolve display name/avatar
@@ -228,9 +342,15 @@ class HostDashCubit extends Cubit<HostDashState> {
   }
 
   /// Resolves a userId's avatar — see [_resolveName] for the precedence.
-  String _resolveAvatarUrl(String userId, HostEntity? profile, String fallback) {
-    if (userId == _currentUserId && _selfAvatarUrl.isNotEmpty) return _selfAvatarUrl;
-    if (profile != null && profile.avatarUrl.isNotEmpty) return profile.avatarUrl;
+  String _resolveAvatarUrl(
+    String userId,
+    HostEntity? profile,
+    String fallback,
+  ) {
+    if (userId == _currentUserId && _selfAvatarUrl.isNotEmpty)
+      return _selfAvatarUrl;
+    if (profile != null && profile.avatarUrl.isNotEmpty)
+      return profile.avatarUrl;
     return fallback;
   }
 
@@ -241,9 +361,13 @@ class HostDashCubit extends Cubit<HostDashState> {
     for (final entry in _presenceHostMap.entries) {
       final profile = _hostProfiles[entry.key];
       final resolvedName = _resolveName(entry.key, profile, entry.value.name);
-      final resolvedImage =
-          _resolveAvatarUrl(entry.key, profile, entry.value.imageUrl);
-      if (resolvedName != entry.value.name || resolvedImage != entry.value.imageUrl) {
+      final resolvedImage = _resolveAvatarUrl(
+        entry.key,
+        profile,
+        entry.value.imageUrl,
+      );
+      if (resolvedName != entry.value.name ||
+          resolvedImage != entry.value.imageUrl) {
         _presenceHostMap[entry.key] = HostOnlineItemEntity(
           name: resolvedName,
           imageUrl: resolvedImage,
@@ -253,7 +377,9 @@ class HostDashCubit extends Cubit<HostDashState> {
       }
     }
     if (changed && !isClosed) {
-      emit(state.copyWith(onlineHosts: _onlineHostsSnapshot('profile backfill')));
+      emit(
+        state.copyWith(onlineHosts: _onlineHostsSnapshot('profile backfill')),
+      );
     }
   }
 
@@ -285,11 +411,13 @@ class HostDashCubit extends Cubit<HostDashState> {
     appLogger.d(
       '🟢 [HostDashCubit] Presence event — '
       'userId: ${presence.userId}${isSelf ? ' (self)' : ''}, '
-      'status: ${presence.status}, busy: ${presence.busy}',
+      'status: ${presence.status}, state: ${presence.state}, '
+      'busy: ${presence.busy}',
     );
 
-    if (presence.status == 'offline' && presence.busy != true) {
-      // Host went offline — remove from the map
+    if (presence.status != 'online') {
+      // Host went offline — remove from the map, even if a stale
+      // `state: busy` is still attached (see HostPresenceEntity.isOnCall).
       _presenceHostMap.remove(presence.userId);
     } else {
       // Online or busy — upsert, preferring self's own cache / the
@@ -307,15 +435,19 @@ class HostDashCubit extends Cubit<HostDashState> {
           profile,
           existing?.imageUrl ?? '',
         ),
-        status: presence.busy == true ? UserStatus.onCall : UserStatus.online,
+        status: presence.isOnCall ? UserStatus.onCall : UserStatus.online,
       );
     }
 
     if (!isClosed) {
-      emit(state.copyWith(
-        onlineHosts: _onlineHostsSnapshot('presence event: ${presence.userId}'),
-        isHostsLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          onlineHosts: _onlineHostsSnapshot(
+            'presence event: ${presence.userId}',
+          ),
+          isHostsLoading: false,
+        ),
+      );
     }
   }
 
@@ -422,13 +554,17 @@ class HostDashCubit extends Cubit<HostDashState> {
       ),
     );
 
+    // The incoming-call notification is how a minimized app rings —
+    // without the permission calls still ring, but only in the app.
+    final notificationsAllowed = await callPermissionService
+        .ensureNotificationPermission();
+    if (isClosed) return;
+
     // Ensure socket is connected (e.g. if host was offline or token wasn't ready earlier)
     await _connectSocket();
 
-    final audioRate =
-        await authRepository.getAudioRate() ?? _fallbackAudioRate;
-    final videoRate =
-        await authRepository.getVideoRate() ?? _fallbackVideoRate;
+    final audioRate = await authRepository.getAudioRate() ?? _fallbackAudioRate;
+    final videoRate = await authRepository.getVideoRate() ?? _fallbackVideoRate;
 
     if (isClosed) return;
 
@@ -470,6 +606,10 @@ class HostDashCubit extends Cubit<HostDashState> {
       isVideoAllowed: state.isVideoSelected,
     );
 
+    // Re-read the transport state: the handshake may have finished (or
+    // failed) after the bounded wait above returned.
+    final isConnectedNow = _syncConnectionStateFromService();
+
     emit(
       state.copyWith(
         callFlowMode: HostDashCallFlowMode.waitingForNextCall,
@@ -478,6 +618,21 @@ class HostDashCubit extends Cubit<HostDashState> {
         isVideoSelected: updatedPreferences.isVideoAllowed,
         isStartingCall: false,
         preferences: updatedPreferences,
+        notificationsBlocked: !notificationsAllowed,
+      ),
+    );
+
+    // Entering "waiting" while already disconnected produces no new
+    // connectionStatus transition, so start the recovery loop here too.
+    if (!isConnectedNow) _scheduleRecovery();
+
+    // Keeps the process — and the presence socket — alive while the app is
+    // minimized, so incoming calls still arrive and ring. Started here while
+    // the host is in the app: Android refuses a background start.
+    unawaited(
+      incomingCallAlertService.startHostStandby(
+        audio: updatedPreferences.isAudioAllowed,
+        video: updatedPreferences.isVideoAllowed,
       ),
     );
   }
@@ -487,7 +642,11 @@ class HostDashCubit extends Cubit<HostDashState> {
   /// connected; [_connectSocket] itself guards against a duplicate in-flight
   /// attempt, so this is safe to tap repeatedly.
   Future<void> retryConnection() async {
-    if (state.isSocketConnected) return;
+    // The socket may already be live while our state says otherwise. In
+    // that case connect() takes its "already connected" branch and emits
+    // nothing, so the banner could never clear. Sync instead; that also
+    // re-asserts availability and re-requests the presence snapshot.
+    if (_syncConnectionStateFromService()) return;
     appLogger.d('🔁 [HostDashCubit] Manual reconnect requested.');
     await _connectSocket();
   }
@@ -502,10 +661,9 @@ class HostDashCubit extends Cubit<HostDashState> {
 
   /// Takes the host offline — disconnects the socket so the backend marks them offline in Redis.
   Future<void> stopWaitingForCalls() async {
-    final audioRate =
-        await authRepository.getAudioRate() ?? _fallbackAudioRate;
-    final videoRate =
-        await authRepository.getVideoRate() ?? _fallbackVideoRate;
+    _cancelRecovery();
+    final audioRate = await authRepository.getAudioRate() ?? _fallbackAudioRate;
+    final videoRate = await authRepository.getVideoRate() ?? _fallbackVideoRate;
 
     emit(
       state.copyWith(
@@ -522,10 +680,9 @@ class HostDashCubit extends Cubit<HostDashState> {
 
     // Simply call socket.disconnect() when staff explicitly toggles to "Go Offline"
     presenceSocketService.disconnect();
+    unawaited(incomingCallAlertService.stopHostStandby());
 
-    appLogger.d(
-      '✅ [HostDashCubit] Socket disconnected — host going offline.',
-    );
+    appLogger.d('✅ [HostDashCubit] Socket disconnected — host going offline.');
 
     // Disconnecting kills the whole presence stream, so no further
     // "offline" event will ever arrive for us over this connection —
@@ -559,11 +716,16 @@ class HostDashCubit extends Cubit<HostDashState> {
 
   @override
   Future<void> close() async {
+    _cancelRecovery();
+    _lifecycleListener?.dispose();
     await _presenceSub?.cancel();
     await _connectionStatusSub?.cancel();
     // Disconnect the socket — backend automatically marks host as offline.
     presenceSocketService.disconnect();
-    appLogger.d('🔴 [HostDashCubit] Socket disconnected — host marked offline.');
+    unawaited(incomingCallAlertService.stopHostStandby());
+    appLogger.d(
+      '🔴 [HostDashCubit] Socket disconnected — host marked offline.',
+    );
     return super.close();
   }
 }

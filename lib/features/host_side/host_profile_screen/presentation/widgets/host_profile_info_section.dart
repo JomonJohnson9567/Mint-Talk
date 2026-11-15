@@ -1,208 +1,176 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/transitions/cubit/snack_bar_state.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/widgets/top_snackbar.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_icon_square.dart';
 
+/// Cream card listing the host's account details as read-only rows. The
+/// referral code row copies the code so the host can share it.
 class HostProfileInfoSection extends StatelessWidget {
   final HostProfileState profile;
-  final VoidCallback onEdit;
 
-  const HostProfileInfoSection({
-    super.key,
-    required this.profile,
-    required this.onEdit,
+  const HostProfileInfoSection({super.key, required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final fields =
+        <({IconData icon, String label, String value, bool copyable})>[
+          (
+            icon: Icons.person_outline_rounded,
+            label: AppTexts.fullNameLabel,
+            value: profile.displayName,
+            copyable: false,
+          ),
+          (
+            icon: Icons.phone_android_rounded,
+            label: AppTexts.phoneNumberLabel,
+            value: profile.displayPhone,
+            copyable: false,
+          ),
+
+          (
+            icon: Icons.cake_outlined,
+            label: AppTexts.dateOfBirthText,
+            value: profile.displayDob,
+            copyable: false,
+          ),
+          (
+            icon: Icons.wc_rounded,
+            label: AppTexts.genderLabel,
+            value: profile.displayGender,
+            copyable: false,
+          ),
+          (
+            icon: Icons.card_giftcard_rounded,
+            label: AppTexts.hostReferralCodeLabel,
+            value: profile.displayReferralCode,
+            copyable: profile.hasReferralCode,
+          ),
+        ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(18.cw),
+        border: Border.all(color: AppColors.profileDivider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < fields.length; i++) ...[
+            _InfoRow(
+              icon: fields[i].icon,
+              tint: HostIconTint.alternating(i),
+              label: fields[i].label,
+              value: fields[i].value,
+              onCopy: fields[i].copyable
+                  ? () => _copy(context, fields[i].value)
+                  : null,
+            ),
+            if (i != fields.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 68.cw,
+                endIndent: 14.cw,
+                color: AppColors.profileDivider,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _copy(BuildContext context, String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    showTopSnackBar(
+      context,
+      AppTexts.referralCodeCopied,
+      type: SnackBarType.success,
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final HostIconTint tint;
+  final String label;
+  final String value;
+
+  /// When set, the row is tappable and shows a copy icon.
+  final VoidCallback? onCopy;
+
+  const _InfoRow({
+    required this.icon,
+    required this.tint,
+    required this.label,
+    required this.value,
+    this.onCopy,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fields = [
-      _InfoField(
-        icon: Icons.person_outline_rounded,
-        label: 'Full Name',
-        value: profile.displayName,
-      ),
-      _InfoField(
-        icon: Icons.phone_android_rounded,
-        label: 'Mobile Number',
-        value: profile.displayPhone,
-      ),
-      _InfoField(
-        icon: Icons.badge_outlined,
-        label: 'Account ID',
-        value: profile.displayUserId,
-      ),
-      _InfoField(
-        icon: Icons.cake_outlined,
-        label: 'Date of Birth',
-        value: profile.displayDob,
-      ),
-      _InfoField(
-        icon: Icons.wc_rounded,
-        label: 'Gender',
-        value: profile.displayGender,
-      ),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 14,
-            spreadRadius: 0,
-            offset: const Offset(0, 3),
-          ),
-        ],
-        border: Border.all(color: AppColors.borderSoft),
-      ),
-      child: Column(
-        children: [
-          ...List.generate(fields.length, (index) {
-            final field = fields[index];
-            return Column(
-              children: [
-                _InfoTile(field: field),
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: AppColors.borderSoft,
-                  indent: 16.w,
-                  endIndent: 16.w,
-                ),
-              ],
-            );
-          }),
-          _EditProfileTile(onTap: onEdit),
-        ],
-      ),
-    );
-  }
-}
-
-class _EditProfileTile extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _EditProfileTile({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-          child: Row(
-            children: [
-              Container(
-                width: 36.w,
-                height: 36.w,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                child: Icon(
-                  Icons.edit_outlined,
-                  color: AppColors.primaryColor,
-                  size: 18.sp,
-                ),
-              ),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: Text(
-                  'Edit Profile',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14.sp,
-                color: AppColors.primaryColor,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final _InfoField field;
-
-  const _InfoTile({required this.field});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+    final row = Padding(
+      padding: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 11.cw),
       child: Row(
         children: [
-          Container(
-            width: 36.w,
-            height: 36.w,
-            decoration: BoxDecoration(
-              color: AppColors.softBlue,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Icon(field.icon, color: AppColors.primaryColor, size: 18.sp),
-          ),
-          SizedBox(width: 14.w),
+          HostIconSquare(icon: icon, tint: tint, size: 40),
+          SizedBox(width: 14.cw),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  field.label,
+                  label,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    color: AppColors.subtitleText,
-                    fontWeight: FontWeight.w400,
+                    fontSize: 12.csp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.hostSubtitle,
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 2.cw),
                 Text(
-                  field.value,
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black,
+                    fontSize: 15.csp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.plumDeep,
+                    letterSpacing: onCopy != null ? 1.2 : null,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 14.sp,
-            color: AppColors.subtitleText,
-          ),
+          if (onCopy != null) ...[
+            SizedBox(width: 8.cw),
+            Icon(
+              Icons.copy_rounded,
+              size: 18.csp,
+              color: AppColors.primaryColor,
+            ),
+          ],
         ],
       ),
     );
+
+    if (onCopy == null) return row;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onCopy, child: row),
+    );
   }
-}
-
-class _InfoField {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoField({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
 }

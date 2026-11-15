@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
@@ -15,10 +16,11 @@ class UserRechargeHistory extends StatelessWidget {
     return BlocProvider(
       create: (_) => getIt<UserRechargeHistoryCubit>()..loadHistory(),
       child: const Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.rechargeBackground,
         appBar: CustomAppBar(
-          title: 'Recharge History',
+          title: AppTexts.rechargeHistory,
           automaticallyImplyLeading: true,
+          foregroundColor: AppColors.plumDeep,
         ),
         body: SafeArea(child: UserRechargeHistoryContents()),
       ),

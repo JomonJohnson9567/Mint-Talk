@@ -11,7 +11,14 @@ class PlanDetailCubit extends Cubit<PlanDetailState> {
 
   PlanDetailCubit(this._getPlanByIdUseCase) : super(const PlanDetailState());
 
-  Future<void> loadPlan(String planId) async {
+  /// Shows [initial] straight away when the caller already has the plan
+  /// (e.g. the recharge plans list) — no fetch, so no skeleton flash, and
+  /// fallback-catalogue ids the backend doesn't know still render.
+  Future<void> loadPlan(String planId, {RechargePlanEntity? initial}) async {
+    if (initial != null) {
+      emit(state.copyWith(status: PlanDetailStatus.loaded, plan: initial));
+      return;
+    }
     if (state.isLoading) return;
 
     emit(

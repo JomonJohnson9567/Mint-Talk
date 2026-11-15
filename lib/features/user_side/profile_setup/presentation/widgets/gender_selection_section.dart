@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
@@ -9,11 +8,13 @@ import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/
 class GenderSelectionSection extends StatelessWidget {
   final String selectedGender;
   final ValueChanged<String> onSelect;
+  final String? errorText;
 
   const GenderSelectionSection({
     super.key,
     required this.selectedGender,
     required this.onSelect,
+    this.errorText,
   });
 
   @override
@@ -21,16 +22,18 @@ class GenderSelectionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppTexts.selectGender,
-          style: GoogleFonts.manrope(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-            letterSpacing: 0.5,
+        Padding(
+          padding: EdgeInsets.only(left: 4.w),
+          child: Text(
+            AppTexts.selectGender,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.plumDeep,
+            ),
           ),
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: 10.h),
         Row(
           children: [
             Expanded(
@@ -41,7 +44,7 @@ class GenderSelectionSection extends StatelessWidget {
                 onTap: () => onSelect(AppTexts.male),
               ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 14.w),
             Expanded(
               child: GenderCard(
                 label: AppTexts.female,
@@ -52,6 +55,14 @@ class GenderSelectionSection extends StatelessWidget {
             ),
           ],
         ),
+        if (errorText != null)
+          Padding(
+            padding: EdgeInsets.only(top: 8.h, left: 16.w),
+            child: Text(
+              errorText!,
+              style: TextStyle(color: Colors.red.shade700, fontSize: 12.sp),
+            ),
+          ),
       ],
     );
   }

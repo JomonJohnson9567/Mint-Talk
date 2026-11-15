@@ -42,15 +42,19 @@ class HostApplicationRepositoryImpl implements HostApplicationRepository {
   }
 
   @override
-  Future<Either<Failure, String>> uploadImage(
+  Future<Either<Failure, String>> uploadVerificationPhoto(
     String imagePath,
-    String key,
   ) async {
     try {
-      final result = await remoteDataSource.uploadImage(imagePath, key);
+      final result = await remoteDataSource.uploadVerificationPhoto(imagePath);
       return Right(result);
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Host application request failed'));
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'Unable to upload verification photo',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

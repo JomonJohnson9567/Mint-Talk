@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
@@ -12,14 +13,15 @@ class HostWallet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<HostWalletCubit>()..loadWallet(),
-      child: Scaffold(
-        appBar: const CustomAppBar(
-          title: 'Wallet',
+      create: (_) => getIt<HostWalletCubit>()..initialize(),
+      child: const Scaffold(
+        appBar: CustomAppBar(
+          title: AppTexts.hostWallet,
           automaticallyImplyLeading: true,
+          foregroundColor: AppColors.plumDeep,
         ),
-        backgroundColor: AppColors.white,
-        body: const WalletContents(),
+        backgroundColor: AppColors.homeBackground,
+        body: WalletContents(),
       ),
     );
   }

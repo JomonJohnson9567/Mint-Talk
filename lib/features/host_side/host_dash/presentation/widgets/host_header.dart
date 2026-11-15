@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/navigations/navigation_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_cubit.dart';
-import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/utils/rate_formatter.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_state.dart';
 
 class HostHeader extends StatelessWidget {
   const HostHeader({super.key});
@@ -15,50 +18,53 @@ class HostHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+      padding: EdgeInsets.fromLTRB(14.cw, 8.cw, 14.cw, 4.cw),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top Left Logo + App Name — flexible so it truncates instead of
-          // pushing the rate capsule off-screen on narrow devices.
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  AppAssets.logo,
-                  height: 32.h,
-                  width: 32.w,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const SizedBox.shrink(),
-                ),
-                SizedBox(width: 6.w),
-              Flexible(
-                  child: Text(
-                    'MintTalk',
-                    overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primaryColor,
-                  ),
-  ),
-                ),
-              ],
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(
+                AppAssets.mintTalkWordmark,
+                height: 30.cw,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
+          SizedBox(width: 8.cw),
+          // Host default earning rates (₹ per hostBillingUnit) from system config.
           BlocSelector<
-            HostProfileCubit,
-            HostProfileState,
-            ({int? audioRate, int? videoRate})
+            SystemConfigCubit,
+            SystemConfigState,
+            ({double? audioRate, double? videoRate, String unit})
           >(
-            selector: (state) =>
-                (audioRate: state.audioRate, videoRate: state.videoRate),
+            selector: (state) => (
+              audioRate: state.hostAudioEarningRateInr,
+              videoRate: state.hostVideoEarningRateInr,
+              unit: state.hostBillingUnit,
+            ),
             builder: (context, rates) {
-              return _HostRateCapsule(
-                audioRate: rates.audioRate,
-                videoRate: rates.videoRate,
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _RateChip(
+                    icon: Icons.call_rounded,
+                    label: AppTexts.audioLabel,
+                    value: rates.audioRate,
+                    billingUnit: rates.unit,
+                    accent: AppColors.audioAccent,
+                    iconBackground: AppColors.audioBtnBg,
+                  ),
+                  SizedBox(width: 6.cw),
+                  _RateChip(
+                    icon: Icons.videocam_rounded,
+                    label: AppTexts.videoLabel,
+                    value: rates.videoRate,
+                    billingUnit: rates.unit,
+                    accent: AppColors.hostVideoAccent,
+                    iconBackground: AppColors.hostVideoIconBg,
+                  ),
+                ],
               );
             },
           ),
@@ -68,106 +74,88 @@ class HostHeader extends StatelessWidget {
   }
 }
 
-class _HostRateCapsule extends StatelessWidget {
-  final int? audioRate;
-  final int? videoRate;
-
-  const _HostRateCapsule({required this.audioRate, required this.videoRate});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24.r),
-        side: BorderSide(color: const Color(0xFFE7EBF3), width: 1.w),
-      ),
-      elevation: 1,
-      shadowColor: AppColors.black.withValues(alpha: 0.04),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24.r),
-        onTap: () {
-          getIt<NavigationService>().navigateTo(AppRoutes.hostAnalytics);
-        },
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _RateStat(
-                icon: Icons.call_rounded,
-                value: _displayRate(audioRate),
-                label: 'Audio Mins',
-              ),
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: 12.w),
-                width: 1.w,
-                height: 24.h,
-                color: const Color(0xFFE7EBF3),
-              ),
-              _RateStat(
-                icon: Icons.videocam_rounded,
-                value: _displayRate(videoRate),
-                label: 'Video Mins',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _displayRate(int? rate) => rate?.toString() ?? '—';
-}
-
-class _RateStat extends StatelessWidget {
+/// Call rate chip, formatted like the profile's call rate tiles; tapping it
+/// opens the host analytics screen.
+class _RateChip extends StatelessWidget {
   final IconData icon;
-  final String value;
   final String label;
+  final double? value;
+  final String billingUnit;
+  final Color accent;
+  final Color iconBackground;
 
-  const _RateStat({
+  const _RateChip({
     required this.icon,
-    required this.value,
     required this.label,
+    required this.value,
+    required this.billingUnit,
+    required this.accent,
+    required this.iconBackground,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.all(3.w),
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.primaryColor, size: 13.sp),
-            ),
-            SizedBox(width: 6.w),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.black,
-              ),
+    return GestureDetector(
+      onTap: () =>
+          getIt<NavigationService>().navigateTo(AppRoutes.hostAnalytics),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(6.cw, 6.cw, 10.cw, 6.cw),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.profileDivider, width: 1.cw),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryColor.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        SizedBox(height: 2.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 8.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.subtitleText,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30.cw,
+              height: 30.cw,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Icon(icon, color: accent, size: 17.csp),
+            ),
+            SizedBox(width: 7.cw),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9.5.csp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.hostSubtitle,
+                    height: 1.1,
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value == null ? '—' : RateFormatter.inr(value, billingUnit),
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 13.csp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.plumDeep,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

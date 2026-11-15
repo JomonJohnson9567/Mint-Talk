@@ -6,10 +6,7 @@ class AuthResponseEntity extends Equatable {
   final UserEntity user;
   final String accessToken;
 
-  const AuthResponseEntity({
-    required this.user,
-    required this.accessToken,
-  });
+  const AuthResponseEntity({required this.user, required this.accessToken});
 
   @override
   List<Object?> get props => [user, accessToken];

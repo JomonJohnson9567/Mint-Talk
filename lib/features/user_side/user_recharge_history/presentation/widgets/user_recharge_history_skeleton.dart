@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
 /// Skeleton loading placeholder for [UserRechargeHistoryContents] while
-/// history loads. Mirrors the summary card + item card layout.
+/// history loads. Mirrors the summary card, section title and item cards.
 class UserRechargeHistorySkeleton extends StatelessWidget {
   const UserRechargeHistorySkeleton({super.key});
 
@@ -12,19 +12,31 @@ class UserRechargeHistorySkeleton extends StatelessWidget {
     return SkeletonShimmer(
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
+        padding: EdgeInsets.fromLTRB(16.cw, 4.cw, 16.cw, 24.cw),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SkeletonBox(height: 190.h, borderRadius: BorderRadius.circular(28.r)),
-            SizedBox(height: 18.h),
+            SkeletonBox(
+              height: 118.cw,
+              borderRadius: BorderRadius.circular(18.cw),
+            ),
+            SizedBox(height: 22.cw),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SkeletonBox(
+                width: 130.cw,
+                height: 18.cw,
+                borderRadius: BorderRadius.circular(6.cw),
+              ),
+            ),
+            SizedBox(height: 12.cw),
             ...List.generate(
               4,
               (index) => Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
+                padding: EdgeInsets.only(bottom: 12.cw),
                 child: SkeletonBox(
-                  height: 130.h,
-                  borderRadius: BorderRadius.circular(24.r),
+                  height: 112.cw,
+                  borderRadius: BorderRadius.circular(18.cw),
                 ),
               ),
             ),

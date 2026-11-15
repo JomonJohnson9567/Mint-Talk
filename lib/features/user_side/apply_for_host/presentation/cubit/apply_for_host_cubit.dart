@@ -1,23 +1,26 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/utils/validators.dart';
+import 'package:mint_talk/features/user_side/profile_setup/domain/value_objects/referral_code_value.dart';
 import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/host_application_entity.dart';
 import '../../domain/repositories/host_application_repository.dart';
 import '../../domain/usecases/submit_host_application_usecase.dart';
-import '../../domain/usecases/upload_image_usecase.dart';
+import '../../domain/usecases/upload_verification_photo_usecase.dart';
 import 'apply_for_host_state.dart';
 
 @injectable
 class ApplyForHostCubit extends Cubit<ApplyForHostState> {
   final SubmitHostApplicationUseCase submitHostApplicationUseCase;
-  final UploadImageUseCase uploadImageUseCase;
+  final UploadVerificationPhotoUseCase uploadVerificationPhotoUseCase;
   final HostApplicationRepository repository;
   final AuthRepository authRepository;
 
   ApplyForHostCubit(
     this.submitHostApplicationUseCase,
-    this.uploadImageUseCase,
+    this.uploadVerificationPhotoUseCase,
     this.repository,
     this.authRepository,
   ) : super(const ApplyForHostState());
@@ -83,11 +86,31 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
     emit(
       state.copyWith(
         selfiePath: value,
-        selfieUrl: value.isEmpty ? '' : state.selfieUrl,
+        // A new capture always invalidates the previous upload.
+        verificationPhotoId: '',
         fieldErrors: errors,
         status: ApplyForHostStatus.initial,
       ),
     );
+  }
+
+  void referralCodeChanged(String value) {
+    final errors = Map<String, String>.from(state.fieldErrors)
+      ..remove('referralCode');
+    emit(
+      state.copyWith(
+        referralCode: value.trim().toUpperCase(),
+        referralStatus: ReferralCheck.idle,
+        fieldErrors: errors,
+        status: ApplyForHostStatus.initial,
+      ),
+    );
+  }
+
+  /// Mirrors the live verification result from `ReferralCubit`.
+  void referralCheckChanged(ReferralCheck check) {
+    if (state.referralCode.isEmpty) return;
+    emit(state.copyWith(referralStatus: check));
   }
 
   Future<void> uploadSelfie(String path) async {
@@ -99,7 +122,12 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
       ),
     );
 
-    final result = await uploadImageUseCase(path, 'selfieUrl');
+    final result = await uploadVerificationPhotoUseCase(path);
+    if (isClosed) return;
+
+    // A retake replaced the photo while this upload was in flight — its
+    // result belongs to a stale capture, so drop it.
+    if (state.selfiePath != path) return;
 
     result.fold(
       (failure) {
@@ -107,13 +135,13 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
           ..['selfie'] = failure.message;
         emit(state.copyWith(isUploadingSelfie: false, fieldErrors: errors));
       },
-      (url) {
+      (photoId) {
         final errors = Map<String, String>.from(state.fieldErrors)
           ..remove('selfie');
         emit(
           state.copyWith(
             isUploadingSelfie: false,
-            selfieUrl: url,
+            verificationPhotoId: photoId,
             fieldErrors: errors,
           ),
         );
@@ -131,11 +159,14 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
     if (dobError != null) errors['dob'] = dobError;
     if (bioError != null) errors['bio'] = bioError;
 
-    if (state.selfiePath.isEmpty || state.selfieUrl.isEmpty) {
+    if (state.selfiePath.isEmpty || state.verificationPhotoId.isEmpty) {
       errors['selfie'] = state.isUploadingSelfie
           ? 'Selfie is still uploading...'
           : 'Selfie photo is required';
     }
+
+    final referralError = _referralError();
+    if (referralError != null) errors['referralCode'] = referralError;
 
     if (errors.isNotEmpty) {
       emit(
@@ -150,7 +181,8 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
       name: state.name.trim(),
       dob: state.dob.trim(),
       bio: state.bio.trim(),
-      selfieUrl: state.selfieUrl,
+      verificationPhotoId: state.verificationPhotoId,
+      referralCode: state.referralCode.isEmpty ? null : state.referralCode,
     );
 
     final result = await submitHostApplicationUseCase(entity);
@@ -171,5 +203,21 @@ class ApplyForHostCubit extends Cubit<ApplyForHostState> {
         emit(state.copyWith(status: ApplyForHostStatus.success));
       },
     );
+  }
+
+  /// Referral code is optional; when entered it must be well-formed and
+  /// verified by the live `/user/referral-verify` check before submitting.
+  String? _referralError() {
+    if (state.referralCode.isEmpty) return null;
+    try {
+      ReferralCodeValue(state.referralCode);
+    } on ValidationException catch (e) {
+      return e.errors['referralCode'] ?? AppTexts.invalidReferralCode;
+    }
+    return switch (state.referralStatus) {
+      ReferralCheck.valid => null,
+      ReferralCheck.invalid => AppTexts.invalidReferralCode,
+      ReferralCheck.idle || ReferralCheck.checking => AppTexts.referralVerifying,
+    };
   }
 }

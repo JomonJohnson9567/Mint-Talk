@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/core/di/injection.dart';
+import 'package:mint_talk/core/services/screen_capture/i_screen_capture_guard.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/user_side/call/data/models/incoming_call_payload_dto.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_session_entity.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
 import 'package:mint_talk/features/user_side/call/presentation/bloc/call_screen_cubit.dart';
 import 'package:mint_talk/features/user_side/call/presentation/widgets/call_screen_contents.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 
 /// The full-screen in-call UI. [CallScreenCubit] is provided once at the app
 /// root (see `app.dart`) and outlives this widget — this screen only starts
@@ -22,6 +25,13 @@ class CallScreen extends StatefulWidget {
   final IncomingCallPayloadDto? incomingPayload;
   final bool isHost;
 
+  /// Whether the dialled host is already a favourite (outgoing calls only).
+  final bool isHostFavorite;
+
+  /// The dialled host (outgoing calls only) — lets "Call again" offer the
+  /// host's available call types.
+  final HostEntity? host;
+
   const CallScreen({
     super.key,
     this.hostId,
@@ -31,6 +41,8 @@ class CallScreen extends StatefulWidget {
     this.callSession,
     this.incomingPayload,
     this.isHost = false,
+    this.isHostFavorite = false,
+    this.host,
   });
 
   @override
@@ -38,9 +50,15 @@ class CallScreen extends StatefulWidget {
 }
 
 class _CallScreenState extends State<CallScreen> {
+  /// Screenshot / screen-record block for as long as this screen is shown
+  /// (app.dart separately holds it while a call is live but minimised).
+  static const _captureHolder = 'call_screen';
+  final _captureGuard = getIt<IScreenCaptureGuard>();
+
   @override
   void initState() {
     super.initState();
+    _captureGuard.acquire(_captureHolder);
 
     // Reads the app-root singleton instance via the ancestor BlocProvider —
     // never getIt<CallScreenCubit>() here, which would construct a brand new,
@@ -74,6 +92,8 @@ class _CallScreenState extends State<CallScreen> {
         callType: effectiveType,
         displayName: displayName,
         avatarUrl: widget.hostAvatar,
+        isHostFavorite: widget.isHostFavorite,
+        host: widget.host,
       );
     }
 
@@ -92,6 +112,12 @@ class _CallScreenState extends State<CallScreen> {
         handleCallEndedTransition(context, cubit.state);
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _captureGuard.release(_captureHolder);
+    super.dispose();
   }
 
   @override

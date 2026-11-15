@@ -1,52 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 
+/// Warm peach card reminding the user of the conduct rules.
 class HostWarningBanner extends StatelessWidget {
   const HostWarningBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.all(14.cw),
       decoration: BoxDecoration(
-        color:
-            AppColors.warningBackground, // Light yellow background for warning
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.amber.withAlpha(128)),
+        color: AppColors.audioCardBg,
+        borderRadius: BorderRadius.circular(18.cw),
+        border: Border.all(
+          color: AppColors.audioAccent.withValues(alpha: 0.35),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: AppColors.orange,
-                size: 24.sp,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                AppTexts.warning,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.red,
-                ),
-              ),
-            ],
+          Container(
+            width: 40.cw,
+            height: 40.cw,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shield_outlined,
+              size: 21.csp,
+              color: AppColors.audioAccent,
+            ),
           ),
-          SizedBox(height: 8.h),
-          Text(
-            AppTexts.warningMessage,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: AppColors.black,
-              height: 1.4,
+          SizedBox(width: 12.cw),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppTexts.warning,
+                  style: GoogleFonts.nunito(
+                    fontSize: 15.csp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.plumDeep,
+                  ),
+                ),
+                SizedBox(height: 2.cw),
+                Text(
+                  AppTexts.warningMessage,
+                  style: TextStyle(
+                    fontSize: 12.5.csp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.plumMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

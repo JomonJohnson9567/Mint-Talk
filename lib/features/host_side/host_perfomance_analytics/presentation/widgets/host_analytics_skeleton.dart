@@ -1,60 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
 /// Skeleton loading placeholder for [HostAnalytics] while the earnings
-/// ledger loads. Mirrors the header + summary grid + ledger list layout.
+/// ledger loads. Mirrors the banner + stat tiles + ledger list layout.
 class HostAnalyticsSkeleton extends StatelessWidget {
   const HostAnalyticsSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tileRadius = BorderRadius.circular(18.r);
+
+    Widget tileRow() => Row(
+      children: [
+        Expanded(
+          child: SkeletonBox(height: 78.cw, borderRadius: tileRadius),
+        ),
+        SizedBox(width: 12.cw),
+        Expanded(
+          child: SkeletonBox(height: 78.cw, borderRadius: tileRadius),
+        ),
+      ],
+    );
+
     return SkeletonShimmer(
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        padding: EdgeInsets.fromLTRB(16.cw, 4.cw, 16.cw, 24.cw),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                SkeletonBox(width: 40.w, height: 40.w, shape: BoxShape.circle),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SkeletonBox(width: 150.w, height: 18.h),
-                      SizedBox(height: 6.h),
-                      SkeletonBox(width: 220.w, height: 12.h),
-                    ],
-                  ),
-                ),
-              ],
+            SkeletonBox(
+              height: 110.cw,
+              borderRadius: BorderRadius.circular(20.r),
             ),
-            SizedBox(height: 20.h),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12.h,
-              crossAxisSpacing: 12.w,
-              childAspectRatio: 1.18,
-              children: List.generate(
-                4,
-                (index) => SkeletonBox(borderRadius: BorderRadius.circular(16.r)),
-              ),
-            ),
-            SizedBox(height: 20.h),
-            SkeletonBox(width: 150.w, height: 16.h),
-            SizedBox(height: 12.h),
+            SizedBox(height: 16.cw),
+            tileRow(),
+            SizedBox(height: 12.cw),
+            tileRow(),
+            SizedBox(height: 22.cw),
+            SkeletonBox(width: 150.cw, height: 18.cw),
+            SizedBox(height: 12.cw),
             ...List.generate(
-              4,
+              3,
               (index) => Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
+                padding: EdgeInsets.only(bottom: 12.cw),
                 child: SkeletonBox(
-                  height: 64.h,
-                  borderRadius: BorderRadius.circular(14.r),
+                  height: 64.cw,
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
               ),
             ),

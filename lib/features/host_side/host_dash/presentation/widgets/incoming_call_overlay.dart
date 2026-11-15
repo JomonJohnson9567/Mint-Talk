@@ -4,14 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/cubit/pressed_state_cubit.dart';
 import 'package:mint_talk/core/di/injection.dart';
+import 'package:mint_talk/core/services/audio/incoming_ringer_service.dart';
+import 'package:mint_talk/core/services/incoming_call_alert/i_incoming_call_alert_service.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/transitions/widgets/animated_breathing_glow.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/incoming_call_overlay_cubit.dart';
+import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/incoming_call_overlay_state.dart';
 import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/incoming_call_session_cubit.dart';
 import 'package:mint_talk/features/user_side/call/data/models/incoming_call_payload_dto.dart';
 import 'package:mint_talk/features/user_side/call/domain/usecases/reject_call_usecase.dart';
 import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/core/utils/server_clock.dart';
 
 class IncomingCallOverlayListener extends StatelessWidget {
   final Widget child;
@@ -23,12 +27,23 @@ class IncomingCallOverlayListener extends StatelessWidget {
     return BlocProvider(
       create: (_) => IncomingCallOverlayCubit(
         presenceSocketService: getIt<IPresenceSocketService>(),
+        incomingCallAlertService: getIt<IIncomingCallAlertService>(),
+        ringtone: getIt<IIncomingRingerService>(),
+        rejectCallUseCase: getIt<RejectCallUseCase>(),
+        serverNow: getIt<ServerClock>().now,
       ),
       child: Builder(
         builder: (context) {
-          return BlocListener<IncomingCallOverlayCubit, IncomingCallPayloadDto?>(
-            listenWhen: (previous, current) => current != null,
-            listener: (context, payload) {
+          return BlocListener<
+            IncomingCallOverlayCubit,
+            IncomingCallOverlayState
+          >(
+            listenWhen: (previous, current) =>
+                current.showRequest != previous.showRequest &&
+                current.payload != null,
+            listener: (context, state) {
+              final payload = state.payload;
+              if (payload == null) return;
               final cubit = context.read<IncomingCallOverlayCubit>();
               showGeneralDialog(
                 context: context,
@@ -37,7 +52,15 @@ class IncomingCallOverlayListener extends StatelessWidget {
                 useRootNavigator: true,
                 transitionDuration: const Duration(milliseconds: 420),
                 pageBuilder: (dialogContext, animation, secondaryAnimation) {
-                  return _IncomingCallFullScreenModal(payload: payload!);
+                  // The dialog lives on the root navigator, outside this
+                  // cubit's subtree — hand it over explicitly.
+                  return BlocProvider.value(
+                    value: cubit,
+                    child: _IncomingCallFullScreenModal(
+                      payload: payload,
+                      autoAccept: state.autoAccept,
+                    ),
+                  );
                 },
                 transitionBuilder:
                     (dialogContext, animation, secondaryAnimation, child) {
@@ -71,7 +94,13 @@ class IncomingCallOverlayListener extends StatelessWidget {
 class _IncomingCallFullScreenModal extends StatelessWidget {
   final IncomingCallPayloadDto payload;
 
-  const _IncomingCallFullScreenModal({required this.payload});
+  /// Answered from the notification already — accept on the first frame.
+  final bool autoAccept;
+
+  const _IncomingCallFullScreenModal({
+    required this.payload,
+    required this.autoAccept,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -86,21 +115,31 @@ class _IncomingCallFullScreenModal extends StatelessWidget {
         },
         presenceSocketService: getIt<IPresenceSocketService>(),
         rejectCallUseCase: getIt<RejectCallUseCase>(),
+        ringtone: getIt<IIncomingRingerService>(),
+        serverNow: getIt<ServerClock>().now,
       ),
-      child: _IncomingCallFullScreenModalContent(payload: payload),
+      child: _IncomingCallFullScreenModalContent(
+        payload: payload,
+        autoAccept: autoAccept,
+      ),
     );
   }
 }
 
 class _IncomingCallFullScreenModalContent extends StatelessWidget {
   final IncomingCallPayloadDto payload;
+  final bool autoAccept;
 
-  const _IncomingCallFullScreenModalContent({required this.payload});
+  const _IncomingCallFullScreenModalContent({
+    required this.payload,
+    required this.autoAccept,
+  });
 
   void _handleAccept(BuildContext context) {
     final cubit = context.read<IncomingCallSessionCubit>();
     if (cubit.state.isProcessing) return;
     HapticFeedback.mediumImpact();
+    context.read<IncomingCallOverlayCubit>().callAccepted();
 
     // Navigate immediately — CallScreen performs the HTTP accept call
     // itself (CallScreenCubit.acceptIncomingCall) once it's already on
@@ -137,6 +176,35 @@ class _IncomingCallFullScreenModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isVideo = payload.callType.isVideo;
 
+    if (autoAccept) {
+      // Guarded by the session cubit's isProcessing, so a rebuild can't
+      // accept twice.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) _handleAccept(context);
+      });
+    }
+
+    // Answer / Decline tapped on the incoming-call notification while this
+    // screen was up (the app was minimized).
+    return BlocListener<IncomingCallOverlayCubit, IncomingCallOverlayState>(
+      listenWhen: (previous, current) =>
+          current.commandRequest != previous.commandRequest &&
+          current.payload?.callId == payload.callId,
+      listener: (context, state) {
+        switch (state.command) {
+          case IncomingCallCommand.accept:
+            _handleAccept(context);
+          case IncomingCallCommand.decline:
+            _handleReject(context);
+          case null:
+            break;
+        }
+      },
+      child: _buildScreen(context, isVideo),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context, bool isVideo) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -199,49 +267,60 @@ class _IncomingCallFullScreenModalContent extends StatelessWidget {
                     SizedBox(height: 44.h),
                     _AnimatedFadeSlideIn(
                       delay: const Duration(milliseconds: 140),
-                      child: BlocBuilder<IncomingCallSessionCubit, IncomingCallSessionState>(
-                        buildWhen: (previous, current) =>
-                            previous.ringPhase != current.ringPhase ||
-                            previous.isAvatarExpanded != current.isAvatarExpanded,
-                        builder: (context, state) {
-                          return _RingingAvatar(
-                            ringPhase: state.ringPhase,
-                            child: AnimatedBreathingGlow(
-                              isExpanded: state.isAvatarExpanded,
-                              glowColor: AppColors.primaryColor,
-                              secondaryGlowColor: AppColors.callBreathingGlowSoft,
-                              collapsedSize: 152.w,
-                              expandedSize: 168.w,
-                              child: Container(
-                                padding: EdgeInsets.all(4.w),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.white.withValues(alpha: 0.5),
-                                    width: 3,
+                      child:
+                          BlocBuilder<
+                            IncomingCallSessionCubit,
+                            IncomingCallSessionState
+                          >(
+                            buildWhen: (previous, current) =>
+                                previous.ringPhase != current.ringPhase ||
+                                previous.isAvatarExpanded !=
+                                    current.isAvatarExpanded,
+                            builder: (context, state) {
+                              return _RingingAvatar(
+                                ringPhase: state.ringPhase,
+                                child: AnimatedBreathingGlow(
+                                  isExpanded: state.isAvatarExpanded,
+                                  glowColor: AppColors.primaryColor,
+                                  secondaryGlowColor:
+                                      AppColors.callBreathingGlowSoft,
+                                  collapsedSize: 152.w,
+                                  expandedSize: 168.w,
+                                  child: Container(
+                                    padding: EdgeInsets.all(4.w),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 60.r,
+                                      backgroundColor: AppColors.primaryColor
+                                          .withValues(alpha: 0.2),
+                                      backgroundImage:
+                                          (payload.callerAvatar?.isNotEmpty ??
+                                              false)
+                                          ? NetworkImage(payload.callerAvatar!)
+                                          : null,
+                                      child:
+                                          (payload.callerAvatar?.isNotEmpty ??
+                                              false)
+                                          ? null
+                                          : Icon(
+                                              Icons.person,
+                                              size: 56.r,
+                                              color: AppColors.white,
+                                            ),
+                                    ),
                                   ),
                                 ),
-                                child: CircleAvatar(
-                                  radius: 60.r,
-                                  backgroundColor: AppColors.primaryColor
-                                      .withValues(alpha: 0.2),
-                                  backgroundImage:
-                                      (payload.callerAvatar?.isNotEmpty ?? false)
-                                      ? NetworkImage(payload.callerAvatar!)
-                                      : null,
-                                  child: (payload.callerAvatar?.isNotEmpty ?? false)
-                                      ? null
-                                      : Icon(
-                                          Icons.person,
-                                          size: 56.r,
-                                          color: AppColors.white,
-                                        ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                              );
+                            },
+                          ),
                     ),
                     SizedBox(height: 28.h),
                     _AnimatedFadeSlideIn(
@@ -269,7 +348,10 @@ class _IncomingCallFullScreenModalContent extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    BlocBuilder<IncomingCallSessionCubit, IncomingCallSessionState>(
+                    BlocBuilder<
+                      IncomingCallSessionCubit,
+                      IncomingCallSessionState
+                    >(
                       buildWhen: (previous, current) =>
                           previous.isProcessing != current.isProcessing,
                       builder: (context, state) {
@@ -364,7 +446,8 @@ class _RingingAvatar extends StatelessWidget {
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          for (final offset in [0.0, 0.5]) _pulseRing((ringPhase + offset) % 1.0),
+          for (final offset in [0.0, 0.5])
+            _pulseRing((ringPhase + offset) % 1.0),
           child,
         ],
       ),

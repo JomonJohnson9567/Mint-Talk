@@ -1,0 +1,9 @@
+{
+  "name": "mint-talk-socket-test-server",
+  "private": true,
+  "description": "Local socket.io v4 server used by test/integration/presence_socket_service_integration_test.dart",
+  "main": "server.js",
+  "dependencies": {
+    "socket.io": "4.8.1"
+  }
+}

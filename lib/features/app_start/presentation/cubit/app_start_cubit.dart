@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/features/app_start/presentation/cubit/app_start_state.dart';
 import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
 
@@ -56,8 +57,16 @@ class AppStartCubit extends Cubit<AppStartState> {
     if (state is AppStartError) return;
 
     if (isProfileComplete) {
-      final roleResult = await _authRepository.syncCurrentUserRole();
+      final roleResult = await _authRepository.syncCurrentUser();
       String? role;
+
+      // Session was rejected (e.g. logged in on another device): the forced
+      // logout has already replaced the splash with the login screen, so
+      // there's nothing left to navigate — and this cubit may be closed.
+      if (isClosed ||
+          roleResult.fold((f) => f is UnauthorizedFailure, (_) => false)) {
+        return;
+      }
 
       roleResult.fold((failure) {
         emit(AppStartError(message: failure.message));

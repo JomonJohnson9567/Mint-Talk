@@ -6,7 +6,6 @@ class HostDto {
   final String fullName;
   final String phone;
   final String avatarUrl;
-  final String selfieUrl;
   final String dob;
   final String gender;
   final num audioRate;
@@ -21,7 +20,6 @@ class HostDto {
     required this.fullName,
     required this.phone,
     required this.avatarUrl,
-    required this.selfieUrl,
     required this.dob,
     required this.gender,
     required this.audioRate,
@@ -38,7 +36,6 @@ class HostDto {
       fullName: (json['fullName'] ?? json['name'] ?? '').toString(),
       phone: (json['phone'] ?? '').toString(),
       avatarUrl: (json['avatarUrl'] ?? '').toString(),
-      selfieUrl: (json['selfieUrl'] ?? '').toString(),
       dob: (json['dob'] ?? '').toString(),
       gender: (json['gender'] ?? '').toString(),
       audioRate: json['audioRate'] is num ? json['audioRate'] : 0,
@@ -58,7 +55,6 @@ class HostDto {
       fullName: fullName,
       phone: phone,
       avatarUrl: avatarUrl,
-      selfieUrl: selfieUrl,
       dob: dob,
       gender: gender,
       audioRate: audioRate,

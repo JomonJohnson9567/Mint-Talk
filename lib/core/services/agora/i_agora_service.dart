@@ -1,5 +1,7 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
+import 'call_audio_route.dart';
+
 abstract class IAgoraService {
   /// Stream of unified Agora call events.
   Stream<AgoraCallEvent> get events;
@@ -10,14 +12,12 @@ abstract class IAgoraService {
   /// Initializes the Agora RTC Engine with the target [appId].
   Future<void> initialize(String appId);
 
-  /// Joins the Agora channel with channel name, token, and user account string.
-  ///
-  /// As specified in the API contract:
-  /// Both caller and host join using their [userAccount] string via [joinChannelWithUserAccount].
+  /// Joins the Agora channel with the numeric [uid] the RTC token was
+  /// issued for — caller 1, host 2, scoped to this call's channel.
   Future<void> joinChannel({
     required String channelName,
     required String rtcToken,
-    required String userAccount,
+    required int uid,
     required bool isVideoCall,
   });
 
@@ -33,11 +33,9 @@ abstract class IAgoraService {
   /// Toggles video stream state.
   Future<void> toggleMuteVideo(bool isMuted);
 
-  /// Switches speakerphone on/off.
-  Future<void> toggleSpeakerphone(bool isSpeakerOn);
-
-  /// Switches front/rear camera.
-  Future<void> switchCamera();
+  /// Routes call audio to [route]. The route actually applied is reported
+  /// back through [AgoraAudioRouteChanged] — treat that as the truth.
+  Future<void> setAudioRoute(CallAudioRoute route);
 
   /// Cleans up resources and disposes the RTC Engine.
   Future<void> dispose();
@@ -55,6 +53,28 @@ class AgoraRemoteUserJoined extends AgoraCallEvent {
   const AgoraRemoteUserJoined(this.remoteUid);
 
   final int remoteUid;
+}
+
+/// The first local audio frame was published to the channel — proof the
+/// local microphone track is actually reaching Agora, not just that the
+/// join succeeded.
+class AgoraLocalAudioPublished extends AgoraCallEvent {
+  const AgoraLocalAudioPublished();
+}
+
+/// Audio from [remoteUid] is being received. Also emitted when the remote
+/// joined with their mic muted — their track is published, just silent.
+class AgoraRemoteAudioReceived extends AgoraCallEvent {
+  const AgoraRemoteAudioReceived(this.remoteUid);
+
+  final int remoteUid;
+}
+
+/// Local capture/publish failed (microphone, or camera on a video call).
+class AgoraLocalMediaFailed extends AgoraCallEvent {
+  const AgoraLocalMediaFailed(this.reason);
+
+  final String reason;
 }
 
 class AgoraRemoteUserLeft extends AgoraCallEvent {
@@ -94,6 +114,14 @@ class AgoraTokenWillExpire extends AgoraCallEvent {
 
 class AgoraTokenExpired extends AgoraCallEvent {
   const AgoraTokenExpired();
+}
+
+/// The engine moved call audio to [route] — after [IAgoraService.setAudioRoute],
+/// or on its own when a headset/Bluetooth device connects or disconnects.
+class AgoraAudioRouteChanged extends AgoraCallEvent {
+  const AgoraAudioRouteChanged(this.route);
+
+  final CallAudioRoute route;
 }
 
 class AgoraCallError extends AgoraCallEvent {

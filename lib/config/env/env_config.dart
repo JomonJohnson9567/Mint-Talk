@@ -22,31 +22,34 @@ abstract class EnvConfig {
 class DevEnvConfig implements EnvConfig {
   @override
   String get baseUrl => const String.fromEnvironment(
-        'BASE_URL',
-        defaultValue: 'https://mint-talk-backend.onrender.com/api/v1',
-      );
+    'BASE_URL',
+    defaultValue: 'https://mint-talk-backend.onrender.com/api/v1',
+  );
 
   @override
   String get healthUrl => const String.fromEnvironment(
-        'HEALTH_URL',
-        defaultValue: 'https://mint-talk-backend.onrender.com/health',
-      );
+    'HEALTH_URL',
+    defaultValue: 'https://mint-talk-backend.onrender.com/health',
+  );
 
   @override
-  String get razorpayKey =>
-      const String.fromEnvironment('RAZORPAY_KEY', defaultValue: '');
+  String get razorpayKey => const String.fromEnvironment(
+    'RAZORPAY_KEY_ID',
+    // Older env files used RAZORPAY_KEY; keep reading it as a fallback.
+    defaultValue: String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
+  );
 
   @override
   String get socketUrl => const String.fromEnvironment(
-        'SOCKET_URL',
-        defaultValue: 'wss://mint-talk-backend.onrender.com',
-      );
+    'SOCKET_URL',
+    defaultValue: 'wss://mint-talk-backend.onrender.com',
+  );
 
   @override
   String get agoraAppId => const String.fromEnvironment(
-        'AGORA_APP_ID',
-        defaultValue: 'replace_with_agora_app_id',
-      );
+    'AGORA_APP_ID',
+    defaultValue: 'replace_with_agora_app_id',
+  );
 }
 
 @staging
@@ -54,31 +57,34 @@ class DevEnvConfig implements EnvConfig {
 class StagingEnvConfig implements EnvConfig {
   @override
   String get baseUrl => const String.fromEnvironment(
-        'BASE_URL',
-        defaultValue: 'https://staging-mint-talk-backend.onrender.com/api/v1',
-      );
+    'BASE_URL',
+    defaultValue: 'https://staging-mint-talk-backend.onrender.com/api/v1',
+  );
 
   @override
   String get healthUrl => const String.fromEnvironment(
-        'HEALTH_URL',
-        defaultValue: 'https://staging-mint-talk-backend.onrender.com/health',
-      );
+    'HEALTH_URL',
+    defaultValue: 'https://staging-mint-talk-backend.onrender.com/health',
+  );
 
   @override
-  String get razorpayKey =>
-      const String.fromEnvironment('RAZORPAY_KEY', defaultValue: '');
+  String get razorpayKey => const String.fromEnvironment(
+    'RAZORPAY_KEY_ID',
+    // Older env files used RAZORPAY_KEY; keep reading it as a fallback.
+    defaultValue: String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
+  );
 
   @override
   String get socketUrl => const String.fromEnvironment(
-        'SOCKET_URL',
-        defaultValue: 'wss://mint-talk-backend.onrender.com',
-      );
+    'SOCKET_URL',
+    defaultValue: 'wss://mint-talk-backend.onrender.com',
+  );
 
   @override
   String get agoraAppId => const String.fromEnvironment(
-        'AGORA_APP_ID',
-        defaultValue: 'replace_with_agora_app_id',
-      );
+    'AGORA_APP_ID',
+    defaultValue: 'replace_with_agora_app_id',
+  );
 }
 
 @prod
@@ -86,29 +92,32 @@ class StagingEnvConfig implements EnvConfig {
 class ProdEnvConfig implements EnvConfig {
   @override
   String get baseUrl => const String.fromEnvironment(
-        'BASE_URL',
-        defaultValue: 'https://mint-talk-backend.onrender.com/api/v1',
-      );
+    'BASE_URL',
+    defaultValue: 'https://api.minttalk.app/api/v1',
+  );
 
   @override
   String get healthUrl => const String.fromEnvironment(
-        'HEALTH_URL',
-        defaultValue: 'https://mint-talk-backend.onrender.com/health',
-      );
+    'HEALTH_URL',
+    defaultValue: 'https://api.minttalk.app/health',
+  );
 
   @override
-  String get razorpayKey =>
-      const String.fromEnvironment('RAZORPAY_KEY', defaultValue: '');
+  String get razorpayKey => const String.fromEnvironment(
+    'RAZORPAY_KEY_ID',
+    // Older env files used RAZORPAY_KEY; keep reading it as a fallback.
+    defaultValue: String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
+  );
 
   @override
   String get socketUrl => const String.fromEnvironment(
-        'SOCKET_URL',
-        defaultValue: 'wss://mint-talk-backend.onrender.com',
-      );
+    'SOCKET_URL',
+    defaultValue: 'wss://api.minttalk.app',
+  );
 
   @override
   String get agoraAppId => const String.fromEnvironment(
-        'AGORA_APP_ID',
-        defaultValue: 'replace_with_agora_app_id',
-      );
+    'AGORA_APP_ID',
+    defaultValue: 'replace_with_agora_app_id',
+  );
 }

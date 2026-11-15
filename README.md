@@ -8,10 +8,15 @@ This project is a starting point for a Flutter application.
 
 ## Building
 
-Environment config (backend URL, socket URL, Agora App ID, Razorpay key) is
+Environment config (backend URL, socket URL, Agora App ID, Razorpay key ID) is
 compiled in at build time via `--dart-define-from-file` — it is **not**
 bundled as an asset, so a given build only ever contains the one active
 environment's values, never all three at once.
+
+Only the public Razorpay **key ID** (`RAZORPAY_KEY_ID`) belongs in these
+files. Never put the Razorpay key **secret** here: dart-define values are
+readable from the compiled app binary. The secret lives only in the backend's
+environment (order creation, signature verification, payouts).
 
 1. Copy `env/example.json` to `env/dev.json` (or `env/staging.json` /
    `env/prod.json`) and fill in real values. These files are git-ignored —
@@ -34,4 +39,4 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-flutter run --dart-define-from-file=env/dev.json
+flutter run --dart-define-from-file=env/prod.json

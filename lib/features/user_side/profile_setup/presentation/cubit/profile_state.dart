@@ -8,7 +8,6 @@ class ProfileState extends Equatable {
   final String name;
   final String dob;
   final String gender;
-  final String? referralCode;
   final Map<String, String> fieldErrors;
   final ProfileFormStatus formStatus;
   final ProfileSubmissionStatus submissionStatus;
@@ -18,7 +17,6 @@ class ProfileState extends Equatable {
     this.name = '',
     this.dob = '',
     this.gender = '',
-    this.referralCode,
     this.fieldErrors = const {},
     this.formStatus = ProfileFormStatus.initial,
     this.submissionStatus = ProfileSubmissionStatus.idle,
@@ -29,7 +27,6 @@ class ProfileState extends Equatable {
     String? name,
     String? dob,
     String? gender,
-    String? referralCode,
     Map<String, String>? fieldErrors,
     ProfileFormStatus? formStatus,
     ProfileSubmissionStatus? submissionStatus,
@@ -40,7 +37,6 @@ class ProfileState extends Equatable {
       name: name ?? this.name,
       dob: dob ?? this.dob,
       gender: gender ?? this.gender,
-      referralCode: referralCode ?? this.referralCode,
       fieldErrors: clearErrors ? const {} : (fieldErrors ?? this.fieldErrors),
       formStatus: formStatus ?? this.formStatus,
       submissionStatus: submissionStatus ?? this.submissionStatus,
@@ -53,7 +49,6 @@ class ProfileState extends Equatable {
     name,
     dob,
     gender,
-    referralCode,
     fieldErrors,
     formStatus,
     submissionStatus,

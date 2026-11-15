@@ -123,11 +123,6 @@ class AppIcons {
     ios: CupertinoIcons.mic_off,
   );
 
-  static IconData get cameraSwitch => PlatformUtils.select(
-    android: Icons.cameraswitch_outlined,
-    ios: CupertinoIcons.camera_rotate,
-  );
-
   static IconData get more => PlatformUtils.select(
     android: Icons.more_horiz,
     ios: CupertinoIcons.ellipsis,

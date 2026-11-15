@@ -8,6 +8,7 @@ import '../../domain/entities/host_presence_entity.dart';
 import '../../domain/entities/paginated_hosts_entity.dart';
 import '../../domain/repositories/host_repository.dart';
 import '../datasources/host_remote_data_source.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_profile_update_entity.dart';
 
 @LazySingleton(as: HostRepository)
 class HostRepositoryImpl implements HostRepository {
@@ -48,7 +49,6 @@ class HostRepositoryImpl implements HostRepository {
     );
   }
 
-
   Future<Either<Failure, PaginatedHostsEntity>> _fetchHosts(
     Future<dynamic> Function() call,
   ) async {
@@ -56,7 +56,9 @@ class HostRepositoryImpl implements HostRepository {
       final dto = await call();
       return Right(dto.toEntity());
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch hosts'));
+      return Left(
+        mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch hosts'),
+      );
     } catch (e) {
       return Left(UnknownFailure(message: e.toString()));
     }
@@ -69,10 +71,37 @@ class HostRepositoryImpl implements HostRepository {
       _presenceSocketService.presenceUpdates;
 
   @override
+  Stream<HostProfileUpdateEntity> watchProfileUpdates() => _presenceSocketService
+      .profileUpdates
+      .map(_toProfileUpdate)
+      .where((update) => update != null)
+      .cast<HostProfileUpdateEntity>();
+
+  /// Accepts a flat payload or one nested under `user`/`profile`/`data`.
+  static HostProfileUpdateEntity? _toProfileUpdate(Map<String, dynamic> data) {
+    final nested = data['user'] ?? data['profile'] ?? data['data'];
+    final json = nested is Map ? Map<String, dynamic>.from(nested) : data;
+    final id =
+        (json['userId'] ?? json['_id'] ?? json['id'] ?? data['userId'])
+            ?.toString() ??
+        '';
+    if (id.isEmpty) return null;
+    String? text(Object? value) {
+      final s = value?.toString().trim() ?? '';
+      return s.isEmpty ? null : s;
+    }
+
+    return HostProfileUpdateEntity(
+      userId: id,
+      avatarUrl: text(json['avatarUrl']),
+      fullName: text(json['fullName']),
+    );
+  }
+
+  @override
   void connectPresence(String accessToken) =>
       _presenceSocketService.connect(accessToken);
 
   @override
   void disconnectPresence() => _presenceSocketService.disconnect();
 }
-

@@ -21,6 +21,7 @@ import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentat
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/screen/host_analytics.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_cubit.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/screen/apply_for_leave.dart';
+import 'package:mint_talk/features/shared/block_users/presentation/screen/blocked_list_kind.dart';
 import 'package:mint_talk/features/shared/block_users/presentation/screen/blocked_users_screen.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart';
 import 'package:mint_talk/features/user_side/apply_for_host/presentation/screens/apply_for_host.dart';
@@ -38,6 +39,7 @@ import 'package:mint_talk/features/user_side/onboard/presentation/screens/splash
 import 'package:mint_talk/features/user_side/onboard/presentation/screens/welcome/welcome.dart';
 import 'package:mint_talk/features/user_side/online_users/presentation/screens/audio_call.dart';
 import 'package:mint_talk/features/user_side/online_users/presentation/screens/video_call.dart';
+import 'package:mint_talk/features/user_side/profile_setup/presentation/cubit/referral_cubit.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/screen/profile_setup.dart';
 import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/success_setup_screen.dart';
 import 'package:mint_talk/features/user_side/recharge_plans/presentation/screen/plan_detail_screen.dart';
@@ -187,8 +189,13 @@ class AppRouter {
       builder: (_) => const HostMainNavigationScreen(),
     ),
     AppRoutes.applyForHost: RouteConfig(
-      builder: (_) => BlocProvider(
-        create: (_) => getIt<ApplyForHostCubit>()..loadProfileData(),
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => getIt<ApplyForHostCubit>()..loadProfileData(),
+          ),
+          BlocProvider(create: (_) => getIt<ReferralCubit>()),
+        ],
         child: const ApplyForHost(),
       ),
     ),
@@ -210,7 +217,10 @@ class AppRouter {
       ),
     ),
     AppRoutes.blockedUsersScreen: RouteConfig(
-      builder: (_) => const BlockedUsersScreen(),
+      builder: (_) => const BlockedUsersScreen(kind: BlockedListKind.hosts),
+    ),
+    AppRoutes.hostBlockedUsersScreen: RouteConfig(
+      builder: (_) => const BlockedUsersScreen(kind: BlockedListKind.users),
     ),
     AppRoutes.userNotificationsScreen: RouteConfig(
       builder: (_) => const UserNotifications(),

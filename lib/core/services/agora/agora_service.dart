@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:logger/logger.dart';
 
+import 'call_audio_route.dart';
 import 'i_agora_service.dart';
 
 @LazySingleton(as: IAgoraService)
@@ -15,6 +18,10 @@ class AgoraService implements IAgoraService {
   bool _isDisposing = false;
   bool _isJoining = false;
   bool _isJoined = false;
+
+  /// Local mic is encoding. Tracked across the join because Agora usually
+  /// reports encoding *before* onJoinChannelSuccess.
+  bool _isLocalAudioEncoding = false;
 
   // Bounds every native engine call made during teardown. Without this, a
   // hung stopPreview()/leaveChannel()/release() (seen in practice on some
@@ -40,7 +47,9 @@ class AgoraService implements IAgoraService {
   @override
   Future<void> initialize(String appId) async {
     while (_isDisposing) {
-      _logger.d('[AgoraService] Engine is currently disposing, waiting to initialize...');
+      _logger.d(
+        '[AgoraService] Engine is currently disposing, waiting to initialize...',
+      );
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
@@ -71,6 +80,7 @@ class AgoraService implements IAgoraService {
             _isJoining = false;
             _isJoined = true;
             _addEvent(const AgoraLocalJoinSuccess());
+            if (_isLocalAudioEncoding) _addEvent(const AgoraLocalAudioPublished());
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
             _logger.i(
@@ -79,44 +89,111 @@ class AgoraService implements IAgoraService {
             _addEvent(AgoraRemoteUserJoined(remoteUid));
           },
           onUserOffline:
-              (RtcConnection connection, int remoteUid
-              , UserOfflineReasonType reason) {
-            _logger.w(
-              '🔴 [AgoraService] Remote user left channel: $remoteUid (reason: $reason)',
-            );
-            _addEvent(AgoraRemoteUserLeft(remoteUid, reason));
-          },
-          onNetworkQuality: (
-            RtcConnection connection,
-            int remoteUid,
-            QualityType txQuality,
-            QualityType rxQuality,
-          ) {
-            // High-frequency (~2s/uid) — no logging here, only on real
-            // threshold changes, handled upstream in the Cubit.
-            _addEvent(
-              AgoraNetworkQualityChanged(
-                remoteUid: remoteUid,
-                txQuality: txQuality,
-                rxQuality: rxQuality,
-              ),
-            );
-          },
-          onConnectionStateChanged: (
-            RtcConnection connection,
-            ConnectionStateType state,
-            ConnectionChangedReasonType reason,
-          ) {
+              (
+                RtcConnection connection,
+                int remoteUid,
+                UserOfflineReasonType reason,
+              ) {
+                _logger.w(
+                  '🔴 [AgoraService] Remote user left channel: $remoteUid (reason: $reason)',
+                );
+                _addEvent(AgoraRemoteUserLeft(remoteUid, reason));
+              },
+          onNetworkQuality:
+              (
+                RtcConnection connection,
+                int remoteUid,
+                QualityType txQuality,
+                QualityType rxQuality,
+              ) {
+                // High-frequency (~2s/uid) — no logging here, only on real
+                // threshold changes, handled upstream in the Cubit.
+                _addEvent(
+                  AgoraNetworkQualityChanged(
+                    remoteUid: remoteUid,
+                    txQuality: txQuality,
+                    rxQuality: rxQuality,
+                  ),
+                );
+              },
+          onConnectionStateChanged:
+              (
+                RtcConnection connection,
+                ConnectionStateType state,
+                ConnectionChangedReasonType reason,
+              ) {
+                _logger.i(
+                  '🔌 [AgoraService] Connection state changed: $state (reason: $reason)',
+                );
+                if (state == ConnectionStateType.connectionStateFailed ||
+                    state == ConnectionStateType.connectionStateDisconnected) {
+                  _isJoining = false;
+                  _isJoined = false;
+                }
+                _addEvent(AgoraConnectionChanged(state: state, reason: reason));
+              },
+          onFirstLocalAudioFramePublished: (RtcConnection connection, int elapsed) {
             _logger.i(
-              '🔌 [AgoraService] Connection state changed: $state (reason: $reason)',
+              '🎙️ [AgoraService] First local audio frame published (${elapsed}ms)',
             );
-            if (state == ConnectionStateType.connectionStateFailed ||
-                state == ConnectionStateType.connectionStateDisconnected) {
-              _isJoining = false;
-              _isJoined = false;
-            }
-            _addEvent(AgoraConnectionChanged(state: state, reason: reason));
+            _addEvent(const AgoraLocalAudioPublished());
           },
+          onRemoteAudioStateChanged:
+              (
+                RtcConnection connection,
+                int remoteUid,
+                RemoteAudioState state,
+                RemoteAudioStateReason reason,
+                int elapsed,
+              ) {
+                final isReceiving =
+                    state == RemoteAudioState.remoteAudioStateDecoding ||
+                    (state == RemoteAudioState.remoteAudioStateStopped &&
+                        reason ==
+                            RemoteAudioStateReason
+                                .remoteAudioReasonRemoteMuted);
+                if (isReceiving) {
+                  _logger.i(
+                    '🔊 [AgoraService] Receiving remote audio: $remoteUid ($state)',
+                  );
+                  _addEvent(AgoraRemoteAudioReceived(remoteUid));
+                }
+              },
+          onLocalAudioStateChanged:
+              (
+                RtcConnection connection,
+                LocalAudioStreamState state,
+                LocalAudioStreamReason reason,
+              ) {
+                _isLocalAudioEncoding =
+                    state ==
+                    LocalAudioStreamState.localAudioStreamStateEncoding;
+                if (state ==
+                    LocalAudioStreamState.localAudioStreamStateFailed) {
+                  _logger.e('❌ [AgoraService] Local audio failed: $reason');
+                  _addEvent(
+                    AgoraLocalMediaFailed('Microphone failed ($reason)'),
+                  );
+                } else if (_isLocalAudioEncoding && _isJoined) {
+                  // Joined with publishMicrophoneTrack + encoding is publishing.
+                  // Covers a mic muted before the first frame went out, where
+                  // onFirstLocalAudioFramePublished may never fire. (Encoding
+                  // seen before the join is replayed from onJoinChannelSuccess.)
+                  _addEvent(const AgoraLocalAudioPublished());
+                }
+              },
+          onLocalVideoStateChanged:
+              (
+                VideoSourceType source,
+                LocalVideoStreamState state,
+                LocalVideoStreamReason reason,
+              ) {
+                if (state ==
+                    LocalVideoStreamState.localVideoStreamStateFailed) {
+                  _logger.e('❌ [AgoraService] Local video failed: $reason');
+                  _addEvent(AgoraLocalMediaFailed('Camera failed ($reason)'));
+                }
+              },
           onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
             _logger.w('⚠️ [AgoraService] Token will expire soon');
             _addEvent(const AgoraTokenWillExpire());
@@ -124,6 +201,13 @@ class AgoraService implements IAgoraService {
           onRequestToken: (RtcConnection connection) {
             _logger.w('⚠️ [AgoraService] Token expired, requesting new token');
             _addEvent(const AgoraTokenExpired());
+          },
+          onAudioRoutingChanged: (int routing) {
+            final route = callAudioRouteFromAgora(routing);
+            _logger.d(
+              '[AgoraService] Audio routing changed: $routing → $route',
+            );
+            if (route != null) _addEvent(AgoraAudioRouteChanged(route));
           },
           onError: (ErrorCodeType err, String msg) {
             _logger.e('❌ [AgoraService] Error [$err]: $msg');
@@ -133,7 +217,9 @@ class AgoraService implements IAgoraService {
       );
     } catch (e) {
       _logger.e('❌ [AgoraService] Initialization failed: $e');
-      throw AgoraInitializationException('Failed to initialize Agora Engine: $e');
+      throw AgoraInitializationException(
+        'Failed to initialize Agora Engine: $e',
+      );
     }
   }
 
@@ -141,26 +227,29 @@ class AgoraService implements IAgoraService {
   Future<void> joinChannel({
     required String channelName,
     required String rtcToken,
-    required String userAccount,
+    required int uid,
     required bool isVideoCall,
   }) async {
     if (_engine == null) {
-      throw const AgoraJoinException('Agora Engine is not initialized. Call initialize() first.');
+      throw const AgoraJoinException(
+        'Agora Engine is not initialized. Call initialize() first.',
+      );
     }
 
     final sanitizedToken = _sanitizeToken(rtcToken);
     final sanitizedChannel = channelName.trim();
-    final sanitizedUserAccount = userAccount.trim();
 
     if (sanitizedChannel.isEmpty) {
       throw const AgoraJoinException('Agora channel name is empty.');
     }
-    if (sanitizedUserAccount.isEmpty) {
-      throw const AgoraJoinException('Agora user account is empty.');
+    if (uid <= 0) {
+      throw AgoraJoinException('Invalid Agora uid: $uid');
     }
 
     if (_isJoining || _isJoined) {
-      _logger.w('⚠️ [AgoraService] Join channel request ignored. isJoining=$_isJoining, isJoined=$_isJoined');
+      _logger.w(
+        '⚠️ [AgoraService] Join channel request ignored. isJoining=$_isJoining, isJoined=$_isJoined',
+      );
       return;
     }
 
@@ -168,12 +257,16 @@ class AgoraService implements IAgoraService {
 
     if (kDebugMode) {
       _logger.i(
-        '🔌 [AgoraService] Joining channel "$sanitizedChannel" with userAccount "$sanitizedUserAccount"\n'
+        '🔌 [AgoraService] Joining channel "$sanitizedChannel" with uid $uid\n'
         '   → (video=$isVideoCall, hasToken=${sanitizedToken.isNotEmpty})',
       );
     }
 
     try {
+      // Video calls start on the loudspeaker, audio calls on the earpiece.
+      // A connected Bluetooth/wired headset still takes priority.
+      await _engine!.setDefaultAudioRouteToSpeakerphone(isVideoCall);
+
       if (isVideoCall) {
         await _engine!.enableAudio();
         await _engine!.enableVideo();
@@ -184,10 +277,10 @@ class AgoraService implements IAgoraService {
         await _engine!.disableVideo();
       }
 
-      await _engine!.joinChannelWithUserAccount(
+      await _engine!.joinChannel(
         token: sanitizedToken,
         channelId: sanitizedChannel,
-        userAccount: sanitizedUserAccount,
+        uid: uid,
         options: ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
@@ -206,7 +299,9 @@ class AgoraService implements IAgoraService {
 
   String _sanitizeToken(String token) {
     final trimmed = token.trim();
-    if (trimmed.isEmpty || trimmed.toLowerCase() == 'null' || trimmed.toLowerCase() == 'undefined') {
+    if (trimmed.isEmpty ||
+        trimmed.toLowerCase() == 'null' ||
+        trimmed.toLowerCase() == 'undefined') {
       return '';
     }
     return trimmed;
@@ -228,7 +323,9 @@ class AgoraService implements IAgoraService {
       // slower network-drop timeout detection instead.
       await _engine!.stopPreview().timeout(_nativeCallTimeout);
     } catch (e) {
-      _logger.w('[AgoraService] stopPreview failed (expected for audio-only calls): $e');
+      _logger.w(
+        '[AgoraService] stopPreview failed (expected for audio-only calls): $e',
+      );
     }
     try {
       await _engine!.leaveChannel().timeout(_nativeCallTimeout);
@@ -237,6 +334,7 @@ class AgoraService implements IAgoraService {
     } finally {
       _isJoining = false;
       _isJoined = false;
+      _isLocalAudioEncoding = false;
     }
   }
 
@@ -245,7 +343,9 @@ class AgoraService implements IAgoraService {
     if (_engine == null) return;
     final sanitizedToken = _sanitizeToken(token);
     if (kDebugMode) {
-      _logger.i('[AgoraService] Renewing token (hasToken=${sanitizedToken.isNotEmpty})');
+      _logger.i(
+        '[AgoraService] Renewing token (hasToken=${sanitizedToken.isNotEmpty})',
+      );
     }
     try {
       await _engine!.renewToken(sanitizedToken);
@@ -278,25 +378,44 @@ class AgoraService implements IAgoraService {
   }
 
   @override
-  Future<void> toggleSpeakerphone(bool isSpeakerOn) async {
+  Future<void> setAudioRoute(CallAudioRoute route) async {
     if (_engine == null) return;
-    _logger.d('[AgoraService] Speakerphone on: $isSpeakerOn');
+    _logger.d('[AgoraService] Set audio route: $route');
     try {
-      await _engine!.setEnableSpeakerphone(isSpeakerOn);
+      if (Platform.isAndroid) {
+        // Agora: don't mix this with setEnableSpeakerphone on Android.
+        await _engine!.setRouteInCommunicationMode(
+          agoraCommunicationRouteFor(route),
+        );
+        return;
+      }
+
+      await _engine!.setEnableSpeakerphone(route == CallAudioRoute.speaker);
+      if (Platform.isIOS && route != CallAudioRoute.speaker) {
+        await _selectIosInput(route);
+      }
     } catch (e) {
-      _logger.w('⚠️ setEnableSpeakerphone failed: $e');
+      _logger.w('⚠️ setAudioRoute($route) failed: $e');
     }
   }
 
-  @override
-  Future<void> switchCamera() async {
-    if (_engine == null) return;
-    _logger.d('[AgoraService] Switching camera');
-    try {
-      await _engine!.switchCamera();
-    } catch (e) {
-      _logger.w('⚠️ switchCamera failed: $e');
+  /// On iOS, with the speaker override off, the output follows the
+  /// preferred input: the built-in mic means the receiver (earpiece), a
+  /// Bluetooth HFP input means that headset.
+  Future<void> _selectIosInput(CallAudioRoute route) async {
+    final wanted = switch (route) {
+      CallAudioRoute.bluetooth => const {AVAudioSessionPort.bluetoothHfp},
+      CallAudioRoute.wiredHeadset => const {AVAudioSessionPort.headsetMic},
+      _ => const {AVAudioSessionPort.builtInMic},
+    };
+    final session = AVAudioSession();
+    final inputs = await session.availableInputs;
+    final port = inputs.where((p) => wanted.contains(p.portType)).firstOrNull;
+    if (port == null) {
+      _logger.w('⚠️ [AgoraService] No iOS input available for $route');
+      return;
     }
+    await session.setPreferredInput(port);
   }
 
   @override

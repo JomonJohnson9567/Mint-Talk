@@ -2,6 +2,7 @@ import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/network/api_client.dart';
 import '../../domain/entities/call_type.dart';
 import '../models/call_session_dto.dart';
+import '../models/call_token_dto.dart';
 
 abstract class ICallRemoteDataSource {
   Future<CallSessionDto> initiateCall({
@@ -20,6 +21,8 @@ abstract class ICallRemoteDataSource {
   Future<CallSessionDto> endCall(String callId);
 
   Future<CallSessionDto> getCallDetails(String callId);
+
+  Future<CallTokenDto> fetchCallToken(String callId);
 }
 
 @LazySingleton(as: ICallRemoteDataSource)
@@ -115,5 +118,20 @@ class CallRemoteDataSource implements ICallRemoteDataSource {
       receiveTimeout: const Duration(seconds: 8),
     );
     return CallSessionDto.fromJson(response);
+  }
+
+  @override
+  Future<CallTokenDto> fetchCallToken(String callId) async {
+    // Short timeout: this sits on the critical path for joining Agora after
+    // acceptance (and for renewal before expiry), inside the 30s connect
+    // window — a stalled attempt must fail fast enough to retry.
+    final response = await _apiClient.post(
+      '/calls/$callId/token',
+      requiresAuth: true,
+      connectTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+    );
+    return CallTokenDto.fromJson(response);
   }
 }

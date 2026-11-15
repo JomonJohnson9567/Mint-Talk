@@ -8,26 +8,34 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool automaticallyImplyLeading;
   final List<Widget>? actions;
 
+  /// Colour of the title, back button and action icons.
+  final Color foregroundColor;
+
+  final bool centerTitle;
+
   const CustomAppBar({
     super.key,
     required this.title,
     this.automaticallyImplyLeading = true,
     this.actions,
+    this.foregroundColor = AppColors.black,
+    this.centerTitle = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: automaticallyImplyLeading,
+      iconTheme: IconThemeData(color: foregroundColor),
       title: Text(
         title,
         style: TextStyle(
-          color: AppColors.black,
+          color: foregroundColor,
           fontSize: 20.sp,
           fontWeight: FontWeight.bold,
         ),
       ),
-      centerTitle: true,
+      centerTitle: centerTitle,
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: actions,

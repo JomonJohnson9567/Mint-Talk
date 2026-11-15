@@ -29,6 +29,10 @@ class HostDashState extends Equatable {
   /// true only once a real `connect` event has been observed.
   final bool isSocketConnected;
 
+  /// Went online without notification permission — a minimized app can't
+  /// show incoming calls. Drives a one-time hint on the dashboard.
+  final bool notificationsBlocked;
+
   const HostDashState({
     this.status = HostDashStatus.initial,
     this.preferenceUpdateStatus = HostPreferenceUpdateStatus.initial,
@@ -42,6 +46,7 @@ class HostDashState extends Equatable {
     this.onlineHosts = const [],
     this.isHostsLoading = false,
     this.isSocketConnected = false,
+    this.notificationsBlocked = false,
   });
 
   HostDashState copyWith({
@@ -57,6 +62,7 @@ class HostDashState extends Equatable {
     List<HostOnlineItemEntity>? onlineHosts,
     bool? isHostsLoading,
     bool? isSocketConnected,
+    bool? notificationsBlocked,
   }) {
     return HostDashState(
       status: status ?? this.status,
@@ -72,6 +78,7 @@ class HostDashState extends Equatable {
       onlineHosts: onlineHosts ?? this.onlineHosts,
       isHostsLoading: isHostsLoading ?? this.isHostsLoading,
       isSocketConnected: isSocketConnected ?? this.isSocketConnected,
+      notificationsBlocked: notificationsBlocked ?? this.notificationsBlocked,
     );
   }
 
@@ -101,6 +108,6 @@ class HostDashState extends Equatable {
     onlineHosts,
     isHostsLoading,
     isSocketConnected,
+    notificationsBlocked,
   ];
 }
-

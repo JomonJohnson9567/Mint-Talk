@@ -1,3 +1,4 @@
+import 'package:mint_talk/core/services/agora/call_audio_route.dart';
 import 'package:mint_talk/core/services/agora/i_agora_service.dart';
 
 /// Mute/speaker/camera toggle logic extracted out of [CallScreenCubit] —
@@ -20,11 +21,6 @@ class CallMediaControls {
     return next;
   }
 
-  bool toggleSpeakerphone(bool currentlySpeakerOn) {
-    final next = !currentlySpeakerOn;
-    _agoraService.toggleSpeakerphone(next);
-    return next;
-  }
-
-  void switchCamera() => _agoraService.switchCamera();
+  void setAudioRoute(CallAudioRoute route) =>
+      _agoraService.setAudioRoute(route);
 }

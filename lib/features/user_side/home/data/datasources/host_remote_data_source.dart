@@ -11,7 +11,6 @@ abstract class HostRemoteDataSource {
   Future<PaginatedHostsDto> getAllHosts({int? page, int? limit});
 }
 
-
 @LazySingleton(as: HostRemoteDataSource)
 class HostRemoteDataSourceImpl implements HostRemoteDataSource {
   final ApiClient apiClient;
@@ -19,10 +18,7 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
   HostRemoteDataSourceImpl(this.apiClient);
 
   @override
-  Future<PaginatedHostsDto> getOnlineHosts({
-    int? page,
-    int? limit,
-  }) async {
+  Future<PaginatedHostsDto> getOnlineHosts({int? page, int? limit}) async {
     return _fetchHosts(
       endpoint: ApiEndpoints.hostsOnline,
       page: page,
@@ -31,10 +27,7 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
   }
 
   @override
-  Future<PaginatedHostsDto> getOnCallHosts({
-    int? page,
-    int? limit,
-  }) async {
+  Future<PaginatedHostsDto> getOnCallHosts({int? page, int? limit}) async {
     return _fetchHosts(
       endpoint: ApiEndpoints.hostsOnCall,
       page: page,
@@ -43,17 +36,9 @@ class HostRemoteDataSourceImpl implements HostRemoteDataSource {
   }
 
   @override
-  Future<PaginatedHostsDto> getAllHosts({
-    int? page,
-    int? limit,
-  }) async {
-    return _fetchHosts(
-      endpoint: ApiEndpoints.hosts,
-      page: page,
-      limit: limit,
-    );
+  Future<PaginatedHostsDto> getAllHosts({int? page, int? limit}) async {
+    return _fetchHosts(endpoint: ApiEndpoints.hosts, page: page, limit: limit);
   }
-
 
   Future<PaginatedHostsDto> _fetchHosts({
     required String endpoint,

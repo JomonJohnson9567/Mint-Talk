@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
+import 'package:mint_talk/features/user_side/profile_setup/domain/value_objects/full_name.dart';
 import 'package:mint_talk/features/shared/profile/domain/usecases/upload_profile_image_usecase.dart';
 import '../../../../../core/usecases/usecase.dart';
 import '../../domain/entities/host_profile_entity.dart';
@@ -24,6 +26,8 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
     required this.authRepository,
   }) : super(const HostProfileEditState());
 
+  static const int maxCategories = 4;
+
   Future<void> loadProfile() async {
     emit(state.copyWith(status: HostProfileEditStatus.loading));
     final cachedValues = await Future.wait<String?>([
@@ -43,26 +47,33 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
           errorMessage: failure.message,
         ),
       ),
-      (profile) => emit(
-        state.copyWith(
-          status: HostProfileEditStatus.loaded,
-          name: _cachedOrFallback(cachedValues[0], profile.fullName),
-          phone: _cachedOrFallback(cachedValues[1], profile.phone),
-          idNumber: _cachedOrFallback(cachedValues[2], profile.idNumber),
-          dob: _cachedOrFallback(cachedValues[3], profile.dob),
-          selectedCategories: profile.selectedCategories,
-          avatarAsset: _cachedOrFallback(cachedValues[4], profile.avatarAsset),
-        ),
-      ),
+      (profile) {
+        final name = _cachedOrFallback(cachedValues[0], profile.fullName);
+        final avatarAsset = _cachedOrFallback(
+          cachedValues[4],
+          profile.avatarAsset,
+        );
+        emit(
+          state.copyWith(
+            status: HostProfileEditStatus.loaded,
+            name: name,
+            phone: _cachedOrFallback(cachedValues[1], profile.phone),
+            idNumber: _cachedOrFallback(cachedValues[2], profile.idNumber),
+            dob: _cachedOrFallback(cachedValues[3], profile.dob),
+            gender: _cachedOrFallback(cachedValues[5], profile.gender),
+            selectedCategories: profile.selectedCategories,
+            avatarAsset: avatarAsset,
+            initialName: name,
+            initialAvatarAsset: avatarAsset,
+            initialCategories: profile.selectedCategories,
+          ),
+        );
+      },
     );
   }
 
-  void nameChanged(String name) {
-    emit(state.copyWith(name: name));
-  }
-
-  void dobChanged(String dob) {
-    emit(state.copyWith(dob: dob));
+  void nameChanged(String value) {
+    emit(state.copyWith(name: value, clearNameError: true));
   }
 
   void avatarChanged(String avatarAsset) {
@@ -74,7 +85,7 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
     if (updatedCategories.contains(category)) {
       updatedCategories.remove(category);
     } else {
-      if (updatedCategories.length < 4) {
+      if (updatedCategories.length < maxCategories) {
         updatedCategories.add(category);
       }
     }
@@ -82,21 +93,24 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
   }
 
   Future<void> submit() async {
-    if (state.name.trim().isEmpty ||
-        state.dob.isEmpty ||
-        state.selectedCategories.isEmpty) {
-      emit(state.copyWith(showErrors: true));
+    if (state.isSaving) return;
+    // Only the name is validated: DOB, phone, ID and gender are locked after
+    // registration and categories are optional.
+    try {
+      FullName(state.name);
+    } on ValidationException catch (e) {
+      emit(state.copyWith(nameError: e.errors['fullName']));
       return;
     }
-
-    emit(state.copyWith(status: HostProfileEditStatus.saving));
+    emit(
+      state.copyWith(
+        status: HostProfileEditStatus.saving,
+        clearNameError: true,
+      ),
+    );
 
     String finalAvatarAsset = state.avatarAsset;
-    if (state.avatarAsset.isNotEmpty &&
-        !state.avatarAsset.startsWith('http') &&
-        !state.avatarAsset.startsWith('/uploads/') &&
-        !state.avatarAsset.startsWith('assets/') &&
-        File(state.avatarAsset).existsSync()) {
+    if (_needsUpload(state.avatarAsset)) {
       final uploadResult = await uploadProfileImageUseCase(
         UploadProfileImageParams(imagePath: state.avatarAsset),
       );
@@ -111,9 +125,18 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
           return true;
         },
         (entity) {
-          if (entity.avatarUrl.isNotEmpty) {
-            finalAvatarAsset = entity.avatarUrl;
+          // Never fall back to the local/asset path: the backend drops
+          // non-URL values, so users would see no avatar.
+          if (entity.avatarUrl.isEmpty) {
+            emit(
+              state.copyWith(
+                status: HostProfileEditStatus.failure,
+                errorMessage: "Couldn't save photo, please try again",
+              ),
+            );
+            return true;
           }
+          finalAvatarAsset = entity.avatarUrl;
           return false;
         },
       );
@@ -157,6 +180,15 @@ class HostProfileEditCubit extends Cubit<HostProfileEditState> {
         emit(state.copyWith(status: HostProfileEditStatus.success));
       },
     );
+  }
+
+  /// Preset avatars (bundled `assets/`) and picked/captured files must be
+  /// uploaded; server URLs (`http…`, `/uploads/…`) are already stored.
+  bool _needsUpload(String path) {
+    if (path.isEmpty) return false;
+    if (path.startsWith('http') || path.startsWith('/uploads/')) return false;
+    if (path.startsWith('assets/')) return true;
+    return File(path).existsSync();
   }
 
   String _cachedOrFallback(String? cached, String fallback) {

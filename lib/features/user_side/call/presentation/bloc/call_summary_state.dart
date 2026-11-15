@@ -14,9 +14,9 @@ class CallSummaryState extends Equatable {
 
   /// Null until the server has reported real billing data (or the retry
   /// window gives up) — see [durationText].
-  final int? billedMinutes;
+  final int? billedUnits;
 
-  /// See [billedMinutes].
+  /// See [billedUnits].
   final int? pointsValue;
 
   final String pointsLabel;
@@ -30,7 +30,7 @@ class CallSummaryState extends Equatable {
     required this.title,
     required this.motivationMessage,
     this.durationText,
-    this.billedMinutes,
+    this.billedUnits,
     this.pointsValue,
     required this.pointsLabel,
     required this.talkLevel,
@@ -51,7 +51,10 @@ class CallSummaryState extends Equatable {
     );
   }
 
-  factory CallSummaryState.error({required bool isHost, required String errorMessage}) {
+  factory CallSummaryState.error({
+    required bool isHost,
+    required String errorMessage,
+  }) {
     return CallSummaryState(
       isHost: isHost,
       title: 'Failed to load details',
@@ -69,7 +72,7 @@ class CallSummaryState extends Equatable {
     String? title,
     String? motivationMessage,
     String? durationText,
-    int? billedMinutes,
+    int? billedUnits,
     int? pointsValue,
     String? pointsLabel,
     String? talkLevel,
@@ -82,7 +85,7 @@ class CallSummaryState extends Equatable {
       title: title ?? this.title,
       motivationMessage: motivationMessage ?? this.motivationMessage,
       durationText: durationText ?? this.durationText,
-      billedMinutes: billedMinutes ?? this.billedMinutes,
+      billedUnits: billedUnits ?? this.billedUnits,
       pointsValue: pointsValue ?? this.pointsValue,
       pointsLabel: pointsLabel ?? this.pointsLabel,
       talkLevel: talkLevel ?? this.talkLevel,
@@ -94,16 +97,16 @@ class CallSummaryState extends Equatable {
 
   @override
   List<Object?> get props => [
-        isHost,
-        title,
-        motivationMessage,
-        durationText,
-        billedMinutes,
-        pointsValue,
-        pointsLabel,
-        talkLevel,
-        talkLevelColor,
-        isLoading,
-        errorMessage,
-      ];
+    isHost,
+    title,
+    motivationMessage,
+    durationText,
+    billedUnits,
+    pointsValue,
+    pointsLabel,
+    talkLevel,
+    talkLevelColor,
+    isLoading,
+    errorMessage,
+  ];
 }

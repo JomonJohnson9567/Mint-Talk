@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_icon_square.dart';
+import 'leave_form_field.dart';
 
 class DateSelectionRow extends StatelessWidget {
   final DateTime? startDate;
@@ -31,13 +33,14 @@ class DateSelectionRow extends StatelessWidget {
     DateTime? firstDate,
   ) async {
     final DateTime now = DateTime.now();
-    final DateTime resolvedFirstDate = firstDate ?? now.subtract(const Duration(days: 365));
-    
+    final DateTime resolvedFirstDate =
+        firstDate ?? now.subtract(const Duration(days: 365));
+
     DateTime resolvedInitialDate = initialDate ?? now;
     if (resolvedInitialDate.isBefore(resolvedFirstDate)) {
       resolvedInitialDate = resolvedFirstDate;
     }
-    
+
     final DateTime lastDate = now.add(const Duration(days: 365));
     if (resolvedInitialDate.isAfter(lastDate)) {
       resolvedInitialDate = lastDate;
@@ -54,7 +57,7 @@ class DateSelectionRow extends StatelessWidget {
             colorScheme: const ColorScheme.light(
               primary: AppColors.primaryColor,
               onPrimary: AppColors.white,
-              onSurface: AppColors.black,
+              onSurface: AppColors.plumDeep,
             ),
           ),
           child: child!,
@@ -83,7 +86,7 @@ class DateSelectionRow extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 16.w),
+        SizedBox(width: 14.cw),
         Expanded(
           child: _DateSelector(
             label: 'End Date',
@@ -120,58 +123,32 @@ class _DateSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        SizedBox(height: 8.h),
-        InkWell(
+        LeaveFieldLabel(label),
+        LeaveFieldBox(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16.r),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              border: Border.all(color: const Color(0xFFDCDDF7), width: 1.5),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.r),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF0FC),
-                    borderRadius: BorderRadius.circular(10.r),
+          padding: EdgeInsets.all(10.cw),
+          child: Row(
+            children: [
+              const HostIconSquare(
+                icon: Icons.calendar_today_outlined,
+                size: 38,
+              ),
+              SizedBox(width: 10.cw),
+              Expanded(
+                child: Text(
+                  dateText,
+                  style: TextStyle(
+                    fontSize: 14.csp,
+                    color: isSelected
+                        ? AppColors.plumDeep
+                        : AppColors.hostSubtitle,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
-                  child: Icon(
-                    Icons.calendar_today_outlined,
-                    color: AppColors.primaryColor,
-                    size: 16.sp,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    dateText,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: isSelected ? AppColors.black : AppColors.subtitleText,
-                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(
-                  Icons.calendar_month_outlined,
-                  color: AppColors.primaryColor,
-                  size: 18.sp,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

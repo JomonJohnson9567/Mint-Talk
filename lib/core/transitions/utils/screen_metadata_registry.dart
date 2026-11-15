@@ -6,9 +6,9 @@ import 'package:mint_talk/core/transitions/models/screen_metadata.dart';
 class ScreenMetadataRegistry {
   static final Map<String, ScreenMetadata> _registry = {
     AppRoutes.welcome: ScreenMetadata(
-      backgroundImage: AppAssets.welcomeBackground,
-      borderRadius: 32.0,
-      backgroundColor: AppColors.tealBackground,
+      topImage: AppAssets.welcomeMascot,
+      borderRadius: 24.0,
+      backgroundColor: AppColors.creamBackground,
     ),
     AppRoutes.phoneNumber: ScreenMetadata(
       topImage: AppAssets.phoneEntry,

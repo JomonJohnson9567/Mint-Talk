@@ -11,7 +11,10 @@ import '../models/host_application_status_model.dart';
 
 abstract class HostApplicationRemoteDataSource {
   Future<bool> submitApplication(HostApplicationModel model);
-  Future<String> uploadImage(String imagePath, String key);
+
+  /// POST /host-applications/verification-photo (multipart field `image`).
+  /// Returns the private `verificationPhotoId`.
+  Future<String> uploadVerificationPhoto(String imagePath);
   Future<HostApplicationStatusModel> getApplicationStatus();
 
   /// POST /host-applications/join — activates host status for an approved
@@ -58,8 +61,8 @@ class HostApplicationRemoteDataSourceImpl
   }
 
   @override
-  Future<String> uploadImage(String imagePath, String key) async {
-    appLogger.d('HostApplicationRemoteDataSource.uploadImage: uploading $key');
+  Future<String> uploadVerificationPhoto(String imagePath) async {
+    appLogger.d('HostApplicationRemoteDataSource.uploadVerificationPhoto');
 
     final file = await MultipartFile.fromFile(
       imagePath,
@@ -67,35 +70,34 @@ class HostApplicationRemoteDataSourceImpl
     );
 
     final response = await apiClient.postMultipart(
-      ApiEndpoints.profileImage,
+      ApiEndpoints.hostApplicationVerificationPhoto,
       requiresAuth: true,
-      body: {
-        'image': file,
-      },
+      body: {'image': file},
     );
 
-    final isSuccess =
-        response['success'] == true || response['data'] != null;
-    if (!isSuccess) {
+    if (response['success'] == false) {
       throw ServerException(
-        message: response['message'] as String? ?? 'Failed to upload $key',
+        message:
+            response['message']?.toString() ??
+            'Failed to upload verification photo',
       );
     }
 
+    // Only the id is read — this response must never feed an avatar.
     final data = response['data'] is Map ? response['data'] as Map : response;
-    final url = (data['avatarUrl'] ??
-            data['url'] ??
-            data['imageUrl'] ??
-            data['fileUrl'] ??
-            data[key] ??
+    final id = (data['verificationPhotoId'] ??
+            response['verificationPhotoId'] ??
             '')
-        .toString();
+        .toString()
+        .trim();
 
-    if (url.isEmpty) {
-      throw ServerException(message: 'Upload succeeded but no URL returned for $key');
+    if (id.isEmpty) {
+      throw ServerException(
+        message: 'Upload succeeded but no verification photo id was returned',
+      );
     }
 
-    return url;
+    return id;
   }
 
   @override
@@ -133,7 +135,7 @@ class HostApplicationRemoteDataSourceImpl
       );
     }
 
-    // Same defensive unwrap as uploadImage() above — accept the user/token
+    // Same defensive unwrap as uploadVerificationPhoto() above — accept the user/token
     // nested under `data` or sitting at the top level.
     final container = response['data'] is Map
         ? Map<String, dynamic>.from(response['data'] as Map)

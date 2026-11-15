@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/auth/presentation/screens/otp_verification/presentation/cubit/otp_verification/otp_verification_cubit.dart';
@@ -18,14 +19,17 @@ class OtpVerificationScreen extends StatelessWidget {
 
     if (phone.isNotEmpty) {
       context.read<OtpVerificationCubit>().setCredentials(
-            phone: phone,
-            countryCode: countryCode,
-          );
+        phone: phone,
+        countryCode: countryCode,
+      );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.tealBackground,
-      body: OtpContents(phone: phone, countryCode: countryCode),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.creamBackground,
+        body: OtpContents(phone: phone, countryCode: countryCode),
+      ),
     );
   }
 }

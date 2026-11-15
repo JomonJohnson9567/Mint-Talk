@@ -1,55 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/user_side/wallet/domain/entities/plan_tier.dart';
 import 'package:mint_talk/features/user_side/wallet/domain/entities/recharge_plan_entity.dart';
-import 'recharge_plan_card.dart';
 
+import 'recharge_tier_section.dart';
+
+/// The plan catalogue grouped into one section per [PlanTier] — Silver, Gold,
+/// Platinum, then any untiered plans — each a grid of selectable cards.
 class RechargePlanGrid extends StatelessWidget {
+  /// Sorted by price, cheapest first (see `WalletCubit.fetchPlans`); that
+  /// order is kept inside each section.
   final List<RechargePlanEntity> plans;
-  final Color accentColor;
+  final String? selectedPlanId;
+  final ValueChanged<RechargePlanEntity> onSelect;
 
   const RechargePlanGrid({
     super.key,
     required this.plans,
-    required this.accentColor,
+    required this.selectedPlanId,
+    required this.onSelect,
   });
+
+  /// Shared with [RechargePlansSkeleton] so loading tiles match the grid.
+  /// [hasBonus] adds room for the "+X bonus" line so every row stays the
+  /// same height; without bonuses the grid matches the design exactly.
+  /// [hasName] adds room for the package-name line above the coin.
+  static SliverGridDelegate delegateFor(
+    double width, {
+    bool hasBonus = false,
+    bool hasName = false,
+  }) {
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: width >= 600 ? 4 : 3,
+      crossAxisSpacing: 8.cw,
+      mainAxisSpacing: 8.cw,
+      mainAxisExtent: ((hasBonus ? 172 : 152) + (hasName ? 18 : 0)).cw,
+    );
+  }
+
+  /// Spacing between tier sections; shared with the skeleton.
+  static double get sectionSpacing => 20.cw;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final crossAxisCount = width >= 680
-            ? 3
-            : width >= 360
-            ? 2
-            : 1;
-        final horizontalSpacing = width >= 680 ? 16.0 : 12.0;
-        final verticalSpacing = width >= 680 ? 16.0 : 12.0;
-        final tileHeight = width >= 680
-            ? 248.0
-            : width >= 360
-            ? 228.0
-            : 212.0;
+    final byTier = <PlanTier, List<RechargePlanEntity>>{};
+    for (final plan in plans) {
+      byTier.putIfAbsent(plan.tier, () => []).add(plan);
+    }
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: plans.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: horizontalSpacing.w,
-            mainAxisSpacing: verticalSpacing.h,
-            mainAxisExtent: tileHeight.h,
+    final sections = [
+      for (final tier in PlanTier.values)
+        if (byTier[tier] case final tierPlans?)
+          RechargeTierSection(
+            key: ValueKey(tier),
+            tier: tier,
+            plans: tierPlans,
+            selectedPlanId: selectedPlanId,
+            onSelect: onSelect,
           ),
-          itemBuilder: (context, index) {
-            return RechargePlanCard(
-              plan: plans[index],
-              accentColor: accentColor,
-            );
-          },
-        );
-      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) SizedBox(height: sectionSpacing),
+          sections[i],
+        ],
+      ],
     );
   }
 }

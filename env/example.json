@@ -3,5 +3,5 @@
   "SOCKET_URL": "wss://your-backend-host",
   "AGORA_APP_ID": "replace_with_agora_app_id",
   "HEALTH_URL": "https://your-backend-host/health",
-  "RAZORPAY_KEY": "replace_with_razorpay_key"
+  "RAZORPAY_KEY_ID": "replace_with_razorpay_key_id"
 }

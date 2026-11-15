@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/core/services/audio/incoming_ringer_service.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/features/user_side/call/data/models/incoming_call_payload_dto.dart';
 import 'package:mint_talk/features/user_side/call/domain/usecases/reject_call_usecase.dart';
+import 'package:mint_talk/features/user_side/call/domain/entities/ring_window.dart';
 
 class IncomingCallSessionState extends Equatable {
   final bool isProcessing;
@@ -36,7 +38,10 @@ class IncomingCallSessionState extends Equatable {
 
 /// Owns one incoming-call dialog's lifetime: the breathing-avatar toggle,
 /// the ring-pulse phase, the call-status subscription that auto-dismisses
-/// on missed/ended/rejected/cancelled, and accept/reject.
+/// on missed/ended/rejected/cancelled, accept/reject, and the looping
+/// ringtone (the same tone the caller hears, following the device's
+/// ringer mode and Do Not Disturb), which plays from creation
+/// until the call is accepted, rejected, auto-dismissed or the cubit closes.
 ///
 /// Created fresh per dialog instance (not DI-registered) and closed when
 /// the dialog is dismissed.
@@ -45,10 +50,22 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
   final VoidCallback onDismiss;
   final IPresenceSocketService _presenceSocketService;
   final RejectCallUseCase _rejectCallUseCase;
+  final IIncomingRingerService _ringtone;
 
   StreamSubscription<Map<String, dynamic>>? _statusSub;
   Timer? _breathingTimer;
   Timer? _ringTimer;
+
+  /// Closes the overlay at the payload's server `ringExpiresAt` (audio and
+  /// video alike); [ringTimeout] is only the fallback when it's missing.
+  /// The server misses the call / the caller cancels on the same deadline,
+  /// so this is not a reject.
+  Timer? _noAnswerTimer;
+  @visibleForTesting
+  static Duration ringTimeout = RingWindow.fallback;
+
+  /// Server-corrected "now" (`ServerClock.now`) for [RingWindow].
+  final DateTime Function() _serverNow;
 
   /// True once the call has been handed off to [CallScreen], which owns
   /// the call's socket subscription from that point on — prevents
@@ -58,15 +75,39 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
 
   static const _ringCycle = Duration(milliseconds: 2200);
 
+  /// Any of these (from `call_missed`, `call_cancelled`, … or a terminal
+  /// `call_status_update`) closes the still-ringing overlay.
+  static const _terminalStatuses = {
+    'missed',
+    'ended',
+    'rejected',
+    'cancelled',
+    'failed',
+    'insufficient_balance',
+  };
+
   IncomingCallSessionCubit({
     required this.payload,
     required this.onDismiss,
     required IPresenceSocketService presenceSocketService,
     required RejectCallUseCase rejectCallUseCase,
-  })  : _presenceSocketService = presenceSocketService,
-        _rejectCallUseCase = rejectCallUseCase,
-        super(const IncomingCallSessionState()) {
+    required IIncomingRingerService ringtone,
+    DateTime Function()? serverNow,
+  }) : _presenceSocketService = presenceSocketService,
+       _serverNow = serverNow ?? DateTime.now,
+       _rejectCallUseCase = rejectCallUseCase,
+       _ringtone = ringtone,
+       super(const IncomingCallSessionState()) {
     _listenForStatusUpdates();
+    unawaited(_ringtone.start());
+    _noAnswerTimer = Timer(
+      RingWindow.remaining(
+        payload.ringExpiresAt,
+        _serverNow(),
+        fallback: ringTimeout,
+      ),
+      _dismissUnanswered,
+    );
 
     _breathingTimer = Timer.periodic(const Duration(milliseconds: 1400), (_) {
       if (isClosed) return;
@@ -105,15 +146,24 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
       }
 
       final status = data['status']?.toString();
-      final isTerminal =
-          status == 'missed' ||
-          status == 'ended' ||
-          status == 'rejected' ||
-          status == 'cancelled';
+      final isTerminal = _terminalStatuses.contains(status);
       if (!isTerminal || isClosed || state.isProcessing) return;
+      _noAnswerTimer?.cancel();
+      unawaited(_ringtone.stop());
       emit(state.copyWith(isProcessing: true));
       onDismiss();
     });
+  }
+
+  /// Ring limit reached with no answer — close the overlay locally. The
+  /// caller's /cancel ends the call on the server; a `call_cancelled` push
+  /// arriving afterwards is ignored by the `isProcessing` guard above.
+  void _dismissUnanswered() {
+    _noAnswerTimer = null;
+    if (isClosed || state.isProcessing) return;
+    unawaited(_ringtone.stop());
+    emit(state.copyWith(isProcessing: true));
+    onDismiss();
   }
 
   /// Stops the ring/breathing timers immediately — called the instant
@@ -128,15 +178,20 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
   /// here too would remove the just-pushed `CallScreen` instead.
   void handOffToCallScreen() {
     if (state.isProcessing) return;
+    _noAnswerTimer?.cancel();
     _breathingTimer?.cancel();
     _ringTimer?.cancel();
+    // Stop before CallScreen's Agora join takes over the audio session.
+    unawaited(_ringtone.stop());
     _handedOffToCallScreen = true;
     emit(state.copyWith(isProcessing: true));
   }
 
   Future<void> reject() async {
     if (state.isProcessing) return;
+    _noAnswerTimer?.cancel();
     emit(state.copyWith(isProcessing: true));
+    unawaited(_ringtone.stop());
     await _rejectCallUseCase(payload.callId);
     onDismiss();
   }
@@ -144,8 +199,10 @@ class IncomingCallSessionCubit extends Cubit<IncomingCallSessionState> {
   @override
   Future<void> close() {
     _statusSub?.cancel();
+    _noAnswerTimer?.cancel();
     _breathingTimer?.cancel();
     _ringTimer?.cancel();
+    unawaited(_ringtone.stop());
     if (!_handedOffToCallScreen) {
       _presenceSocketService.unsubscribeCall(payload.callId);
     }

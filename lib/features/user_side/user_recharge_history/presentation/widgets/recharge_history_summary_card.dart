@@ -1,203 +1,192 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/utils/indian_number_format.dart';
+import 'package:mint_talk/core/widgets/plum_blob.dart';
 import 'package:mint_talk/features/user_side/user_recharge_history/domain/entities/recharge_history_item.dart';
 
+/// Plum hero card at the top of the recharge history list — styled like the
+/// balance card on the recharge plans screen.
 class RechargeHistorySummaryCard extends StatelessWidget {
   final List<RechargeHistoryItem> history;
 
-  const RechargeHistorySummaryCard({
-    super.key,
-    required this.history,
-  });
+  const RechargeHistorySummaryCard({super.key, required this.history});
 
   @override
   Widget build(BuildContext context) {
-    final completedCount = history.where((item) => item.isCompleted).length;
+    final completed = history.where((item) => item.isCompleted);
+    final completedCount = completed.length;
     final pendingCount = history.where((item) => item.isPending).length;
-    final totalPoints = history.fold<int>(0, (sum, item) => sum + item.points);
-    final latest = history.isNotEmpty ? history.first : null;
+    // Only completed recharges have actually landed in the wallet.
+    final totalCoins = completed.fold<int>(0, (sum, item) => sum + item.points);
+    final radius = BorderRadius.circular(18.cw);
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(18.w),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.primaryColor,
-            AppColors.tealBackground,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28.r),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryColor.withValues(alpha: 0.18),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
+            color: AppColors.primaryColor.withValues(alpha: 0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: ClipRRect(
+        borderRadius: radius,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.balanceCardStart, AppColors.primaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
             children: [
-              Container(
-                padding: EdgeInsets.all(10.w),
-                decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.16),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.history_rounded,
-                  color: AppColors.white,
-                  size: 20.sp,
-                ),
+              Positioned(
+                right: -30.cw,
+                top: -40.cw,
+                child: PlumBlob(size: 112.cw),
               ),
-              SizedBox(width: 12.w),
-              Expanded(
+              Positioned(
+                left: -36.cw,
+                bottom: -58.cw,
+                child: PlumBlob(size: 100.cw),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.cw, 16.cw, 16.cw, 14.cw),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Recharge History',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      children: [
+                        Image.asset(
+                          AppAssets.rechargeCoinStack,
+                          width: 60.cw,
+                          fit: BoxFit.contain,
+                        ),
+                        SizedBox(width: 14.cw),
+                        Container(
+                          width: 1,
+                          height: 40.cw,
+                          color: AppColors.white.withValues(alpha: 0.25),
+                        ),
+                        SizedBox(width: 16.cw),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppTexts.totalCoinsCredited,
+                                style: TextStyle(
+                                  fontSize: 12.5.csp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.white.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 2.cw),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: IndianNumberFormat.format(
+                                          totalCoins,
+                                        ),
+                                        style: GoogleFonts.nunito(
+                                          fontSize: 28.csp,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: ' ${AppTexts.coinsSuffix}',
+                                        style: GoogleFonts.nunito(
+                                          fontSize: 18.csp,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  style: const TextStyle(
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 3.h),
-                    Text(
-                      'A ledger of your wallet top-ups and point credits.',
-                      style: TextStyle(
-                        color: AppColors.white.withValues(alpha: 0.82),
-                        fontSize: 12.sp,
-                        height: 1.4,
-                      ),
+                    SizedBox(height: 14.cw),
+                    Wrap(
+                      spacing: 8.cw,
+                      runSpacing: 8.cw,
+                      children: [
+                        _SummaryStat(
+                          value: history.length,
+                          label: AppTexts.recharges,
+                        ),
+                        _SummaryStat(
+                          value: completedCount,
+                          label: AppTexts.completed,
+                        ),
+                        if (pendingCount > 0)
+                          _SummaryStat(
+                            value: pendingCount,
+                            label: AppTexts.pending,
+                          ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryMetric(
-                  value: history.length.toString(),
-                  label: 'Transactions',
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _SummaryMetric(
-                  value: totalPoints.toString(),
-                  label: 'Points Credited',
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _SummaryMetric(
-                  value: completedCount.toString(),
-                  label: 'Completed',
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 14.h),
-          if (latest != null)
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18.r),
-                border: Border.all(color: AppColors.white.withValues(alpha: 0.16)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.schedule_rounded, color: AppColors.white, size: 18.sp),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: Text(
-                      'Latest recharge ${latest.points} points • ${latest.currency} ${latest.amount}',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  if (pendingCount > 0)
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.orange.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999.r),
-                      ),
-                      child: Text(
-                        '$pendingCount pending',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _SummaryMetric extends StatelessWidget {
-  final String value;
+class _SummaryStat extends StatelessWidget {
+  final int value;
   final String label;
 
-  const _SummaryMetric({
-    required this.value,
-    required this.label,
-  });
+  const _SummaryStat({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.cw, vertical: 5.cw),
       decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: AppColors.white.withValues(alpha: 0.16)),
+        color: AppColors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: IndianNumberFormat.format(value),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.white.withValues(alpha: 0.82),
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+            TextSpan(text: ' $label'),
+          ],
+        ),
+        style: TextStyle(
+          fontSize: 12.csp,
+          fontWeight: FontWeight.w600,
+          color: AppColors.white,
+        ),
       ),
     );
   }

@@ -1,0 +1,4 @@
+tags:
+  # Real-socket tests against test/support/socket_io_server (needs node +
+  # `npm install` there; auto-skipped otherwise).
+  integration:

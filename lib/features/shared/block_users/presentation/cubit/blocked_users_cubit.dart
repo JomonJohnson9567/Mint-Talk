@@ -35,25 +35,45 @@ class BlockedUsersCubit extends Cubit<BlockedUsersState> {
     final result = await unblockUserUseCase(UnblockUserParams(userId: userId));
 
     result.fold(
-      (failure) => emit(BlockedUsersError(message: failure.message)),
+      (failure) {
+        // Error first so listeners show it, then restore the list so the
+        // screen keeps it and a retry isn't blocked by the guard above.
+        emit(BlockedUsersError(message: failure.message));
+        emit(BlockedUsersLoaded(users: currentState.users));
+      },
       (_) {
         final updatedUsers = currentState.users
             .where((user) => user.blockedId != userId && user.id != userId)
             .toList();
-        emit(BlockedUsersLoaded(
-          users: updatedUsers,
-          actionMessage: 'User unblocked successfully',
-        ));
+        emit(
+          BlockedUsersLoaded(
+            users: updatedUsers,
+            actionMessage: 'User unblocked successfully',
+            lastAction: BlockAction.unblocked,
+          ),
+        );
       },
     );
   }
 
   Future<void> blockUser(String userId) async {
     final result = await blockUserUseCase(BlockUserParams(userId: userId));
+    if (isClosed) return;
 
-    result.fold(
-      (failure) => emit(BlockedUsersError(message: failure.message)),
-      (_) => loadBlockedUsers(),
+    await result.fold(
+      (failure) async => emit(BlockedUsersError(message: failure.message)),
+      (_) async {
+        await loadBlockedUsers();
+        if (isClosed) return;
+        final current = state;
+        emit(
+          BlockedUsersLoaded(
+            users: current is BlockedUsersLoaded ? current.users : const [],
+            actionMessage: 'User blocked successfully',
+            lastAction: BlockAction.blocked,
+          ),
+        );
+      },
     );
   }
 }

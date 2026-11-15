@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
-import 'package:mint_talk/core/widgets/confirmation_dialog.dart';
+import 'package:mint_talk/core/widgets/exit_app_bottom_sheet.dart';
 import 'package:mint_talk/features/host_side/host_settings_screen/presentation/screen/host_settings.dart';
 import 'package:mint_talk/shared/widgets/custom_bottom_nav_bar.dart';
 import 'package:mint_talk/features/user_side/main_navigation/presentation/cubit/bottom_nav_cubit.dart';
@@ -18,28 +19,13 @@ class HostMainNavigationScreen extends StatelessWidget {
   const HostMainNavigationScreen({super.key});
 
   // Dashboard is the default landing tab.
-  static const int _defaultTabIndex = 1;
+  static const int _defaultTabIndex = 0;
 
   final List<Widget> _screens = const [
-    HostCallLogScreen(),
     HostDashScreen(),
+    HostCallLogScreen(),
     HostSettings(),
   ];
-
-  Future<bool> _confirmExit(BuildContext context) async {
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => ConfirmationDialog(
-        title: 'Exit Mint Talk?',
-        content: 'Are you sure you want to close the app?',
-        confirmButtonText: 'Yes',
-        cancelButtonText: 'No',
-        accentColor: Theme.of(context).colorScheme.primary,
-        onConfirm: () => Navigator.of(dialogContext).pop(true),
-      ),
-    );
-    return shouldExit ?? false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +41,9 @@ class HostMainNavigationScreen extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => BottomNavCubit()),
+        BlocProvider(
+          create: (context) => BottomNavCubit(initialIndex: _defaultTabIndex),
+        ),
         BlocProvider(
           create: (context) => getIt<HostDashCubit>()..loadDashboardData(),
         ),
@@ -75,12 +63,13 @@ class HostMainNavigationScreen extends StatelessWidget {
                   navCubit.changeTab(_defaultTabIndex);
                   return;
                 }
-                if (await _confirmExit(context)) {
+                if (await ExitAppBottomSheet.show(context)) {
                   SystemNavigator.pop();
                 }
               },
               child: Scaffold(
-                extendBody: true, // Allows content to flow behind bottom navigation
+                extendBody:
+                    true, // Allows content to flow behind bottom navigation
                 body: BlocBuilder<BottomNavCubit, int>(
                   builder: (context, currentIndex) {
                     return Stack(
@@ -105,7 +94,16 @@ class HostMainNavigationScreen extends StatelessWidget {
                       onTap: (index) {
                         context.read<BottomNavCubit>().changeTab(index);
                       },
-                      icons: const [Icons.call, Icons.home_rounded, Icons.settings],
+                      icons: const [
+                        Icons.home_rounded,
+                        Icons.call_rounded,
+                        Icons.settings_rounded,
+                      ],
+                      labels: const [
+                        AppTexts.navHome,
+                        AppTexts.navCalls,
+                        AppTexts.navSettings,
+                      ],
                     );
                   },
                 ),

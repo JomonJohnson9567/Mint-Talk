@@ -51,15 +51,6 @@ class ProfileCubit extends Cubit<ProfileState> {
     );
   }
 
-  void referralCodeChanged(String? code) {
-    emit(
-      state.copyWith(
-        referralCode: code,
-        fieldErrors: Map.from(state.fieldErrors)..remove('referralCode'),
-      ),
-    );
-  }
-
   Future<void> submit() async {
     emit(
       state.copyWith(
@@ -74,13 +65,12 @@ class ProfileCubit extends Cubit<ProfileState> {
       final fullNameVO = FullName(state.name);
       final dobVO = DateOfBirth(state.dob);
       final genderVO = GenderValue(state.gender);
-      final referralVO = ReferralCodeValue(state.referralCode);
 
       final profile = UserProfile(
         fullName: fullNameVO,
         dob: dobVO,
         gender: genderVO,
-        referralCode: referralVO,
+        referralCode: ReferralCodeValue(null),
         termsAcceptedAt: DateTime.now().toIso8601String(),
       );
 
@@ -116,7 +106,6 @@ class ProfileCubit extends Cubit<ProfileState> {
           await _authRepository.saveFullName(state.name);
           await _authRepository.saveDob(state.dob);
           await _authRepository.saveGender(state.gender);
-          await _authRepository.saveReferralCode(state.referralCode);
           emit(
             state.copyWith(submissionStatus: ProfileSubmissionStatus.success),
           );

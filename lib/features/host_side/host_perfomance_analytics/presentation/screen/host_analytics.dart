@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/utils/indian_number_format.dart';
+import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/cubit/host_analytics_cubit.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/cubit/host_analytics_state.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/host_analytics_skeleton.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/host_leaderboard_section.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/host_targets_section.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/domain/entities/host_earnings_ledger_entity.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/ledger_entry_card.dart';
+import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/ledger_period_chip.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/presentation/widgets/ledger_summary_card.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_icon_square.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_mascot_banner.dart';
+import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 
 class HostAnalytics extends StatelessWidget {
   const HostAnalytics({super.key});
@@ -16,8 +26,13 @@ class HostAnalytics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFC),
+      backgroundColor: AppColors.homeBackground,
+      appBar: const CustomAppBar(
+        title: AppTexts.earningsLedger,
+        foregroundColor: AppColors.plumDeep,
+      ),
       body: SafeArea(
+        top: false,
         child: BlocBuilder<HostAnalyticsCubit, HostAnalyticsState>(
           builder: (context, state) {
             if (state.isLoading) {
@@ -25,181 +40,18 @@ class HostAnalytics extends StatelessWidget {
             }
 
             if (state.status == HostAnalyticsStatus.failure) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.w),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48.sp,
-                        color: AppColors.callEndedStatus,
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        state.errorMessage ??
-                            'Failed to load earnings ledger',
-                        style: GoogleFonts.manrope(
-                          fontSize: 14.sp,
-                          color: AppColors.black,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 20.h),
-                      ElevatedButton(
-                        onPressed: context.read<HostAnalyticsCubit>().loadAnalytics,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.r),
-                          ),
-                        ),
-                        child: Text(
-                          'Retry',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              return _LedgerLoadFailure(
+                message: state.errorMessage ?? 'Failed to load earnings ledger',
               );
             }
-
-            final ledger = state.ledger!;
 
             return RefreshIndicator(
               color: AppColors.primaryColor,
               onRefresh: context.read<HostAnalyticsCubit>().loadAnalytics,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(context),
-                    SizedBox(height: 20.h),
-                    HostTargetsSection(targets: state.targets),
-                    if (state.targets.isNotEmpty) SizedBox(height: 8.h),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12.h,
-                      crossAxisSpacing: 12.w,
-                      childAspectRatio: 1.18,
-                      children: [
-                        LedgerSummaryCard(
-                          title: 'Gross Revenue',
-                          valueText: '₹ ${ledger.summary.totalGrossInr.toStringAsFixed(0)}',
-                          subtitle: '${ledger.summary.totalCalls} calls',
-                          icon: Icons.payments_rounded,
-                          iconColor: const Color(0xFF6B4EE0),
-                          iconBgColor: const Color(0xFF6B4EE0).withAlpha(20),
-                        ),
-                        LedgerSummaryCard(
-                          title: 'Net Revenue',
-                          valueText: '₹ ${ledger.summary.totalNetInr.toStringAsFixed(0)}',
-                          subtitle: '${ledger.summary.totalBilledPoints} points',
-                          icon: Icons.account_balance_wallet_rounded,
-                          iconColor: AppColors.onlineIndicator,
-                          iconBgColor: AppColors.onlineIndicator.withAlpha(20),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.receipt_long_rounded,
-                              color: AppColors.primaryColor,
-                              size: 22.sp,
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Earnings Ledger',
-                              style: GoogleFonts.manrope(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Page ${ledger.page}',
-                          style: GoogleFonts.manrope(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.subtitleText,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-                    ...ledger.earnings.map(
-                      (earning) => Padding(
-                        padding: EdgeInsets.only(bottom: 12.h),
-                        child: LedgerEntryCard(earning: earning),
-                      ),
-                    ),
-                    if (state.callStats != null) ...[
-                      SizedBox(height: 20.h),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.analytics_rounded,
-                            color: AppColors.primaryColor,
-                            size: 22.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            'Call Statistics Summary',
-                            style: GoogleFonts.manrope(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12.h,
-                        crossAxisSpacing: 12.w,
-                        childAspectRatio: 1.18,
-                        children: [
-                          LedgerSummaryCard(
-                            title: 'Total Call Duration',
-                            valueText: '${state.callStats!.totalDurationMinutes} mins',
-                            subtitle: 'Connected time',
-                            icon: Icons.timer_rounded,
-                            iconColor: const Color(0xFF2196F3),
-                            iconBgColor: const Color(0xFF2196F3).withAlpha(20),
-                          ),
-                          LedgerSummaryCard(
-                            title: 'Total Billed',
-                            valueText: '${state.callStats!.totalBilledMinutes} mins',
-                            subtitle: 'Billable time',
-                            icon: Icons.access_time_filled_rounded,
-                            iconColor: const Color(0xFF4CAF50),
-                            iconBgColor: const Color(0xFF4CAF50).withAlpha(20),
-                          ),
-                        ],
-                      ),
-                    ],
-                    SizedBox(height: 20.h),
-                  ],
-                ),
+                padding: EdgeInsets.fromLTRB(16.cw, 4.cw, 16.cw, 24.cw),
+                child: _LedgerBody(state: state),
               ),
             );
           },
@@ -207,48 +59,320 @@ class HostAnalytics extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
+class _LedgerBody extends StatelessWidget {
+  final HostAnalyticsState state;
+
+  const _LedgerBody({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final ledger = state.ledger!;
+    final isRecent = state.scope == EarningsLedgerScope.recent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            padding: EdgeInsets.all(10.w),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.borderSoft),
+        if (state.hasPeriod) ...[
+          LedgerPeriodChip(start: state.periodStart!, end: state.periodEnd!),
+          SizedBox(height: 14.cw),
+        ],
+        const HostMascotBanner(
+          title: AppTexts.growingTogether,
+          subtitle: AppTexts.everyConversationBuildsJourney,
+          mascotAsset: AppAssets.rechargeMascot,
+          mascotHeight: 100,
+        ),
+        SizedBox(height: 16.cw),
+        _StatGrid(state: state),
+        if (state.leaderboard.isNotEmpty) ...[
+          SizedBox(height: 22.cw),
+          HostLeaderboardSection(entries: state.leaderboard),
+        ],
+        if (state.targets.isNotEmpty) ...[
+          SizedBox(height: 22.cw),
+          HostTargetsSection(targets: state.targets),
+        ],
+        SizedBox(height: 22.cw),
+        Text(
+          isRecent ? AppTexts.recentEarnings : AppTexts.earningsHistory,
+          style: TextStyle(
+            fontSize: 19.csp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.plumDeep,
+          ),
+        ),
+        SizedBox(height: 10.cw),
+        _ScopeToggle(selected: state.scope),
+        SizedBox(height: 12.cw),
+        if (state.isLedgerLoading)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.cw),
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
-            child: Icon(Icons.arrow_back, color: AppColors.black, size: 20.sp),
-          ),
-        ),
-        SizedBox(width: 16.w),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Earnings Ledger',
-                style: GoogleFonts.manrope(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.black,
-                ),
+          )
+        else if (ledger.earnings.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.cw),
+            child: Text(
+              isRecent ? AppTexts.noRecentEarnings : AppTexts.noEarningsHistory,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.csp,
+                color: AppColors.hostSubtitle,
+                height: 1.4,
               ),
-              SizedBox(height: 4.h),
-              Text(
-                'Track host revenue and billed earnings',
-                style: GoogleFonts.manrope(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.subtitleText,
-                ),
+            ),
+          )
+        else
+          ...ledger.earnings.map(
+            (earning) => Padding(
+              padding: EdgeInsets.only(bottom: 12.cw),
+              child: LedgerEntryCard(
+                earning: earning,
+                showRemaining: isRecent,
               ),
-            ],
+            ),
           ),
-        ),
+        SizedBox(height: 12.cw),
+        const _LedgerInfoFooter(),
       ],
+    );
+  }
+}
+
+/// Gross / Net on the first row, Connected / Billable (when call stats are
+/// available) on the second. Rows rather than a fixed-aspect grid so tiles
+/// grow with the text scale instead of overflowing.
+class _StatGrid extends StatelessWidget {
+  final HostAnalyticsState state;
+
+  const _StatGrid({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = state.ledger!.summary;
+    final withdrawable = state.ledger!.withdrawableBalanceInr;
+    final callStats = state.callStats;
+    final isPerSecondBilling = context.select<SystemConfigCubit, bool>(
+      (cubit) => cubit.state.isPerSecondBilling,
+    );
+
+    return Column(
+      children: [
+        _StatRow(
+          left: LedgerSummaryCard(
+            title: AppTexts.grossRevenue,
+            valueText: _inr(summary.totalGrossInr),
+            subtitle: '${summary.totalCalls} calls',
+            icon: Icons.paid_outlined,
+          ),
+          right: LedgerSummaryCard(
+            title: AppTexts.netEarnings,
+            valueText: _inr(summary.totalNetInr),
+            icon: Icons.account_balance_wallet_outlined,
+            tint: HostIconTint.peach,
+          ),
+        ),
+        if (withdrawable != null) ...[
+          SizedBox(height: 12.cw),
+          LedgerSummaryCard(
+            title: AppTexts.availableBalance,
+            valueText: '₹${IndianNumberFormat.format(withdrawable)}',
+            icon: Icons.savings_outlined,
+          ),
+        ],
+        if (callStats != null) ...[
+          SizedBox(height: 12.cw),
+          _StatRow(
+            left: LedgerSummaryCard(
+              title: AppTexts.connectedLabel,
+              valueText: '${callStats.totalDurationMinutes} min',
+              icon: Icons.call_outlined,
+            ),
+            right: LedgerSummaryCard(
+              title: AppTexts.billableLabel,
+              valueText:
+                  '${callStats.totalBilledUnits} ${isPerSecondBilling ? 'sec' : 'min'}',
+              icon: Icons.schedule_rounded,
+              tint: HostIconTint.peach,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  static String _inr(double value) =>
+      '₹${IndianNumberFormat.format(value.round())}';
+}
+
+/// Recent (unpaid) vs full-history ledger.
+class _ScopeToggle extends StatelessWidget {
+  final EarningsLedgerScope selected;
+
+  const _ScopeToggle({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(4.cw),
+      decoration: BoxDecoration(
+        color: AppColors.hostToggleTrack,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: AppColors.lavenderBorder),
+      ),
+      child: Row(
+        children: [
+          for (final (scope, label) in const [
+            (EarningsLedgerScope.recent, AppTexts.earningsScopeRecent),
+            (EarningsLedgerScope.history, AppTexts.earningsScopeHistory),
+          ])
+            Expanded(
+              child: GestureDetector(
+                onTap: () =>
+                    context.read<HostAnalyticsCubit>().selectScope(scope),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: EdgeInsets.symmetric(vertical: 10.cw),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: scope == selected
+                        ? AppColors.primaryColor
+                        : AppColors.transparent,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.csp,
+                      fontWeight: FontWeight.w700,
+                      color: scope == selected
+                          ? AppColors.white
+                          : AppColors.hostSubtitle,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatRow extends StatelessWidget {
+  final Widget left;
+  final Widget right;
+
+  const _StatRow({required this.left, required this.right});
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          SizedBox(width: 12.cw),
+          Expanded(child: right),
+        ],
+      ),
+    );
+  }
+}
+
+class _LedgerInfoFooter extends StatelessWidget {
+  const _LedgerInfoFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 12.cw),
+      decoration: BoxDecoration(
+        color: AppColors.hostToggleTrack,
+        borderRadius: BorderRadius.circular(14.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.info_rounded, size: 18.csp, color: AppColors.hostSubtitle),
+          SizedBox(width: 8.cw),
+          Flexible(
+            child: Text(
+              AppTexts.weeklyTotalsUpdate,
+              style: TextStyle(
+                fontSize: 12.5.csp,
+                color: AppColors.hostSubtitle,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LedgerLoadFailure extends StatelessWidget {
+  final String message;
+
+  const _LedgerLoadFailure({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.cw),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80.cw,
+              height: 80.cw,
+              decoration: const BoxDecoration(
+                color: AppColors.audioBtnBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 38.csp,
+                color: AppColors.audioAccent,
+              ),
+            ),
+            SizedBox(height: 16.cw),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14.csp, color: AppColors.plumMuted),
+            ),
+            SizedBox(height: 20.cw),
+            ElevatedButton(
+              onPressed: context.read<HostAnalyticsCubit>().loadAnalytics,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                elevation: 0,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 28.cw,
+                  vertical: 12.cw,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24.r),
+                ),
+              ),
+              child: Text(
+                AppTexts.retry,
+                style: TextStyle(
+                  fontSize: 14.csp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

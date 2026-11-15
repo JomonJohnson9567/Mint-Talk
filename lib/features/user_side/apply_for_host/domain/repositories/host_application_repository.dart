@@ -7,7 +7,9 @@ abstract class HostApplicationRepository {
   Future<Either<Failure, bool>> submitApplication(
     HostApplicationEntity application,
   );
-  Future<Either<Failure, String>> uploadImage(String imagePath, String key);
+  /// Uploads a selfie to the private verification endpoint and returns its
+  /// `verificationPhotoId`.
+  Future<Either<Failure, String>> uploadVerificationPhoto(String imagePath);
   Future<Either<Failure, HostApplicationStatusEntity>> getApplicationStatus();
 
   /// Activates host status for an approved application — the user's role

@@ -49,6 +49,12 @@ class ApiEndpoints {
   /// POST /api/v1/host-applications/join).
   static const String hostApplicationJoin = '/host-applications/join';
 
+  /// POST multipart/form-data — field: "image". Private KYC upload; returns
+  /// a `verificationPhotoId` that is sent with [applyForHost]. Never use
+  /// [profileImage] for verification selfies — that one is public.
+  static const String hostApplicationVerificationPhoto =
+      '/host-applications/verification-photo';
+
   // ── Host ─────────────────────────────────────────────────────────────
   static const String hostMyEarningsLedger = '/earnings/my-ledger';
   static const String hostWithdrawalsRequest = '/withdrawals/request';
@@ -75,9 +81,10 @@ class ApiEndpoints {
 
   // ── Profile Image ──────────────────────────────────────────────────────
   /// POST multipart/form-data — field: "image" (max 5MB, JPEG/PNG/GIF/WEBP)
-  /// Docs: POST /api/v1/user/profile-image  (alias: /api/v1/user/avatar)
-  /// Backend currently serves the route at /user/avatar
-  static const String profileImage = '/user/avatar';
+  /// POST /api/v1/user/profile-image (alias: /api/v1/user/avatar).
+  /// Public profile pictures ONLY — verification selfies go to
+  /// [hostApplicationVerificationPhoto].
+  static const String profileImage = '/user/profile-image';
 
   // ── Hosts ─────────────────────────────────────────────────────────────
   static const String hosts = '/hosts';

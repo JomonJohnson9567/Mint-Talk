@@ -30,12 +30,15 @@ class HostPresenceDto {
       status: (json['status'] ?? 'offline').toString(),
       lastSeen: json['lastSeen'] is int ? json['lastSeen'] : 0,
       updatedAt: json['updatedAt'] is int ? json['updatedAt'] : 0,
-      busy: json['busy'] == true || json['state'] == 'busy',
+      // Raw flag only — HostPresenceEntity.isOnCall reads `state` itself.
+      busy: json['busy'] == true,
       audioAvailable:
           json['audio_available'] == true || json['audioAvailable'] == true,
       videoAvailable:
           json['video_available'] == true || json['videoAvailable'] == true,
-      state: (json['state'] ?? (json['busy'] == true ? 'busy' : '')).toString(),
+      // Kept raw (not synthesized from `busy`) so HostPresenceEntity.isOnCall
+      // can tell "server says busy" apart from a stale busy flag.
+      state: (json['state'] ?? '').toString(),
     );
   }
 

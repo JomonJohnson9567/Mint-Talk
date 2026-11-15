@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/indian_number_format.dart';
 import 'package:mint_talk/features/host_side/host_perfomance_analytics/domain/entities/host_earnings_ledger_entity.dart';
 import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 
 class LedgerEntryCard extends StatelessWidget {
   final HostEarningEntryEntity earning;
 
-  const LedgerEntryCard({super.key, required this.earning});
+  /// Shows the not-yet-withdrawn part (recent scope).
+  final bool showRemaining;
+
+  const LedgerEntryCard({
+    super.key,
+    required this.earning,
+    this.showRemaining = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateLabel = _formatDate(earning.createdAt);
     final typeLabel = earning.isReferral ? 'Referral' : 'Call';
-    final accentColor = earning.isReferral ? AppColors.orange : AppColors.primaryColor;
-    // Same billing-granularity flag CallSummaryDialog uses: earning.billedMinutes
+    final accentColor = earning.isReferral
+        ? AppColors.audioAccent
+        : AppColors.linkMagenta;
+    // Same billing-granularity flag CallSummaryDialog uses: earning.billedUnits
     // holds billed seconds, not minutes, when the app is on per-second billing.
     final isPerSecondBilling =
         context.watch<SystemConfigCubit>().state.billingUnit == 'second';
@@ -24,9 +35,9 @@ class LedgerEntryCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.borderSoft),
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: AppColors.profileDivider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,7 +51,9 @@ class LedgerEntryCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  earning.isReferral ? Icons.card_giftcard_rounded : Icons.call_rounded,
+                  earning.isReferral
+                      ? Icons.card_giftcard_rounded
+                      : Icons.call_rounded,
                   size: 16.sp,
                   color: accentColor,
                 ),
@@ -55,7 +68,7 @@ class LedgerEntryCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.black,
+                        color: AppColors.plumDeep,
                       ),
                     ),
                     SizedBox(height: 2.h),
@@ -63,7 +76,7 @@ class LedgerEntryCard extends StatelessWidget {
                       dateLabel,
                       style: TextStyle(
                         fontSize: 11.sp,
-                        color: AppColors.subtitleText,
+                        color: AppColors.hostSubtitle,
                       ),
                     ),
                   ],
@@ -84,31 +97,36 @@ class LedgerEntryCard extends StatelessWidget {
             spacing: 8.w,
             runSpacing: 8.h,
             children: [
-              _InfoChip(label: 'Gross', value: _formatCurrency(earning.grossEarningInr)),
-              if (earning.billedMinutes != null)
-                _InfoChip(label: billedUnitLabel, value: '${earning.billedMinutes}'),
+              _InfoChip(
+                label: 'Gross',
+                value: _formatCurrency(earning.grossEarningInr),
+              ),
+              if (earning.billedUnits != null)
+                _InfoChip(
+                  label: billedUnitLabel,
+                  value: '${earning.billedUnits}',
+                ),
               if (earning.billedPoints != null)
                 _InfoChip(label: 'Points', value: '${earning.billedPoints}'),
+              if (showRemaining && earning.remainingEarningInr != null)
+                _InfoChip(
+                  label: AppTexts.remainingLabel,
+                  value: '₹ ${IndianNumberFormat.format(earning.remainingEarningInr!)}',
+                ),
             ],
           ),
           if (earning.callInfo != null) ...[
             SizedBox(height: 12.h),
             Text(
               'Call: ${earning.callInfo!.callType} • ${earning.callInfo!.duration}s • ${earning.callInfo!.status}',
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: AppColors.subtitleText,
-              ),
+              style: TextStyle(fontSize: 11.sp, color: AppColors.hostSubtitle),
             ),
           ],
           if (earning.isReferral && earning.metadata != null) ...[
             SizedBox(height: 12.h),
             Text(
               'Referral payout',
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: AppColors.subtitleText,
-              ),
+              style: TextStyle(fontSize: 11.sp, color: AppColors.hostSubtitle),
             ),
           ],
         ],
@@ -160,7 +178,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FC),
+        color: AppColors.hostToggleTrack,
         borderRadius: BorderRadius.circular(999.r),
       ),
       child: Text(
@@ -168,7 +186,7 @@ class _InfoChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 10.sp,
           fontWeight: FontWeight.w600,
-          color: AppColors.black,
+          color: AppColors.plumDeep,
         ),
       ),
     );

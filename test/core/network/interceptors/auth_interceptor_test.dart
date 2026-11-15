@@ -1,15 +1,38 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mint_talk/core/di/injection.dart';
-import 'package:mint_talk/core/navigations/app_routes.dart';
-import 'package:mint_talk/core/navigations/navigation_service.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/network/interceptors/auth_interceptor.dart';
+import 'package:mint_talk/core/services/session/session_manager.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockTokenManager extends Mock implements TokenManager {}
 
-class _MockNavigationService extends Mock implements NavigationService {}
+class _MockSessionManager extends Mock implements SessionManager {}
+
+/// Answers every retried request with a 200 and records the Authorization
+/// header it was sent with.
+class _StubAdapter implements HttpClientAdapter {
+  final List<Object?> authHeaders = [];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    authHeaders.add(options.headers['Authorization']);
+    return ResponseBody.fromString('{}', 200, headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    });
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
 
 /// [ErrorInterceptorHandler.next]/[.reject] complete an internal completer
 /// that isn't exposed to callers outside the dio package — if nothing ever
@@ -38,23 +61,50 @@ class _RecordingErrorHandler extends ErrorInterceptorHandler {
   }
 }
 
+/// Same reasoning as [_RecordingErrorHandler], for the request side.
+class _RecordingRequestHandler extends RequestInterceptorHandler {
+  RequestOptions? forwarded;
+  DioException? rejectedWith;
+
+  @override
+  void next(RequestOptions requestOptions) {
+    forwarded = requestOptions;
+  }
+
+  @override
+  void reject(
+    DioException error, [
+    bool callFollowingErrorInterceptor = false,
+  ]) {
+    rejectedWith = error;
+  }
+}
+
 void main() {
   late _MockTokenManager tokenManager;
-  late _MockNavigationService navigationService;
+  late _MockSessionManager sessionManager;
   late AuthInterceptor interceptor;
   late Dio dio;
+  late _StubAdapter adapter;
 
   setUp(() {
     tokenManager = _MockTokenManager();
-    navigationService = _MockNavigationService();
+    sessionManager = _MockSessionManager();
 
     // AuthInterceptor resolves these via getIt internally rather than
     // constructor injection (a known service-locator leak — out of scope to
     // fix here), so tests register mocks into the same container.
     getIt.registerSingleton<TokenManager>(tokenManager);
-    getIt.registerSingleton<NavigationService>(navigationService);
+    getIt.registerSingleton<SessionManager>(sessionManager);
 
-    dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    when(() => sessionManager.forceLogout(
+          message: any(named: 'message'),
+          silent: any(named: 'silent'),
+        )).thenAnswer((_) async {});
+
+    adapter = _StubAdapter();
+    dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+      ..httpClientAdapter = adapter;
     interceptor = AuthInterceptor(dio);
   });
 
@@ -74,12 +124,29 @@ void main() {
         extra: {'requiresAuth': requiresAuth, ...?extra},
       );
 
+  DioException unauthorized({
+    Map<String, dynamic>? extra,
+    String? sentWith,
+  }) {
+    final options = requestOptions(extra: extra);
+    if (sentWith != null) options.headers['Authorization'] = 'Bearer $sentWith';
+    return DioException(
+      requestOptions: options,
+      response: Response(requestOptions: options, statusCode: 401),
+    );
+  }
+
+  void verifyNoLogout() => verifyNever(() => sessionManager.forceLogout(
+        message: any(named: 'message'),
+        silent: any(named: 'silent'),
+      ));
+
   group('onRequest', () {
     test('attaches Bearer header when an access token is already available', () async {
       when(() => tokenManager.getAccessToken()).thenReturn('access-123');
 
       final options = requestOptions();
-      final handler = RequestInterceptorHandler();
+      final handler = _RecordingRequestHandler();
 
       await interceptor.onRequest(options, handler);
 
@@ -92,21 +159,53 @@ void main() {
       when(() => tokenManager.hasRefreshToken()).thenAnswer((_) async => false);
 
       final options = requestOptions();
-      final handler = RequestInterceptorHandler();
+      final handler = _RecordingRequestHandler();
 
       await interceptor.onRequest(options, handler);
 
       expect(options.headers.containsKey('Authorization'), isFalse);
+      expect(handler.forwarded, same(options));
     });
 
     test('does not attach a header (or touch TokenManager) when requiresAuth is false, even with a valid token available', () async {
       final options = requestOptions(requiresAuth: false);
-      final handler = RequestInterceptorHandler();
+      final handler = _RecordingRequestHandler();
 
       await interceptor.onRequest(options, handler);
 
       expect(options.headers.containsKey('Authorization'), isFalse);
       verifyZeroInteractions(tokenManager);
+    });
+
+    test('a rejected pre-flight refresh (cold start, stale token) logs out silently and never sends the request', () async {
+      when(() => tokenManager.getAccessToken()).thenReturn(null);
+      when(() => tokenManager.hasRefreshToken()).thenAnswer((_) async => true);
+      when(() => tokenManager.refreshAccessToken())
+          .thenAnswer((_) async => RefreshResult.rejected);
+
+      final handler = _RecordingRequestHandler();
+      await interceptor.onRequest(requestOptions(), handler);
+
+      expect(handler.forwarded, isNull);
+      expect(handler.rejectedWith?.error, isA<UnauthorizedException>());
+      verify(() => sessionManager.forceLogout(
+            message: any(named: 'message'),
+            silent: true,
+          )).called(1);
+    });
+
+    test('a transient pre-flight refresh failure still sends the request and keeps the session', () async {
+      when(() => tokenManager.getAccessToken()).thenReturn(null);
+      when(() => tokenManager.hasRefreshToken()).thenAnswer((_) async => true);
+      when(() => tokenManager.refreshAccessToken())
+          .thenAnswer((_) async => RefreshResult.transientFailure);
+
+      final options = requestOptions();
+      final handler = _RecordingRequestHandler();
+      await interceptor.onRequest(options, handler);
+
+      expect(handler.forwarded, same(options));
+      verifyNoLogout();
     });
   });
 
@@ -122,44 +221,85 @@ void main() {
 
       expect(handler.passedThrough, same(err));
       verifyZeroInteractions(tokenManager);
-      verifyZeroInteractions(navigationService);
+      verifyZeroInteractions(sessionManager);
     });
 
-    test('a 401 with isRetry already set clears tokens without attempting another refresh', () async {
-      when(() => tokenManager.clearAll()).thenAnswer((_) async {});
-
-      final err = DioException(
-        requestOptions: requestOptions(extra: {'isRetry': true}),
-        response: Response(
-          requestOptions: requestOptions(extra: {'isRetry': true}),
-          statusCode: 401,
-        ),
-      );
+    test('a 401 with isRetry already set is surfaced without another refresh or a logout', () async {
+      final err = unauthorized(extra: {'isRetry': true});
       final handler = _RecordingErrorHandler();
 
       await interceptor.onError(err, handler);
 
       expect(handler.passedThrough, same(err));
-      verify(() => tokenManager.clearAll()).called(1);
-      verifyNever(() => tokenManager.getRefreshToken());
+      verifyNoLogout();
+      verifyNever(() => tokenManager.refreshAccessToken());
     });
 
-    test('a 401 with no stored refresh token clears session and redirects to login', () async {
-      when(() => tokenManager.getRefreshToken()).thenAnswer((_) async => null);
-      when(() => tokenManager.clearAll()).thenAnswer((_) async {});
-      when(() => navigationService.navigateAndRemoveUntil(any())).thenAnswer((_) async => null);
+    test('a 401 on a token another request already refreshed is retried with the current token, without refreshing', () async {
+      when(() => tokenManager.getAccessToken()).thenReturn('new-token');
 
-      final err = DioException(
-        requestOptions: requestOptions(),
-        response: Response(requestOptions: requestOptions(), statusCode: 401),
-      );
+      final handler = _RecordingErrorHandler();
+      await interceptor.onError(unauthorized(sentWith: 'old-token'), handler);
+
+      expect(handler.resolvedWith?.statusCode, 200);
+      expect(adapter.authHeaders, ['Bearer new-token']);
+      verifyNever(() => tokenManager.refreshAccessToken());
+      verifyNoLogout();
+    });
+
+    test('a 401 on the current token refreshes and retries with the new one', () async {
+      var token = 'old-token';
+      when(() => tokenManager.getAccessToken()).thenAnswer((_) => token);
+      when(() => tokenManager.refreshAccessToken()).thenAnswer((_) async {
+        token = 'new-token';
+        return RefreshResult.success;
+      });
+
+      final handler = _RecordingErrorHandler();
+      await interceptor.onError(unauthorized(sentWith: 'old-token'), handler);
+
+      expect(handler.resolvedWith?.statusCode, 200);
+      expect(adapter.authHeaders, ['Bearer new-token']);
+      verify(() => tokenManager.refreshAccessToken()).called(1);
+      verifyNoLogout();
+    });
+
+    test('a 401 whose refresh is rejected (revoked session) forces logout', () async {
+      when(() => tokenManager.refreshAccessToken())
+          .thenAnswer((_) async => RefreshResult.rejected);
+
+      final err = unauthorized();
       final handler = _RecordingErrorHandler();
 
       await interceptor.onError(err, handler);
 
       expect(handler.passedThrough, same(err));
-      verify(() => tokenManager.clearAll()).called(1);
-      verify(() => navigationService.navigateAndRemoveUntil(AppRoutes.phoneNumber)).called(1);
+      verify(() => sessionManager.forceLogout(message: any(named: 'message'))).called(1);
+    });
+
+    test('a 401 whose refresh fails on the network keeps the session', () async {
+      when(() => tokenManager.refreshAccessToken())
+          .thenAnswer((_) async => RefreshResult.transientFailure);
+
+      final err = unauthorized();
+      final handler = _RecordingErrorHandler();
+
+      await interceptor.onError(err, handler);
+
+      expect(handler.passedThrough, same(err));
+      verifyNoLogout();
+      verifyNever(() => tokenManager.clearAll());
+    });
+
+    test('a 401 on a request that opted out of session handling is passed through', () async {
+      final err = unauthorized(extra: {'skipSessionHandling': true});
+      final handler = _RecordingErrorHandler();
+
+      await interceptor.onError(err, handler);
+
+      expect(handler.passedThrough, same(err));
+      verifyZeroInteractions(tokenManager);
+      verifyZeroInteractions(sessionManager);
     });
   });
 }

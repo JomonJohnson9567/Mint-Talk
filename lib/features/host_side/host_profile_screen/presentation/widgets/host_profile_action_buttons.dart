@@ -1,96 +1,56 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/core/widgets/primary_button.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/host_side/host_settings_screen/presentation/widgets/settings_tile.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_cubit.dart';
-import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_state.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_action_bottom_sheet.dart';
 
+/// Peach "Log out" tile (same as host settings) with a quieter
+/// "Delete account" link under it. The logout spinner is shown by
+/// [HostProfileScreen]'s overlay.
 class HostProfileActionButtons extends StatelessWidget {
   const HostProfileActionButtons({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LogoutCubit, LogoutState>(
-      builder: (context, state) {
-        final isLoading = state.status == LogoutStatus.loading;
-
-        return Stack(
-          children: [
-            Column(
-              children: [
-                // Logout button
-                PrimaryButton(
-                  text: 'Logout',
-                  onPressed: isLoading
-                      ? null
-                      : () => _showLogoutConfirmation(context),
-                  backgroundColor: AppColors.primaryColor,
-                  foregroundColor: AppColors.white,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsTile(
+          icon: Icons.logout_rounded,
+          title: AppTexts.logOut,
+          isDestructive: true,
+          onTap: () {
+            final logoutCubit = context.read<LogoutCubit>();
+            SettingsActionBottomSheetPresenter.showLogout(
+              context,
+              onConfirm: logoutCubit.logout,
+            );
+          },
+        ),
+        SizedBox(height: 6.cw),
+        Center(
+          child: TextButton.icon(
+            onPressed: () =>
+                SettingsActionBottomSheetPresenter.showDeleteAccount(
+                  context,
+                  // Account deletion isn't wired up yet — same as the user side.
+                  onConfirm: () {},
                 ),
-                SizedBox(height: 12.h),
-                // Delete Account outlined button
-                const _DeleteAccountButton(),
-              ],
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.linkMagenta,
+              shape: const StadiumBorder(),
             ),
-            if (isLoading) _LogoutLoadingOverlay(),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showLogoutConfirmation(BuildContext context) {
-    final logoutCubit = context.read<LogoutCubit>();
-    SettingsActionBottomSheetPresenter.showLogout(
-      context,
-      onConfirm: () => logoutCubit.logout(),
-    );
-  }
-}
-
-class _DeleteAccountButton extends StatelessWidget {
-  const _DeleteAccountButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () {
-        },
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.red,
-          side: BorderSide(color: AppColors.red.withAlpha(120)),
-          padding: EdgeInsets.symmetric(vertical: 16.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30.r),
+            icon: Icon(Icons.delete_outline_rounded, size: 18.csp),
+            label: Text(
+              AppTexts.deleteAccountRow,
+              style: TextStyle(fontSize: 14.csp, fontWeight: FontWeight.w700),
+            ),
           ),
         ),
-        icon: Icon(Icons.delete_outline_rounded, size: 18.sp),
-        label: Text(
-          'Delete Account',
-          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
-        ),
-      ),
+      ],
     );
   }
 }
-
-class _LogoutLoadingOverlay extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: ColoredBox(
-        color: AppColors.white.withValues(alpha: 0.7),
-        child: const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryColor),
-        ),
-      ),
-    );
-  }
-}
-

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mint_talk/core/utils/json_date_parser.dart';
 import '../../domain/entities/call_type.dart';
 
 class IncomingCallPayloadDto extends Equatable {
@@ -11,6 +12,9 @@ class IncomingCallPayloadDto extends Equatable {
   final String? agoraChannel;
   final String? agoraToken;
 
+  /// Server time the ringing window closes; the host overlay closes then.
+  final DateTime? ringExpiresAt;
+
   const IncomingCallPayloadDto({
     required this.callId,
     required this.callerId,
@@ -20,6 +24,7 @@ class IncomingCallPayloadDto extends Equatable {
     required this.callType,
     this.agoraChannel,
     this.agoraToken,
+    this.ringExpiresAt,
   });
 
   factory IncomingCallPayloadDto.fromJson(Map<String, dynamic> json) {
@@ -39,6 +44,21 @@ class IncomingCallPayloadDto extends Equatable {
       callType: CallType.fromString(rawType),
       agoraChannel: (json['agoraChannel'] ?? json['agora_channel'])?.toString(),
       agoraToken: (json['agoraToken'] ?? json['agora_token'])?.toString(),
+      ringExpiresAt: JsonDateParser.parse(json['ringExpiresAt']),
+    );
+  }
+
+  IncomingCallPayloadDto copyWith({DateTime? ringExpiresAt}) {
+    return IncomingCallPayloadDto(
+      callId: callId,
+      callerId: callerId,
+      callerName: callerName,
+      callerAvatar: callerAvatar,
+      hostId: hostId,
+      callType: callType,
+      agoraChannel: agoraChannel,
+      agoraToken: agoraToken,
+      ringExpiresAt: ringExpiresAt ?? this.ringExpiresAt,
     );
   }
 
@@ -52,5 +72,6 @@ class IncomingCallPayloadDto extends Equatable {
         callType,
         agoraChannel,
         agoraToken,
+        ringExpiresAt,
       ];
 }

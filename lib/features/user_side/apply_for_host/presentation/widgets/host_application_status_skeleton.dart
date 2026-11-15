@@ -40,11 +40,7 @@ class _StatusCardSkeleton extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SkeletonBox(
-            width: 76.w,
-            height: 76.w,
-            shape: BoxShape.circle,
-          ),
+          SkeletonBox(width: 76.w, height: 76.w, shape: BoxShape.circle),
           SizedBox(height: 18.h),
           SkeletonBox(
             width: 180.w,
@@ -140,11 +136,7 @@ class _ReviewNoteSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SkeletonBox(
-          width: 20.w,
-          height: 20.w,
-          shape: BoxShape.circle,
-        ),
+        SkeletonBox(width: 20.w, height: 20.w, shape: BoxShape.circle),
         SizedBox(width: 10.w),
         Expanded(
           child: SkeletonBox(

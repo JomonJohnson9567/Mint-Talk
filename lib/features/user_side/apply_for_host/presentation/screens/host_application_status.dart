@@ -47,10 +47,7 @@ class HostApplicationStatus extends StatelessWidget {
       ),
       body: SafeArea(
         child:
-            BlocBuilder<
-              HostApplicationStatusCubit,
-              HostApplicationStatusState
-            >(
+            BlocBuilder<HostApplicationStatusCubit, HostApplicationStatusState>(
               builder: (context, state) {
                 switch (state.view) {
                   case HostApplicationStatusView.initial:
@@ -79,9 +76,7 @@ class HostApplicationStatus extends StatelessWidget {
                           HostStatusCard(status: application.status),
                           SizedBox(height: 20.h),
                           HostApplicationDetailsCard(application: application),
-                          if (application.rejectionReason
-                                  ?.trim()
-                                  .isNotEmpty ==
+                          if (application.rejectionReason?.trim().isNotEmpty ==
                               true) ...[
                             SizedBox(height: 20.h),
                             _RejectionReason(
@@ -213,8 +208,7 @@ class _JoinAsHostPrompt extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  state.errorMessage ??
-                      'Unable to activate your host account',
+                  state.errorMessage ?? 'Unable to activate your host account',
                 ),
                 backgroundColor: Colors.red.shade700,
                 behavior: SnackBarBehavior.floating,
@@ -236,9 +230,7 @@ class _JoinAsHostPrompt extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.primaryColor.withAlpha(15),
                 borderRadius: BorderRadius.circular(18.r),
-                border: Border.all(
-                  color: AppColors.primaryColor.withAlpha(45),
-                ),
+                border: Border.all(color: AppColors.primaryColor.withAlpha(45)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

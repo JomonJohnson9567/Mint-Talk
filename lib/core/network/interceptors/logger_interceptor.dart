@@ -2,6 +2,34 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
+/// Payout fields never written to the debug log, wherever they appear in a
+/// request/response body (withdrawal history, payout accounts, …).
+const _sensitiveKeys = {
+  'accountnumber',
+  'ifsc',
+  'upiid',
+  'vpa',
+  'holdername',
+  'accountholdername',
+  'payoutdetails',
+};
+
+/// Returns a copy of [data] with every [_sensitiveKeys] value replaced, so
+/// bank/UPI details can't leak through the API log.
+@visibleForTesting
+Object? redactSensitive(Object? data) {
+  if (data is Map) {
+    return {
+      for (final entry in data.entries)
+        entry.key: _sensitiveKeys.contains(entry.key.toString().toLowerCase())
+            ? '<redacted>'
+            : redactSensitive(entry.value),
+    };
+  }
+  if (data is List) return data.map(redactSensitive).toList();
+  return data;
+}
+
 class LoggerInterceptor extends Interceptor {
   final Logger _logger = Logger(
     printer: PrettyPrinter(
@@ -19,7 +47,7 @@ class LoggerInterceptor extends Interceptor {
     if (kDebugMode) {
       _logger.d('➡️ API REQUEST: [${options.method}] ${options.uri}\n'
           'Headers: ${options.headers}\n'
-          'Data: ${options.data}');
+          'Data: ${redactSensitive(options.data)}');
     }
     return handler.next(options);
   }
@@ -28,7 +56,7 @@ class LoggerInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (kDebugMode) {
       _logger.i('⬅️ API RESPONSE: [${response.statusCode}] ${response.requestOptions.uri}\n'
-          'Data: ${response.data}');
+          'Data: ${redactSensitive(response.data)}');
     }
     return handler.next(response);
   }
@@ -49,7 +77,7 @@ class LoggerInterceptor extends Interceptor {
         _logger.e('❌ API ERROR: [${err.response?.statusCode}] ${err.requestOptions.uri}\n'
             'Message: ${err.message}\n'
             'Error: ${err.error}\n'
-            'Response: ${err.response?.data}');
+            'Response: ${redactSensitive(err.response?.data)}');
       }
     }
     return handler.next(err);

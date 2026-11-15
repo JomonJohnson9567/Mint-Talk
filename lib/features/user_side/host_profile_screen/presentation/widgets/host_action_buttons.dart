@@ -1,19 +1,15 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/confirmation_dialog.dart';
 import 'package:mint_talk/features/user_side/chat/presentation/screen/user_chat_screen.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/user_side/favorites/presentation/cubit/host_favorite_cubit.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
-import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
-import 'package:mint_talk/features/user_side/home/presentation/widgets/call_type_selection_bottom_sheet.dart';
-import 'package:mint_talk/features/user_side/call/presentation/screen/call_screen.dart';
+import 'package:mint_talk/features/user_side/call/presentation/widgets/outgoing_call_launcher.dart';
 import 'package:mint_talk/features/shared/block_users/presentation/cubit/blocked_users_cubit.dart';
 import 'package:mint_talk/features/shared/block_users/presentation/cubit/blocked_users_state.dart';
 
@@ -23,8 +19,7 @@ class HostActionButtons extends StatelessWidget {
   const HostActionButtons({super.key, required this.host});
 
   void _handleCall(BuildContext context) {
-    final isBusy =
-        host.presence?.busy == true || host.presence?.state == 'busy';
+    final isBusy = host.presence?.isOnCall ?? false;
     final isOnline = host.presence?.isAvailableForCalls ?? false;
     if (isBusy) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -39,7 +34,9 @@ class HostActionButtons extends StatelessWidget {
     if (!isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${host.fullName} is currently offline. We will notify you when they are online.'),
+          content: Text(
+            '${host.fullName} is currently offline. We will notify you when they are online.',
+          ),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -47,44 +44,11 @@ class HostActionButtons extends StatelessWidget {
       return;
     }
 
-    final isAudioAvailable = host.presence?.audioAvailable ?? true;
-    final isVideoAvailable = host.presence?.videoAvailable ?? true;
-
-    if (isAudioAvailable && isVideoAvailable) {
-      CallTypeSelectionBottomSheet.show(context, host);
-    } else if (isVideoAvailable) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CallScreen(
-            hostId: host.id,
-            hostName: host.fullName,
-            hostAvatar: host.avatarUrl,
-            callType: CallType.video,
-          ),
-        ),
-      );
-    } else if (isAudioAvailable) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CallScreen(
-            hostId: host.id,
-            hostName: host.fullName,
-            hostAvatar: host.avatarUrl,
-            callType: CallType.audio,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${host.fullName} is currently not accepting calls.'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    pickCallTypeThen(
+      context,
+      host,
+      (type) => launchOutgoingCall(context, host: host, callType: type),
+    );
   }
 
   void _handleBlockToggle(BuildContext context, bool isBlocked) {
@@ -97,7 +61,8 @@ class HostActionButtons extends StatelessWidget {
           iconColor: AppColors.primaryColor,
           accentColor: AppColors.primaryColor,
           title: 'Unblock ${host.fullName}?',
-          content: 'You will be able to call and message ${host.fullName} again.',
+          content:
+              'You will be able to call and message ${host.fullName} again.',
           confirmButtonText: 'Unblock',
           cancelButtonText: 'Cancel',
           onConfirm: () {
@@ -114,7 +79,8 @@ class HostActionButtons extends StatelessWidget {
           iconColor: AppColors.red,
           accentColor: AppColors.red,
           title: 'Block ${host.fullName}?',
-          content: 'Blocking will prevent you from calling or messaging ${host.fullName}. You can unblock anytime.',
+          content:
+              'Blocking will prevent you from calling or messaging ${host.fullName}. You can unblock anytime.',
           confirmButtonText: 'Block',
           cancelButtonText: 'Cancel',
           onConfirm: () {
@@ -132,66 +98,72 @@ class HostActionButtons extends StatelessWidget {
       create: (_) => getIt<HostFavoriteCubit>()..setInitial(host.isFavorite),
       child: BlocBuilder<BlockedUsersCubit, BlockedUsersState>(
         builder: (context, state) {
-          final isBlocked = state is BlockedUsersLoaded &&
+          final isBlocked =
+              state is BlockedUsersLoaded &&
               state.users.any((u) => u.blockedId == host.id || u.id == host.id);
 
           return Container(
-            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
+            padding: EdgeInsets.symmetric(vertical: 16.cw, horizontal: 8.cw),
             decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16.r),
+              color: AppColors.cardWhite,
+              borderRadius: BorderRadius.circular(18.cw),
+              border: Border.all(color: AppColors.profileDivider),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withAlpha(13),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+                  color: AppColors.primaryColor.withValues(alpha: 0.05),
+                  blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
               ],
-              border: Border.all(color: AppColors.grey.withAlpha(26)),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _ActionButton(
-                  icon: Icons.call,
-                  label: AppTexts.call,
-                  color: AppColors.actionBlue,
-                  onTap: () => _handleCall(context),
-                ),
-                _ActionButton(
-                  icon: Icons.message,
-                  label: AppTexts.message,
-                  color: AppColors.actionBlue,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.userChatScreen,
-                      arguments: UserChatArgs(
-                        recipientId: host.id,
-                        recipientName: host.fullName,
-                        recipientAvatarUrl: host.avatarUrl,
-                        isOnline: host.presence?.status == 'online' &&
-                            host.presence?.busy != true,
-                      ),
-                    );
-                  },
-                ),
-                BlocBuilder<HostFavoriteCubit, bool>(
-                  builder: (context, isFavorite) => _ActionButton(
-                    icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                    iconWidget: _AnimatedFavoriteIcon(isFavorite: isFavorite),
-                    label: AppTexts.favorite,
-                    color: AppColors.actionBlue,
-                    onTap: () => context.read<HostFavoriteCubit>().toggle(host.id),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.call_rounded,
+                    label: AppTexts.call,
+                    isPrimary: true,
+                    onTap: () => _handleCall(context),
                   ),
                 ),
-                _ActionButton(
-                  icon: isBlocked ? Icons.person : Icons.person_off,
-                  label: isBlocked ? 'Unblock' : AppTexts.block,
-                  color: isBlocked ? AppColors.red : AppColors.actionBlue,
-                  onTap: () => _handleBlockToggle(context, isBlocked),
-                  isBlocked: isBlocked,
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: AppTexts.message,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.userChatScreen,
+                        arguments: UserChatArgs(
+                          recipientId: host.id,
+                          recipientName: host.fullName,
+                          recipientAvatarUrl: host.avatarUrl,
+                          isOnline:
+                              host.presence?.status == 'online' &&
+                              host.presence?.isOnCall != true,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<HostFavoriteCubit, bool>(
+                    builder: (context, isFavorite) => _ActionButton(
+                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                      iconWidget: _AnimatedFavoriteIcon(isFavorite: isFavorite),
+                      label: AppTexts.favorite,
+                      onTap: () =>
+                          context.read<HostFavoriteCubit>().toggle(host.id),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.block_rounded,
+                    label: isBlocked ? 'Unblock' : AppTexts.block,
+                    onTap: () => _handleBlockToggle(context, isBlocked),
+                    isBlocked: isBlocked,
+                  ),
                 ),
               ],
             ),
@@ -202,66 +174,116 @@ class HostActionButtons extends StatelessWidget {
   }
 }
 
+/// Round chip + label. [isPrimary] fills the chip with the brand plum;
+/// [isBlocked] switches it to the magenta "Unblock" treatment.
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Widget? iconWidget;
   final String label;
-  final Color color;
   final VoidCallback onTap;
+  final bool isPrimary;
   final bool isBlocked;
 
   const _ActionButton({
     required this.icon,
     this.iconWidget,
     required this.label,
-    required this.color,
     required this.onTap,
+    this.isPrimary = false,
     this.isBlocked = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
+    final size = 56.cw;
+    final Color chipColor;
+    final Color iconColor;
+    if (isPrimary) {
+      chipColor = AppColors.primaryColor;
+      iconColor = AppColors.white;
+    } else if (isBlocked) {
+      chipColor = AppColors.pillUnselected;
+      iconColor = AppColors.linkMagenta;
+    } else {
+      chipColor = AppColors.popularCardBg;
+      iconColor = AppColors.primaryColor;
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 56.w,
-                height: 56.w,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                child: Center(
-                  child: iconWidget ?? Icon(icon, color: AppColors.white, size: 28.sp),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: isPrimary
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primaryColor.withValues(
+                              alpha: 0.3,
+                            ),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Material(
+                  color: chipColor,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: onTap,
+                    child: SizedBox(
+                      width: size,
+                      height: size,
+                      child: Center(
+                        child:
+                            iconWidget ??
+                            Icon(icon, color: iconColor, size: 26.csp),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               if (isBlocked)
                 Positioned(
-                  right: 0,
-                  top: 0,
+                  right: -2.cw,
+                  top: -2.cw,
                   child: Container(
-                    padding: EdgeInsets.all(2.w),
+                    padding: EdgeInsets.all(2.cw),
                     decoration: const BoxDecoration(
                       color: AppColors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.block, color: AppColors.red, size: 16.sp),
+                    child: Icon(
+                      Icons.lock_rounded,
+                      color: AppColors.linkMagenta,
+                      size: 14.csp,
+                    ),
                   ),
                 ),
             ],
           ),
-          SizedBox(height: 8.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.black,
-            ),
+        ),
+        SizedBox(height: 8.cw),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.5.csp,
+            fontWeight: FontWeight.w700,
+            color: isBlocked ? AppColors.linkMagenta : AppColors.plumDeep,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -287,23 +309,11 @@ class _AnimatedFavoriteIcon extends StatelessWidget {
         }
         return FadeTransition(opacity: animation, child: child);
       },
-      child: Stack(
+      child: Icon(
+        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
         key: ValueKey(isFavorite),
-        alignment: Alignment.center,
-        children: [
-          // Icon has no native stroke, so a slightly larger white copy
-          // behind the red glyph fakes a thin outline around it.
-          Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: AppColors.white,
-            size: 31.sp,
-          ),
-          Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: AppColors.favIcon,
-            size: 28.sp,
-          ),
-        ],
+        color: isFavorite ? AppColors.favIcon : AppColors.primaryColor,
+        size: 26.csp,
       ),
     );
   }

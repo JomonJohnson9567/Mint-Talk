@@ -4,20 +4,25 @@ import 'package:bloc/bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:mint_talk/features/auth/domain/repositories/auth_repository.dart';
+import 'package:mint_talk/core/usecases/usecase.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_presence_entity.dart';
 import 'package:mint_talk/features/user_side/home/domain/usecases/connect_host_presence_usecase.dart';
-import 'package:mint_talk/features/user_side/home/domain/usecases/disconnect_host_presence_usecase.dart';
 import 'package:mint_talk/features/user_side/home/domain/usecases/watch_host_presence_usecase.dart';
 
 import 'package:mint_talk/features/user_side/home/domain/usecases/get_hosts_usecase.dart';
 import 'package:mint_talk/features/user_side/favorites/domain/usecases/add_favorite_usecase.dart';
 import 'package:mint_talk/features/user_side/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:mint_talk/features/user_side/favorites/domain/usecases/get_favorite_hosts_usecase.dart';
+import 'package:mint_talk/features/shared/block_users/data/blocked_hosts_store.dart';
+import 'package:mint_talk/features/shared/block_users/domain/usecases/get_blocked_list_usecase.dart';
 
 import 'home_state.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mint_talk/features/user_side/home/domain/entities/host_profile_update_entity.dart';
+import 'package:mint_talk/features/user_side/home/domain/usecases/watch_host_profile_updates_usecase.dart';
 
 /// Duration to wait for the initial socket snapshot burst before giving up.
 /// If no [host_status_update] events arrive within this window, we transition
@@ -28,13 +33,19 @@ const _kInitialSnapshotTimeout = Duration(milliseconds: 2500);
 class HomeCubit extends Cubit<HomeState> {
   final WatchHostPresenceUseCase _watchPresence;
   final ConnectHostPresenceUseCase _connectPresence;
-  final DisconnectHostPresenceUseCase _disconnectPresence;
   final GetHostsUseCase _getHostsUseCase;
   final AuthRepository _authRepository;
   final TokenManager _tokenManager;
   final GetFavoriteHostsUseCase _getFavoriteHostsUseCase;
   final AddFavoriteUseCase _addFavoriteUseCase;
   final RemoveFavoriteUseCase _removeFavoriteUseCase;
+  final GetBlockedListUseCase _getBlockedListUseCase;
+
+  /// Hosts the user has blocked — hidden from every tab. Shared across all
+  /// HomeCubit instances; filled via [GetBlockedListUseCase] and updated by
+  /// block/unblock from any screen.
+  final BlockedHostsStore _blockedHosts;
+  final WatchHostProfileUpdatesUseCase _watchProfileUpdates;
 
   /// All hosts received from the socket & API, keyed by host ID for O(1) patching.
   final Map<String, HostEntity> _allHosts = {};
@@ -50,18 +61,22 @@ class HomeCubit extends Cubit<HomeState> {
   bool _initialSnapshotReceived = false;
 
   StreamSubscription<HostPresenceEntity>? _presenceSub;
+  StreamSubscription<Set<String>>? _blockedSub;
+  StreamSubscription<HostProfileUpdateEntity>? _profileSub;
   Timer? _snapshotTimer;
 
   HomeCubit(
     this._watchPresence,
     this._connectPresence,
-    this._disconnectPresence,
     this._getHostsUseCase,
     this._authRepository,
     this._tokenManager,
     this._getFavoriteHostsUseCase,
     this._addFavoriteUseCase,
     this._removeFavoriteUseCase,
+    this._getBlockedListUseCase,
+    this._blockedHosts,
+    this._watchProfileUpdates,
   ) : super(const HomeState()) {
     _init();
   }
@@ -74,6 +89,10 @@ class HomeCubit extends Cubit<HomeState> {
     // 1. Subscribe FIRST so we never miss the initial burst emitted right after
     //    the socket handshake completes.
     _subscribeToPresence();
+    _blockedSub = _blockedHosts.changes.listen((_) {
+      if (!isClosed) _emitFilteredState();
+    });
+    _profileSub = _watchProfileUpdates().listen(_onProfileUpdated);
 
     // 2. Connect socket
     _connectSocket();
@@ -82,8 +101,9 @@ class HomeCubit extends Cubit<HomeState> {
     _startSnapshotTimeout();
     await Future.wait<void>([
       _loadInitialHosts(),
-      _loadCallRates(),
       _loadFavorites(),
+      _loadUserName(),
+      _loadBlockedHosts(),
     ]);
     if (!isClosed) {
       _emitFilteredState();
@@ -93,7 +113,6 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> _loadInitialHosts() async {
     final result = await _getHostsUseCase(const GetHostsParams());
     if (isClosed) return;
-
 
     result.fold(
       (failure) {
@@ -105,6 +124,17 @@ class HomeCubit extends Cubit<HomeState> {
         appLogger.d(
           '✅ [HomeCubit] REST API returned ${paginatedHosts.items.length} hosts',
         );
+        // One short line per host so the presence fields aren't lost to the
+        // logger truncating the raw response body.
+        for (final host in paginatedHosts.items) {
+          final p = host.presence;
+          appLogger.d(
+            '   • ${host.fullName} [${host.id}] status: ${p?.status}, '
+            'state: ${p?.state}, busy: ${p?.busy}, '
+            'audio: ${p?.audioAvailable}, video: ${p?.videoAvailable} '
+            '→ onCall: ${p?.isOnCall}, available: ${p?.isAvailableForCalls}',
+          );
+        }
         for (final host in paginatedHosts.items) {
           final existing = _allHosts[host.id];
           if (existing != null) {
@@ -122,27 +152,40 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
-  Future<void> _loadCallRates() async {
-    final rates = await Future.wait<int?>([
-      _authRepository.getAudioRate(),
-      _authRepository.getVideoRate(),
-    ]);
+  Future<void> _loadUserName() async {
+    final name = await _authRepository.getFullName();
     if (isClosed) return;
-    emit(state.copyWith(audioRate: rates[0], videoRate: rates[1]));
+    emit(state.copyWith(userName: name));
   }
 
   Future<void> _loadFavorites() async {
-    final result = await _getFavoriteHostsUseCase(const GetFavoriteHostsParams(page: 1, limit: 50));
+    final result = await _getFavoriteHostsUseCase(
+      const GetFavoriteHostsParams(page: 1, limit: 50),
+    );
     if (isClosed) return;
 
     result.fold(
       (failure) {
-        appLogger.d('⚠️ [HomeCubit] Failed to fetch favorite hosts: ${failure.message}');
+        appLogger.d(
+          '⚠️ [HomeCubit] Failed to fetch favorite hosts: ${failure.message}',
+        );
       },
       (paginated) {
         _favoriteHosts = paginated.items;
         _favoriteIds = paginated.items.map((h) => h.id).toSet();
       },
+    );
+  }
+
+  /// Fills [_blockedHosts] (the repository updates it on success), so
+  /// hosts blocked in an earlier session stay hidden after a restart.
+  Future<void> _loadBlockedHosts() async {
+    final result = await _getBlockedListUseCase(NoParams());
+    result.fold(
+      (failure) => appLogger.d(
+        '⚠️ [HomeCubit] Failed to fetch blocked list: ${failure.message}',
+      ),
+      (_) {},
     );
   }
 
@@ -159,11 +202,43 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
+  /// Patches a cached host's avatar/name from `profile_updated` and drops
+  /// the old image from the cache, so cards don't keep the stale picture
+  /// (also when the new URL is the same, overwritten object).
+  void _onProfileUpdated(HostProfileUpdateEntity update) {
+    if (isClosed) return;
+    var changed = false;
+
+    HostEntity patch(HostEntity host) {
+      final oldUrl = host.avatarUrl;
+      if (oldUrl.startsWith('http')) {
+        unawaited(CachedNetworkImage.evictFromCache(oldUrl));
+      }
+      changed = true;
+      return host.copyWith(
+        avatarUrl: update.avatarUrl ?? host.avatarUrl,
+        fullName: update.fullName ?? host.fullName,
+      );
+    }
+
+    final cached = _allHosts[update.userId];
+    if (cached != null) _allHosts[update.userId] = patch(cached);
+    final favoriteIndex = _favoriteHosts.indexWhere(
+      (host) => host.id == update.userId,
+    );
+    if (favoriteIndex != -1) {
+      _favoriteHosts[favoriteIndex] = patch(_favoriteHosts[favoriteIndex]);
+    }
+    if (changed) _emitFilteredState();
+  }
+
   /// Fallback — stop the skeleton if no socket events arrive in time.
   void _startSnapshotTimeout() {
     _snapshotTimer = Timer(_kInitialSnapshotTimeout, () {
       if (!_initialSnapshotReceived && !isClosed) {
-        appLogger.d('⚠️ [HomeCubit] Snapshot timeout — no socket events received.');
+        appLogger.d(
+          '⚠️ [HomeCubit] Snapshot timeout — no socket events received.',
+        );
         emit(state.copyWith(isLoading: false));
       }
     });
@@ -175,6 +250,8 @@ class HomeCubit extends Cubit<HomeState> {
 
   void _onPresenceEvent(HostPresenceEntity presence) {
     if (isClosed) return;
+    // A blocked host's status updates would otherwise re-create its card.
+    if (_blockedHosts.isBlocked(presence.userId)) return;
 
     appLogger.d(
       '🟢 [HomeCubit] host_status_update received — '
@@ -201,10 +278,14 @@ class HomeCubit extends Cubit<HomeState> {
 
     // Keep the Favorites tab's own list (sourced separately from the backend)
     // live too, since it's no longer derived from _allHosts.
-    final favoriteIndex = _favoriteHosts.indexWhere((h) => h.id == presence.userId);
+    final favoriteIndex = _favoriteHosts.indexWhere(
+      (h) => h.id == presence.userId,
+    );
     if (favoriteIndex != -1) {
-      _favoriteHosts[favoriteIndex] =
-          _buildPatchedHost(_favoriteHosts[favoriteIndex], presence);
+      _favoriteHosts[favoriteIndex] = _buildPatchedHost(
+        _favoriteHosts[favoriteIndex],
+        presence,
+      );
     }
 
     appLogger.d(
@@ -221,35 +302,29 @@ class HomeCubit extends Cubit<HomeState> {
       );
     });
 
-
     _emitFilteredState(isLoading: false);
-
   }
 
   void _onPresenceError(Object error) {
     if (isClosed) return;
     _snapshotTimer?.cancel();
-    emit(
-      state.copyWith(
-        isLoading: false,
-        errorMessage: error.toString(),
-      ),
-    );
+    emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
   }
 
   // ---------------------------------------------------------------------------
   // Pull-to-refresh
   // ---------------------------------------------------------------------------
 
-  /// Re-fetches the host list, call rates and favourites. Used by
+  /// Re-fetches the host list and favourites. Used by
   /// pull-to-refresh — deliberately does not flip [HomeState.isLoading],
   /// so the current list stays visible under the refresh spinner instead
   /// of being replaced by the skeleton.
   Future<void> refresh() async {
     await Future.wait<void>([
       _loadInitialHosts(),
-      _loadCallRates(),
       _loadFavorites(),
+      _loadUserName(),
+      _loadBlockedHosts(),
     ]);
     if (!isClosed) {
       _emitFilteredState();
@@ -264,6 +339,20 @@ class HomeCubit extends Cubit<HomeState> {
     _emitFilteredState(selectedTab: tab);
   }
 
+  void searchHosts(String query) {
+    _emitFilteredState(searchQuery: query.trim());
+  }
+
+  void toggleLayout() {
+    emit(
+      state.copyWith(
+        layout: state.layout == HostLayout.grid
+            ? HostLayout.list
+            : HostLayout.grid,
+      ),
+    );
+  }
+
   Future<void> toggleFavorite(String hostId) async {
     final isCurrentlyFavorite = _favoriteIds.contains(hostId);
     final params = FavoriteHostParams(hostId: hostId);
@@ -273,13 +362,12 @@ class HomeCubit extends Cubit<HomeState> {
         : await _addFavoriteUseCase(params);
     if (isClosed) return;
 
-    final succeeded = result.fold(
-      (failure) {
-        appLogger.d('⚠️ [HomeCubit] Failed to toggle favorite: ${failure.message}');
-        return false;
-      },
-      (_) => true,
-    );
+    final succeeded = result.fold((failure) {
+      appLogger.d(
+        '⚠️ [HomeCubit] Failed to toggle favorite: ${failure.message}',
+      );
+      return false;
+    }, (_) => true);
 
     if (succeeded) {
       await _loadFavorites();
@@ -291,8 +379,7 @@ class HomeCubit extends Cubit<HomeState> {
 
   void notifyUser(HostEntity host) {
     final name = host.fullName.isNotEmpty ? host.fullName : 'this host';
-    final isBusy =
-        host.presence?.busy == true || host.presence?.state == 'busy';
+    final isBusy = host.presence?.isOnCall ?? false;
 
     final message = isBusy
         ? 'We will notify you when $name is free'
@@ -316,9 +403,16 @@ class HomeCubit extends Cubit<HomeState> {
   void _emitFilteredState({
     HomeTab? selectedTab,
     bool? isLoading,
+    String? searchQuery,
   }) {
     final tab = selectedTab ?? state.selectedTab;
-    final filtered = _filterHosts(tab);
+    final query = (searchQuery ?? state.searchQuery).toLowerCase();
+    var filtered = _filterHosts(tab);
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((h) => h.fullName.toLowerCase().contains(query))
+          .toList();
+    }
 
     emit(
       state.copyWith(
@@ -326,21 +420,26 @@ class HomeCubit extends Cubit<HomeState> {
         hosts: filtered,
         isLoading: isLoading,
         favoriteIds: _favoriteIds,
+        searchQuery: searchQuery,
       ),
     );
   }
 
-  List<HostEntity> _filterHosts(HomeTab tab) {
+  List<HostEntity> _filterHosts(HomeTab tab) =>
+      _filterByTab(tab).where((h) => !_blockedHosts.isBlocked(h.id)).toList();
+
+  List<HostEntity> _filterByTab(HomeTab tab) {
     final all = _allHosts.values.toList();
 
     switch (tab) {
       case HomeTab.active:
         return all
-            .where((h) =>
-                h.presence == null ||
-                h.presence!.isAvailableForCalls ||
-                h.presence?.busy == true ||
-                h.presence?.state == 'busy')
+            .where(
+              (h) =>
+                  h.presence == null ||
+                  h.presence!.isAvailableForCalls ||
+                  h.presence!.isOnCall,
+            )
             .toList();
 
       case HomeTab.favorites:
@@ -348,12 +447,28 @@ class HomeCubit extends Cubit<HomeState> {
 
       case HomeTab.offline:
         return all
-            .where((h) =>
-                h.presence != null &&
-                !h.presence!.isAvailableForCalls &&
-                h.presence?.busy != true &&
-                h.presence?.state != 'busy')
+            .where(
+              (h) =>
+                  h.presence != null &&
+                  !h.presence!.isAvailableForCalls &&
+                  !h.presence!.isOnCall,
+            )
             .toList();
+
+      case HomeTab.all:
+        // Available hosts first, then busy, then offline.
+        int rank(HostEntity h) {
+          final p = h.presence;
+          if (p == null || p.isAvailableForCalls) return 0;
+          if (p.isOnCall) return 1;
+          return 2;
+        }
+        // Dart's sort isn't stable — tie-break on id so cards don't
+        // reshuffle on every presence update.
+        return all..sort((a, b) {
+          final byRank = rank(a).compareTo(rank(b));
+          return byRank != 0 ? byRank : a.id.compareTo(b.id);
+        });
     }
   }
 
@@ -364,17 +479,23 @@ class HomeCubit extends Cubit<HomeState> {
   HostEntity _mergeHostProfile(HostEntity target, HostEntity profile) {
     return HostEntity(
       id: profile.id,
-      fullName: profile.fullName.isNotEmpty ? profile.fullName : target.fullName,
+      fullName: profile.fullName.isNotEmpty
+          ? profile.fullName
+          : target.fullName,
       phone: profile.phone.isNotEmpty ? profile.phone : target.phone,
-      avatarUrl: profile.avatarUrl.isNotEmpty ? profile.avatarUrl : target.avatarUrl,
-      selfieUrl: profile.selfieUrl.isNotEmpty ? profile.selfieUrl : target.selfieUrl,
+      avatarUrl: profile.avatarUrl.isNotEmpty
+          ? profile.avatarUrl
+          : target.avatarUrl,
       dob: profile.dob.isNotEmpty ? profile.dob : target.dob,
       gender: profile.gender.isNotEmpty ? profile.gender : target.gender,
       audioRate: profile.audioRate > 0 ? profile.audioRate : target.audioRate,
       videoRate: profile.videoRate > 0 ? profile.videoRate : target.videoRate,
       isAudioAllowed: profile.isAudioAllowed,
       isVideoAllowed: profile.isVideoAllowed,
-      presence: target.presence ?? profile.presence,
+      // A fresh REST fetch (initial load, pull-to-refresh, post-call
+      // refresh) must win over whatever presence was cached, otherwise a
+      // stale "on call" card can never be corrected by refreshing.
+      presence: profile.presence ?? target.presence,
     );
   }
 
@@ -391,7 +512,6 @@ class HomeCubit extends Cubit<HomeState> {
       fullName: '',
       phone: '',
       avatarUrl: '',
-      selfieUrl: '',
       dob: '',
       gender: '',
       audioRate: 0,
@@ -410,7 +530,11 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> close() async {
     _snapshotTimer?.cancel();
     await _presenceSub?.cancel();
-    _disconnectPresence();
+    await _blockedSub?.cancel();
+    await _profileSub?.cancel();
+    // The presence socket is a shared singleton — several HomeCubits (home,
+    // video-call hosts screen) watch it at once, so closing one must not
+    // disconnect it. Logout disconnects it via SessionManager.
     return super.close();
   }
 }

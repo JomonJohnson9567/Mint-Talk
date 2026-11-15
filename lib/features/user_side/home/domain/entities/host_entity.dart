@@ -6,7 +6,6 @@ class HostEntity extends Equatable {
   final String fullName;
   final String phone;
   final String avatarUrl;
-  final String selfieUrl;
   final String dob;
   final String gender;
   final num audioRate;
@@ -21,7 +20,6 @@ class HostEntity extends Equatable {
     required this.fullName,
     required this.phone,
     required this.avatarUrl,
-    required this.selfieUrl,
     required this.dob,
     required this.gender,
     required this.audioRate,
@@ -37,7 +35,6 @@ class HostEntity extends Equatable {
     String? fullName,
     String? phone,
     String? avatarUrl,
-    String? selfieUrl,
     String? dob,
     String? gender,
     num? audioRate,
@@ -52,7 +49,6 @@ class HostEntity extends Equatable {
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      selfieUrl: selfieUrl ?? this.selfieUrl,
       dob: dob ?? this.dob,
       gender: gender ?? this.gender,
       audioRate: audioRate ?? this.audioRate,
@@ -66,18 +62,17 @@ class HostEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        fullName,
-        phone,
-        avatarUrl,
-        selfieUrl,
-        dob,
-        gender,
-        audioRate,
-        videoRate,
-        isAudioAllowed,
-        isVideoAllowed,
-        presence,
-        isFavorite,
-      ];
+    id,
+    fullName,
+    phone,
+    avatarUrl,
+    dob,
+    gender,
+    audioRate,
+    videoRate,
+    isAudioAllowed,
+    isVideoAllowed,
+    presence,
+    isFavorite,
+  ];
 }

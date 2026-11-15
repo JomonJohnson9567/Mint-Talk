@@ -10,7 +10,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.tealBackground,
+      backgroundColor: AppColors.creamBackground,
       body: BlocProvider(
         create: (context) => WelcomeCubit(),
         child: const WelcomeContents(),

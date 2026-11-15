@@ -10,10 +10,15 @@ import 'package:mint_talk/core/cubit/secure_app_overlay_cubit.dart';
 /// wallet balances — never appear in the OS recents thumbnail or a momentary
 /// peek behind an interruption. Wrap the whole app once (see `app.dart`'s
 /// `MaterialApp(builder: ...)`) rather than each sensitive screen individually.
+///
+/// [enabled] false suspends the blur — needed while a video call can be
+/// (or is) shown in the system picture-in-picture window, which is a
+/// paused app whose content must stay visible.
 class SecureAppOverlay extends StatelessWidget {
   final Widget? child;
+  final bool enabled;
 
-  const SecureAppOverlay({super.key, required this.child});
+  const SecureAppOverlay({super.key, required this.child, this.enabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +29,7 @@ class SecureAppOverlay extends StatelessWidget {
           return Stack(
             children: [
               ?child,
-              if (obscured)
+              if (obscured && enabled)
                 Positioned.fill(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
 /// Skeleton loading placeholder for the [ApplyForHost] screen while profile data loads.
@@ -9,68 +9,76 @@ class ApplyForHostSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SkeletonShimmer(
-      child: SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SkeletonBox(
-              width: 220.w,
-              height: 22.h,
-              borderRadius: BorderRadius.circular(6.r),
-            ),
-            SizedBox(height: 8.h),
-            SkeletonBox(
-              width: 280.w,
-              height: 14.h,
-              borderRadius: BorderRadius.circular(4.r),
-            ),
-            SizedBox(height: 6.h),
-            SkeletonBox(
-              width: 200.w,
-              height: 14.h,
-              borderRadius: BorderRadius.circular(4.r),
-            ),
-            SizedBox(height: 32.h),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    const _FormFieldSkeleton(labelWidth: 80, height: 56),
-                    SizedBox(height: 20.h),
-                    const _FormFieldSkeleton(labelWidth: 90, height: 56),
-                    SizedBox(height: 20.h),
-                    const _FormFieldSkeleton(labelWidth: 40, height: 100),
-                    SizedBox(height: 24.h),
-                    const _SelfieUploadSkeleton(),
-                    SizedBox(height: 32.h),
-                  ],
-                ),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16.cw, 12.cw, 16.cw, 24.cw),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      SkeletonBox(
+                        width: 40.cw,
+                        height: 40.cw,
+                        borderRadius: BorderRadius.circular(20.cw),
+                      ),
+                      SizedBox(width: 14.cw),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonBox(
+                            width: 180.cw,
+                            height: 26.cw,
+                            borderRadius: BorderRadius.circular(6.cw),
+                          ),
+                          SizedBox(height: 6.cw),
+                          SkeletonBox(
+                            width: 150.cw,
+                            height: 12.cw,
+                            borderRadius: BorderRadius.circular(4.cw),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 18.cw),
+                  SkeletonBox(
+                    width: double.infinity,
+                    height: 150.cw,
+                    borderRadius: BorderRadius.circular(20.cw),
+                  ),
+                  SizedBox(height: 22.cw),
+                  const _SectionSkeleton(cardHeight: 330),
+                  SizedBox(height: 22.cw),
+                  const _SectionSkeleton(cardHeight: 142),
+                ],
               ),
             ),
-            SkeletonBox(
-              width: double.infinity,
-              height: 52.h,
-              borderRadius: BorderRadius.circular(30.r),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.cw, 12.cw, 16.cw, 12.cw),
+            child: SafeArea(
+              top: false,
+              child: SkeletonBox(
+                width: double.infinity,
+                height: 52.cw,
+                borderRadius: BorderRadius.circular(30.cw),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _FormFieldSkeleton extends StatelessWidget {
-  final double labelWidth;
-  final double height;
+class _SectionSkeleton extends StatelessWidget {
+  const _SectionSkeleton({required this.cardHeight});
 
-  const _FormFieldSkeleton({
-    required this.labelWidth,
-    required this.height,
-  });
+  final double cardHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -78,39 +86,15 @@ class _FormFieldSkeleton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SkeletonBox(
-          width: labelWidth.w,
-          height: 12.h,
-          borderRadius: BorderRadius.circular(4.r),
+          width: 140.cw,
+          height: 18.cw,
+          borderRadius: BorderRadius.circular(4.cw),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 10.cw),
         SkeletonBox(
           width: double.infinity,
-          height: height.h,
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-      ],
-    );
-  }
-}
-
-class _SelfieUploadSkeleton extends StatelessWidget {
-  const _SelfieUploadSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SkeletonBox(
-          width: 100.w,
-          height: 12.h,
-          borderRadius: BorderRadius.circular(4.r),
-        ),
-        SizedBox(height: 8.h),
-        SkeletonBox(
-          width: double.infinity,
-          height: 130.h,
-          borderRadius: BorderRadius.circular(16.r),
+          height: cardHeight.cw,
+          borderRadius: BorderRadius.circular(18.cw),
         ),
       ],
     );

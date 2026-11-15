@@ -15,4 +15,8 @@ abstract class NotificationsRepository {
   /// Continuous stream of notifications pushed in real time via
   /// the `new_notification` socket event.
   Stream<NotificationEntity> watchNewNotifications();
+
+  /// Emits each time the realtime socket (re)connects — pushes sent while
+  /// it was down are missed, so the list must be refetched then.
+  Stream<void> watchReconnects();
 }

@@ -22,7 +22,7 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
 
   /// Builds the header (title/motivation/talk level) immediately from
   /// whichever duration is known up front, and leaves the three numeric
-  /// stats (duration/billedMinutes/points) as `null` — the dialog shows a
+  /// stats (duration/billedUnits/points) as `null` — the dialog shows a
   /// skeleton in each of those slots until [_resolveStats] confirms real
   /// server data for it. Only real backend response values are ever shown
   /// in those slots — nothing is fabricated or substituted locally.
@@ -31,10 +31,17 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     required this.isHost,
     int localDurationSeconds = 0,
     GetCallDetailsUseCase? getCallDetailsUseCase,
-  })  : _getCallDetailsUseCase = getCallDetailsUseCase ?? getIt<GetCallDetailsUseCase>(),
-        _localDurationSeconds = localDurationSeconds,
-        callId = session.callId,
-        super(_headerState(session: session, isHost: isHost, localDurationSeconds: localDurationSeconds)) {
+  }) : _getCallDetailsUseCase =
+           getCallDetailsUseCase ?? getIt<GetCallDetailsUseCase>(),
+       _localDurationSeconds = localDurationSeconds,
+       callId = session.callId,
+       super(
+         _headerState(
+           session: session,
+           isHost: isHost,
+           localDurationSeconds: localDurationSeconds,
+         ),
+       ) {
     _resolveStats(session);
   }
 
@@ -60,14 +67,14 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     return true;
   }
 
-  /// billedMinutes/totalPointsDebited are computed by a separate step of
+  /// billedUnits/totalPointsDebited are computed by a separate step of
   /// the backend's billing pipeline and can arrive before or after
   /// duration does, independently. Any non-zero signal is real data worth
   /// showing immediately; a genuine zero can only be trusted once duration
   /// is itself confirmed short enough that "never billed a full minute" is
   /// a real answer rather than "not computed yet".
   bool _billingLooksTrustworthy(CallSessionEntity s) {
-    if (s.billedMinutes > 0 || s.totalPointsDebited > 0) return true;
+    if (s.billedUnits > 0 || s.totalPointsDebited > 0) return true;
     return _durationLooksTrustworthy(s) && s.duration < 60;
   }
 
@@ -79,7 +86,7 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     var latest = initial;
 
     for (final delay in _retryDelays) {
-      if (state.durationText != null && state.billedMinutes != null) {
+      if (state.durationText != null && state.billedUnits != null) {
         return;
       }
       await Future.delayed(delay);
@@ -98,7 +105,7 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
       if (refreshed != null) {
         appLogger.d(
           '⏳ [CallSummaryCubit] Refetched call details: '
-          'duration=${refreshed.duration}, billedMinutes=${refreshed.billedMinutes}, '
+          'duration=${refreshed.duration}, billedUnits=${refreshed.billedUnits}, '
           'totalPointsDebited=${refreshed.totalPointsDebited}',
         );
         latest = refreshed;
@@ -107,7 +114,7 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     }
 
     if (isClosed) return;
-    if (state.durationText != null && state.billedMinutes != null) return;
+    if (state.durationText != null && state.billedUnits != null) return;
 
     // Retry window exhausted — this is still real response data, just not
     // data that passed the trustworthiness check above (a permanent
@@ -116,19 +123,19 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     appLogger.d(
       '⚠️ [CallSummaryCubit] Gave up waiting for the server to finalize '
       'call $callId — revealing the last response as-is '
-      '(duration=${latest.duration}, billedMinutes=${latest.billedMinutes}, '
+      '(duration=${latest.duration}, billedUnits=${latest.billedUnits}, '
       'totalPointsDebited=${latest.totalPointsDebited}).',
     );
     emit(
       state.copyWith(
         durationText: state.durationText ?? _formatDuration(latest.duration),
-        billedMinutes: state.billedMinutes ?? latest.billedMinutes,
+        billedUnits: state.billedUnits ?? latest.billedUnits,
         pointsValue: state.pointsValue ?? latest.totalPointsDebited,
       ),
     );
   }
 
-  /// Fills in whichever of the two stat groups (duration; billedMinutes +
+  /// Fills in whichever of the two stat groups (duration; billedUnits +
   /// points) newly look trustworthy on [s] — [copyWith]'s `??` naturally
   /// leaves an already-resolved field alone, so this only ever moves a
   /// field from skeleton to shown, never back.
@@ -136,8 +143,10 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     final billingReady = _billingLooksTrustworthy(s);
     emit(
       state.copyWith(
-        durationText: _durationLooksTrustworthy(s) ? _formatDuration(s.duration) : null,
-        billedMinutes: billingReady ? s.billedMinutes : null,
+        durationText: _durationLooksTrustworthy(s)
+            ? _formatDuration(s.duration)
+            : null,
+        billedUnits: billingReady ? s.billedUnits : null,
         pointsValue: billingReady ? s.totalPointsDebited : null,
       ),
     );
@@ -157,7 +166,9 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     // Decided once, up front, from whichever duration is known immediately
     // — purely to pick a celebratory copy tier, so the header never
     // flickers between retries the way a server-driven bucket would.
-    final bucketSeconds = localDurationSeconds > 0 ? localDurationSeconds : session.duration;
+    final bucketSeconds = localDurationSeconds > 0
+        ? localDurationSeconds
+        : session.duration;
 
     String title = '';
     String motivation = '';
@@ -167,16 +178,20 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
     if (isHost) {
       if (bucketSeconds < 60) {
         title = "Session Completed";
-        motivation = "Every conversation is a stepping stone. Keep talking to build deeper bonds!";
+        motivation =
+            "Every conversation is a stepping stone. Keep talking to build deeper bonds!";
       } else if (bucketSeconds < 300) {
         title = "Great Talk! 💬";
-        motivation = "Fantastic conversation! Regular chats keep your followers engaged.";
+        motivation =
+            "Fantastic conversation! Regular chats keep your followers engaged.";
       } else if (bucketSeconds < 900) {
         title = "Wonderful Connection! 🌟";
-        motivation = "Incredible session! You are building deep and valuable connections.";
+        motivation =
+            "Incredible session! You are building deep and valuable connections.";
       } else {
         title = "Elite Host Session! 🏆";
-        motivation = "Masterclass conversation! Your dedication and presence are highly motivating.";
+        motivation =
+            "Masterclass conversation! Your dedication and presence are highly motivating.";
       }
       talkLevel = "Host Partner";
       levelColor = const Color(0xFF4A52DA); // Primary Color
@@ -185,22 +200,26 @@ class CallSummaryCubit extends Cubit<CallSummaryState> {
         title = "Quick Connection";
         talkLevel = "Level 1: Quick Chat";
         levelColor = Colors.blue;
-        motivation = "A warm introduction! A longer conversation opens up more to explore.";
+        motivation =
+            "A warm introduction! A longer conversation opens up more to explore.";
       } else if (bucketSeconds < 300) {
         title = "Friendly Connection";
         talkLevel = "Level 2: Friendly Talker";
         levelColor = Colors.teal;
-        motivation = "Great connection! Thank you for supporting the host with a friendly chat.";
+        motivation =
+            "Great connection! Thank you for supporting the host with a friendly chat.";
       } else if (bucketSeconds < 900) {
         title = "Awesome Connection";
         talkLevel = "Level 3: Loyal Supporter";
         levelColor = Colors.purple;
-        motivation = "Wonderful conversation! Your awesome support helps the host grow.";
+        motivation =
+            "Wonderful conversation! Your awesome support helps the host grow.";
       } else {
         title = "Deep Connection";
         talkLevel = "Level 4: Super Supporter";
         levelColor = Colors.amber;
-        motivation = "Exceptional session! Your profound support makes a tremendous difference.";
+        motivation =
+            "Exceptional session! Your profound support makes a tremendous difference.";
       }
     }
 

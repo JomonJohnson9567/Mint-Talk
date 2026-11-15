@@ -1,12 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum PhoneFormStatus {
-  initial,
-  loading,
-  otpSent,
-  error,
-  rateLimited,
-}
+enum PhoneFormStatus { initial, loading, otpSent, error, rateLimited }
 
 class PhoneFormState extends Equatable {
   final String phoneNumber;
@@ -35,12 +29,18 @@ class PhoneFormState extends Equatable {
       error: error != null ? error() : this.error,
       isValid: isValid ?? this.isValid,
       status: status ?? this.status,
-      apiErrorMessage:
-          apiErrorMessage != null ? apiErrorMessage() : this.apiErrorMessage,
+      apiErrorMessage: apiErrorMessage != null
+          ? apiErrorMessage()
+          : this.apiErrorMessage,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [phoneNumber, error, isValid, status, apiErrorMessage];
+  List<Object?> get props => [
+    phoneNumber,
+    error,
+    isValid,
+    status,
+    apiErrorMessage,
+  ];
 }

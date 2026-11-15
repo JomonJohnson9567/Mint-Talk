@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
-/// Skeleton loading placeholder for [PlanDetailScreen] while the plan
-/// loads. Mirrors the hero card + benefits + payment summary layout.
+/// Skeleton loading placeholder for [PlanDetailScreen] while a plan is
+/// fetched by id. Mirrors the hero + "What you get" + summary layout.
 class PlanDetailSkeleton extends StatelessWidget {
   const PlanDetailSkeleton({super.key});
 
@@ -12,21 +12,28 @@ class PlanDetailSkeleton extends StatelessWidget {
     return SkeletonShimmer(
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+        padding: EdgeInsets.fromLTRB(16.cw, 8.cw, 16.cw, 24.cw),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SkeletonBox(height: 260.h, borderRadius: BorderRadius.circular(32.r)),
-            SizedBox(height: 24.h),
-            SkeletonBox(width: 140.w, height: 18.h),
-            SizedBox(height: 16.h),
-            SkeletonBox(height: 60.h, borderRadius: BorderRadius.circular(20.r)),
-            SizedBox(height: 12.h),
-            SkeletonBox(height: 60.h, borderRadius: BorderRadius.circular(20.r)),
-            SizedBox(height: 24.h),
-            SkeletonBox(height: 160.h, borderRadius: BorderRadius.circular(28.r)),
-            SizedBox(height: 32.h),
-            SkeletonBox(height: 56.h, borderRadius: BorderRadius.circular(20.r)),
+            SkeletonBox(
+              height: 250.cw,
+              borderRadius: BorderRadius.circular(24.cw),
+            ),
+            SizedBox(height: 22.cw),
+            SkeletonBox(width: 130.cw, height: 18.cw),
+            SizedBox(height: 12.cw),
+            SkeletonBox(
+              height: 190.cw,
+              borderRadius: BorderRadius.circular(18.cw),
+            ),
+            SizedBox(height: 22.cw),
+            SkeletonBox(width: 150.cw, height: 18.cw),
+            SizedBox(height: 12.cw),
+            SkeletonBox(
+              height: 180.cw,
+              borderRadius: BorderRadius.circular(18.cw),
+            ),
           ],
         ),
       ),

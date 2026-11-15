@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/widgets/screen_contents.dart';
 
@@ -7,9 +8,12 @@ class PhoneScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.tealBackground,
-      body: ScreenContents(),
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.creamBackground,
+        body: ScreenContents(),
+      ),
     );
   }
 }

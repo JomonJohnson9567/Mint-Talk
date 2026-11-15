@@ -25,13 +25,14 @@ class CallSummaryDialog extends StatelessWidget {
     this.localDurationSeconds = 0,
   });
 
-  static void show(
+  /// Completes when the dialog is closed.
+  static Future<void> show(
     BuildContext context,
     CallSessionEntity session,
     bool isHost, {
     int localDurationSeconds = 0,
   }) {
-    showDialog(
+    return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => CallSummaryDialog(
@@ -46,11 +47,7 @@ class CallSummaryDialog extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SkeletonBox(
-          width: 64.w,
-          height: 64.w,
-          shape: BoxShape.circle,
-        ),
+        SkeletonBox(width: 64.w, height: 64.w, shape: BoxShape.circle),
         SizedBox(height: 18.h),
         if (!isHost) ...[
           SkeletonBox(
@@ -122,7 +119,11 @@ class CallSummaryDialog extends StatelessWidget {
             color: AppColors.red.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.error_outline_rounded, color: AppColors.red, size: 36.sp),
+          child: Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.red,
+            size: 36.sp,
+          ),
         ),
         SizedBox(height: 18.h),
         Text(
@@ -158,13 +159,14 @@ class CallSummaryDialog extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              if (!isHost) {
-                Navigator.of(context).pop();
-              }
             },
             child: Text(
               'Close',
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -214,131 +216,137 @@ class CallSummaryDialog extends StatelessWidget {
                 child: state.isLoading
                     ? _buildSkeletonBody()
                     : state.errorMessage != null
-                        ? _buildErrorBody(context, state.errorMessage!)
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildHeaderBadge(state),
-                              SizedBox(height: 18.h),
-                              if (!state.isHost) ...[
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-                                  decoration: BoxDecoration(
-                                    color: state.talkLevelColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: state.talkLevelColor.withValues(alpha: 0.25),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.stars_rounded,
-                                        size: 16.sp,
-                                        color: state.talkLevelColor,
-                                      ),
-                                      SizedBox(width: 6.w),
-                                      Text(
-                                        state.talkLevel,
-                                        style: TextStyle(
-                                          fontSize: 11.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: state.talkLevelColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                    ? _buildErrorBody(context, state.errorMessage!)
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildHeaderBadge(state),
+                          SizedBox(height: 18.h),
+                          if (!state.isHost) ...[
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 14.w,
+                                vertical: 6.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: state.talkLevelColor.withValues(
+                                  alpha: 0.1,
                                 ),
-                                SizedBox(height: 12.h),
-                              ],
-                              Text(
-                                state.title,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.black,
-                                  letterSpacing: -0.5,
+                                borderRadius: BorderRadius.circular(20.r),
+                                border: Border.all(
+                                  color: state.talkLevelColor.withValues(
+                                    alpha: 0.25,
+                                  ),
+                                  width: 1,
                                 ),
                               ),
-                              SizedBox(height: 8.h),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                                child: Text(
-                                  state.motivationMessage,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    color: AppColors.subtitleText,
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 22.h),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Expanded(
-                                    child: _StatCard(
-                                      icon: Icons.timer_outlined,
-                                      iconColor: AppColors.primaryColor,
-                                      label: 'Duration',
-                                      value: state.durationText,
-                                    ),
+                                  Icon(
+                                    Icons.stars_rounded,
+                                    size: 16.sp,
+                                    color: state.talkLevelColor,
                                   ),
-                                  SizedBox(width: 8.w),
-                                  Expanded(
-                                    child: _StatCard(
-                                      icon: Icons.confirmation_number_outlined,
-                                      iconColor: Colors.teal,
-                                      label: billedUnitLabel,
-                                      value: state.billedMinutes != null
-                                          ? '${state.billedMinutes} $billedUnitSuffix'
-                                          : null,
+                                  SizedBox(width: 6.w),
+                                  Text(
+                                    state.talkLevel,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: state.talkLevelColor,
                                     ),
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 8.h),
-                              _StatCard(
-                                icon: Icons.monetization_on_rounded,
-                                iconColor: AppColors.ratingGold,
-                                label: state.pointsLabel,
-                                value: state.pointsValue != null ? '${state.pointsValue} pts' : null,
-                                isWide: true,
+                            ),
+                            SizedBox(height: 12.h),
+                          ],
+                          Text(
+                            state.title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.black,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w),
+                            child: Text(
+                              state.motivationMessage,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: AppColors.subtitleText,
+                                height: 1.45,
                               ),
-                              SizedBox(height: 24.h),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryColor,
-                                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16.r),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    if (!isHost) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  },
-                                  child: Text(
-                                    'Done',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                            ),
+                          ),
+                          SizedBox(height: 22.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.timer_outlined,
+                                  iconColor: AppColors.primaryColor,
+                                  label: 'Duration',
+                                  value: state.durationText,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Icons.confirmation_number_outlined,
+                                  iconColor: Colors.teal,
+                                  label: billedUnitLabel,
+                                  value: state.billedUnits != null
+                                      ? '${state.billedUnits} $billedUnitSuffix'
+                                      : null,
                                 ),
                               ),
                             ],
                           ),
+                          SizedBox(height: 8.h),
+                          _StatCard(
+                            icon: Icons.monetization_on_rounded,
+                            iconColor: AppColors.ratingGold,
+                            label: state.pointsLabel,
+                            value: state.pointsValue != null
+                                ? '${state.pointsValue} pts'
+                                : null,
+                            isWide: true,
+                          ),
+                          SizedBox(height: 24.h),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                padding: EdgeInsets.symmetric(vertical: 14.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16.r),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                'Done',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
           );
@@ -431,7 +439,9 @@ class _StatCard extends StatelessWidget {
         border: Border.all(color: AppColors.borderSoft),
       ),
       child: Row(
-        mainAxisAlignment: isWide ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+        mainAxisAlignment: isWide
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -473,7 +483,7 @@ class _StatCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(3.r),
                             ),
                           ),
-                  ]
+                  ],
                 ],
               ),
             ],

@@ -13,9 +13,13 @@ class PerformanceAnalyticsRepositoryImpl implements PerformanceAnalyticsReposito
   PerformanceAnalyticsRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<Failure, HostEarningsLedgerEntity>> getPerformanceAnalytics() async {
+  Future<Either<Failure, HostEarningsLedgerEntity>> getPerformanceAnalytics({
+    EarningsLedgerScope scope = EarningsLedgerScope.recent,
+  }) async {
     try {
-      final model = await remoteDataSource.getPerformanceAnalytics();
+      final model = await remoteDataSource.getPerformanceAnalytics(
+        scope: scope,
+      );
       return Right(model);
     } catch (e, stackTrace) {
       appLogger.e(

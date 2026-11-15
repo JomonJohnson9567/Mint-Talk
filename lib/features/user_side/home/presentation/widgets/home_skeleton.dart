@@ -1,45 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
+import 'package:mint_talk/features/user_side/home/presentation/bloc/home_state.dart';
+import 'package:mint_talk/features/user_side/home/presentation/widgets/user_grid.dart';
 
 /// Grid of shimmer cards shown while the socket is connecting and no
 /// host_status_update events have arrived yet.
 ///
 /// Mirrors the exact layout of [UserGrid] / [UserGridItem] so there is no
-/// visual jump when real data populates.
+/// visual jump when real data populates. Shrink-wrapped because it sits
+/// inside [UserGrid]'s scroll view.
 class HomeSkeleton extends StatelessWidget {
-  const HomeSkeleton({super.key});
+  final HostLayout layout;
+
+  const HomeSkeleton({super.key, this.layout = HostLayout.grid});
 
   @override
   Widget build(BuildContext context) {
+    if (layout == HostLayout.list) {
+      return SkeletonShimmer(
+        child: LayoutBuilder(
+          builder: (context, constraints) => GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+              left: 14.cw,
+              right: 14.cw,
+              top: 4.cw,
+              bottom: 95.cw,
+            ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: hostListCrossAxisCount(constraints.maxWidth),
+              crossAxisSpacing: 8.cw,
+              mainAxisSpacing: 8.cw,
+              mainAxisExtent: hostTileExtent(),
+            ),
+            itemCount: 6,
+            itemBuilder: (context, index) => const _SkeletonTile(),
+          ),
+        ),
+      );
+    }
+
     return SkeletonShimmer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          int crossAxisCount = 3;
-          if (constraints.maxWidth >= 1200) {
-            crossAxisCount = 6;
-          } else if (constraints.maxWidth >= 900) {
-            crossAxisCount = 5;
-          } else if (constraints.maxWidth >= 600) {
-            crossAxisCount = 4;
-          }
-
+          final crossAxisCount = hostGridCrossAxisCount(constraints.maxWidth);
+          final spacing = 8.cw;
+          final horizontalPadding = 14.cw;
           return GridView.builder(
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.only(
-              left: 20.w,
-              right: 20.w,
-              top: 10.h,
-              bottom: 110.h,
+              left: horizontalPadding,
+              right: horizontalPadding,
+              top: 4.cw,
+              bottom: 95.cw,
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 10.w,
-              mainAxisSpacing: 15.h,
-              mainAxisExtent: 190.h,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: 10.cw,
+              mainAxisExtent: hostCardExtent(
+                hostCardWidth(
+                  constraints.maxWidth - horizontalPadding * 2,
+                  crossAxisCount,
+                  spacing,
+                ),
+              ),
             ),
-            itemCount: 9,
+            itemCount: 6,
             itemBuilder: (context, index) => const _SkeletonCard(),
           );
         },
@@ -57,60 +89,107 @@ class _SkeletonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.grey.withValues(alpha: 0.15)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.06),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 3),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Photo
+          AspectRatio(
+            aspectRatio: kHostPhotoAspectRatio,
+            child: SkeletonBox(width: double.infinity),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(8.cw, 8.cw, 8.cw, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name
+                SkeletonBox(
+                  width: 60.cw,
+                  height: 10.cw,
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                SizedBox(height: 6.cw),
+                // Status label
+                SkeletonBox(
+                  width: 36.cw,
+                  height: 8.cw,
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          // Call buttons
+          Padding(
+            padding: EdgeInsets.only(bottom: 8.cw),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                SkeletonBox(
+                  width: 32.cw,
+                  height: 32.cw,
+                  shape: BoxShape.circle,
+                ),
+                SkeletonBox(
+                  width: 32.cw,
+                  height: 32.cw,
+                  shape: BoxShape.circle,
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    );
+  }
+}
+
+/// Mirrors [UserListTile]: avatar, name + status, then the call pill.
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: hostTileExtent(),
+      padding: EdgeInsets.all(kHostTilePadding.cw),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Row(
         children: [
-          Column(
-            children: [
-              // Avatar circle
-              SkeletonBox(
-                width: 64.w,
-                height: 64.w,
-                shape: BoxShape.circle,
-              ),
-              SizedBox(height: 10.h),
-              // Name
-              SkeletonBox(
-                width: 60.w,
-                height: 10.h,
-                borderRadius: BorderRadius.circular(6.r),
-              ),
-              SizedBox(height: 6.h),
-              // Status dot + label row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SkeletonBox(
-                    width: 6.w,
-                    height: 6.w,
-                    shape: BoxShape.circle,
-                  ),
-                  SizedBox(width: 4.w),
-                  SkeletonBox(
-                    width: 32.w,
-                    height: 8.h,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Button
           SkeletonBox(
-            width: double.infinity,
-            height: 32.h,
-            borderRadius: BorderRadius.circular(10.r),
+            width: kHostTileAvatar.cw,
+            height: kHostTileAvatar.cw,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          SizedBox(width: 10.cw),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBox(
+                  width: 110.cw,
+                  height: 11.cw,
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                SizedBox(height: 7.cw),
+                SkeletonBox(
+                  width: 48.cw,
+                  height: 8.cw,
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+              ],
+            ),
+          ),
+          SkeletonBox(
+            width: 84.cw,
+            height: 30.cw,
+            borderRadius: BorderRadius.circular(18.r),
           ),
         ],
       ),

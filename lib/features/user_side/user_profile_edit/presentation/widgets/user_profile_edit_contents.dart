@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/core/widgets/primary_button.dart';
-import 'package:mint_talk/features/user_side/profile_setup/presentation/widgets/profile_field.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/widgets/back_title_header.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_cubit.dart';
 import 'package:mint_talk/features/user_side/user_profile_edit/presentation/cubit/user_profile_edit_state.dart';
 
-import 'user_profile_edit_avatar.dart';
+import 'user_profile_edit_account_card.dart';
+import 'user_profile_edit_hero_card.dart';
+import 'user_profile_edit_name_field.dart';
+import 'user_profile_edit_save_bar.dart';
 
 class UserProfileEditContents extends StatelessWidget {
   const UserProfileEditContents({super.key});
@@ -17,213 +20,100 @@ class UserProfileEditContents extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<UserProfileEditCubit>();
     return BlocBuilder<UserProfileEditCubit, UserProfileEditState>(
-      builder: (context, state) => SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 36.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            UserProfileEditAvatar(
-              imagePath: state.imagePath,
-              fullName: state.fullName,
-              onChanged: cubit.imageChanged,
+      builder: (context, state) => Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(16.cw, 12.cw, 16.cw, 24.cw),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const BackTitleHeader(
+                    title: AppTexts.editProfile,
+                    subtitle: AppTexts.editProfileSubtitle,
+                  ),
+                  SizedBox(height: 18.cw),
+                  UserProfileEditHeroCard(
+                    imagePath: state.imagePath,
+                    fullName: state.fullName,
+                    onImageChanged: cubit.imageChanged,
+                  ),
+                  SizedBox(height: 22.cw),
+                  const _SectionTitle(AppTexts.personalDetails),
+                  SizedBox(height: 10.cw),
+                  _SectionCard(
+                    child: UserProfileEditNameField(
+                      name: state.fullName,
+                      errorText: state.fieldErrors['fullName'],
+                      onChanged: cubit.fullNameChanged,
+                    ),
+                  ),
+                  SizedBox(height: 22.cw),
+                  const _SectionTitle(AppTexts.accountDetails),
+                  SizedBox(height: 10.cw),
+                  UserProfileEditAccountCard(
+                    phone: state.phone,
+                    dob: state.dob,
+                    gender: state.gender,
+                    dobError: state.fieldErrors['dob'],
+                  ),
+                ],
+              ),
             ),
-            SizedBox(height: 16.h),
-            _ProfileFormCard(state: state, cubit: cubit),
-            SizedBox(height: 24.h),
-            PrimaryButton(
-              text: 'Save changes',
-              isLoading: state.isSaving,
-              onPressed: state.isSaving ? null : cubit.submit,
-            ),
-          ],
+          ),
+          const UserProfileEditSaveBar(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Nunito heading shown above each section card.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: 2.cw),
+      child: Text(
+        text,
+        style: GoogleFonts.nunito(
+          fontSize: 18.csp,
+          fontWeight: FontWeight.w800,
+          color: AppColors.plumDeep,
         ),
       ),
     );
   }
 }
 
-class _ProfileFormCard extends StatelessWidget {
-  final UserProfileEditState state;
-  final UserProfileEditCubit cubit;
+/// Cream-white rounded card wrapping the editable fields.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.child});
 
-  const _ProfileFormCard({required this.state, required this.cubit});
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20.r),
+      padding: EdgeInsets.all(16.cw),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppColors.borderSoft),
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(18.cw),
+        border: Border.all(color: AppColors.profileDivider),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: .04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: AppColors.primaryColor.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Personal details',
-            style: GoogleFonts.manrope(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.black,
-            ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            'Keep your profile information up to date.',
-            style: GoogleFonts.manrope(
-              fontSize: 13.sp,
-              color: AppColors.subtitleText,
-            ),
-          ),
-          SizedBox(height: 24.h),
-          _NameField(
-            name: state.fullName,
-            errorText: state.fieldErrors['fullName'],
-            onChanged: cubit.fullNameChanged,
-          ),
-          SizedBox(height: 18.h),
-          ProfileField(
-            key: ValueKey('phone-${state.phone}'),
-            label: 'PHONE NUMBER',
-            hintText: 'Phone number',
-            labelColor: AppColors.primaryColor,
-            initialValue: state.phone,
-            readOnly: true,
-            suffixIcon: const Icon(
-              Icons.lock_outline,
-              color: AppColors.subtitleText,
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 6.h, left: 4.w),
-            child: Text(
-              'Phone number is linked to your account.',
-              style: GoogleFonts.manrope(
-                fontSize: 11.sp,
-                color: AppColors.subtitleText,
-              ),
-            ),
-          ),
-          SizedBox(height: 18.h),
-          ProfileField(
-            key: ValueKey('dob-${state.dob}'),
-            label: 'DATE OF BIRTH',
-            hintText: 'DD/MM/YYYY',
-            labelColor: AppColors.primaryColor,
-            initialValue: state.dob,
-            readOnly: true,
-            errorText: state.fieldErrors['dob'],
-            suffixIcon: const Icon(
-              Icons.lock_outline,
-              color: AppColors.subtitleText,
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 6.h, left: 4.w),
-            child: Text(
-              'Date of birth cannot be changed after registration.',
-              style: GoogleFonts.manrope(
-                fontSize: 11.sp,
-                color: AppColors.subtitleText,
-              ),
-            ),
-          ),
-          SizedBox(height: 18.h),
-          ProfileField(
-            key: ValueKey('gender-${state.gender}'),
-            label: 'GENDER',
-            hintText: 'Gender',
-            labelColor: AppColors.primaryColor,
-            initialValue: state.gender.isEmpty
-                ? ''
-                : '${state.gender[0].toUpperCase()}${state.gender.substring(1)}',
-            readOnly: true,
-            suffixIcon: const Icon(
-              Icons.lock_outline,
-              color: AppColors.subtitleText,
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(top: 6.h, left: 4.w),
-            child: Text(
-              'Gender cannot be changed after registration.',
-              style: GoogleFonts.manrope(
-                fontSize: 11.sp,
-                color: AppColors.subtitleText,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Owns the name field's [TextEditingController] itself instead of relying
-/// on [ProfileField]'s `initialValue`, which only ever seeds the field on
-/// its very first build. `initialValue` alone can't reflect a name arriving
-/// later from the cubit's async profile load, so this used to be keyed off
-/// `state.fullName` to force a remount whenever it changed — which also
-/// remounted (and stole focus from) the field on every single keystroke,
-/// since `onChanged` emits a new `state.fullName` on every character.
-/// Syncing the controller in [didUpdateWidget] instead picks up the
-/// async-loaded name without ever touching focus while typing.
-class _NameField extends StatefulWidget {
-  final String name;
-  final String? errorText;
-  final ValueChanged<String> onChanged;
-
-  const _NameField({
-    required this.name,
-    required this.errorText,
-    required this.onChanged,
-  });
-
-  @override
-  State<_NameField> createState() => _NameFieldState();
-}
-
-class _NameFieldState extends State<_NameField> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.name,
-  );
-
-  @override
-  void didUpdateWidget(covariant _NameField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only external changes (the async profile load) land here — typing
-    // routes through onChanged -> cubit -> this same widget.name, so it
-    // already matches _controller.text by the time this runs and this is
-    // a no-op, leaving focus/cursor untouched.
-    if (widget.name != _controller.text) {
-      _controller.text = widget.name;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ProfileField(
-      label: 'FULL NAME',
-      hintText: 'Enter your full name',
-      labelColor: AppColors.primaryColor,
-      controller: _controller,
-      onChanged: widget.onChanged,
-      errorText: widget.errorText,
+      child: child,
     );
   }
 }

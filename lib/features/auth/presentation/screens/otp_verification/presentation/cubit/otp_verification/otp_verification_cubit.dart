@@ -20,14 +20,11 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
   final VerifyOtpUseCase _verifyOtpUseCase;
   final SendOtpUseCase _sendOtpUseCase;
   final SmsAutoFill _smsAutoFill = SmsAutoFill();
-  final List<TextEditingController> _otpControllers = List.generate(
-    _otpLength,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _otpFocusNodes = List.generate(
-    _otpLength,
-    (_) => FocusNode(),
-  );
+  // One field holds the whole code; the UI draws the boxes from state. A
+  // per-box field can't see backspace on an empty box (onChanged never
+  // fires), so deleting back across boxes needs a single field.
+  final TextEditingController _otpController = TextEditingController();
+  final FocusNode _otpFocusNode = FocusNode();
 
   Timer? _resendTimer;
   StreamSubscription<String>? _smsCodeSubscription;
@@ -43,48 +40,39 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     _countryCode = countryCode;
   }
 
-  List<TextEditingController> get otpControllers =>
-      List<TextEditingController>.unmodifiable(_otpControllers);
+  TextEditingController get otpController => _otpController;
 
-  List<FocusNode> get otpFocusNodes =>
-      List<FocusNode>.unmodifiable(_otpFocusNodes);
+  FocusNode get otpFocusNode => _otpFocusNode;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     _isInitialized = true;
-    _syncOtpControllers(state.otpDigits);
     _startInitialTimer();
     _smsCodeSubscription = _smsAutoFill.code.listen(_applyIncomingCode);
 
     await _smsAutoFill.listenForCode(smsCodeRegexPattern: r'\d{4}');
   }
 
-  void otpChanged(int index, String value) {
-    if (index < 0 || index >= state.otpDigits.length) return;
+  void otpChanged(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final code = digits.length > _otpLength
+        ? digits.substring(0, _otpLength)
+        : digits;
 
-    final sanitizedValue = value.replaceAll(RegExp(r'\D'), '');
-    final updatedDigits = List<String>.from(state.otpDigits);
-    final nextValue = sanitizedValue.isEmpty
-        ? ''
-        : sanitizedValue.substring(sanitizedValue.length - 1);
-
-    updatedDigits[index] = nextValue;
-    _syncOtpController(index, nextValue);
-
-    final isComplete = updatedDigits.every((digit) => digit.isNotEmpty);
+    _syncOtpController(code);
 
     emit(
       state.copyWith(
-        otpDigits: updatedDigits,
+        otpDigits: _toDigits(code),
         status: OtpStatus.initial,
         errorMessage: () => null,
       ),
     );
 
-    _moveFocus(index: index, value: nextValue, otpLength: updatedDigits.length);
-
-    if (isComplete && _phone.isNotEmpty && state.status != OtpStatus.submitting) {
+    if (code.length == _otpLength &&
+        _phone.isNotEmpty &&
+        state.status != OtpStatus.submitting) {
       FocusManager.instance.primaryFocus?.unfocus();
       submitOtp(phone: _phone, countryCode: _countryCode);
     }
@@ -192,11 +180,11 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     final normalizedCode = code.replaceAll(RegExp(r'\D'), '');
     if (normalizedCode.length < _otpLength) return;
 
-    final otpDigits = normalizedCode.substring(0, _otpLength).split('');
-    _syncOtpControllers(otpDigits);
+    final otpCode = normalizedCode.substring(0, _otpLength);
+    _syncOtpController(otpCode);
     emit(
       state.copyWith(
-        otpDigits: otpDigits,
+        otpDigits: _toDigits(otpCode),
         status: OtpStatus.initial,
         errorMessage: () => null,
       ),
@@ -222,33 +210,14 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     });
   }
 
-  void _moveFocus({
-    required int index,
-    required String value,
-    required int otpLength,
-  }) {
-    if (value.isNotEmpty) {
-      if (index < otpLength - 1) {
-        _otpFocusNodes[index + 1].requestFocus();
-      } else {
-        _otpFocusNodes[index].unfocus();
-      }
-      return;
-    }
+  /// "12" → ['1', '2', '', ''].
+  List<String> _toDigits(String code) => List.generate(
+    _otpLength,
+    (index) => index < code.length ? code[index] : '',
+  );
 
-    if (index > 0) {
-      _otpFocusNodes[index - 1].requestFocus();
-    }
-  }
-
-  void _syncOtpControllers(List<String> digits) {
-    for (var index = 0; index < _otpControllers.length; index++) {
-      _syncOtpController(index, digits[index]);
-    }
-  }
-
-  void _syncOtpController(int index, String value) {
-    final controller = _otpControllers[index];
+  void _syncOtpController(String value) {
+    final controller = _otpController;
     if (controller.text == value) return;
 
     controller.value = TextEditingValue(
@@ -262,12 +231,8 @@ class OtpVerificationCubit extends Cubit<OtpVerificationState> {
     _resendTimer?.cancel();
     await _smsCodeSubscription?.cancel();
     await _smsAutoFill.unregisterListener();
-    for (final controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (final focusNode in _otpFocusNodes) {
-      focusNode.dispose();
-    }
+    _otpController.dispose();
+    _otpFocusNode.dispose();
     return super.close();
   }
 }

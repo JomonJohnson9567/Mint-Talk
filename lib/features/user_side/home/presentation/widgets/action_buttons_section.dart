@@ -1,146 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/utils/rate_formatter.dart';
 import 'package:mint_talk/features/shared/system_config/presentation/cubit/system_config_cubit.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
-import 'package:mint_talk/features/user_side/home/presentation/bloc/home_cubit.dart';
-import 'package:mint_talk/features/user_side/home/presentation/bloc/home_state.dart';
 
 class ActionButtonsSection extends StatelessWidget {
   const ActionButtonsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final billingUnit = context.watch<SystemConfigCubit>().state.billingUnit;
-    return BlocBuilder<HomeCubit, HomeState>(
-      buildWhen: (previous, current) =>
-          previous.audioRate != current.audioRate ||
-          previous.videoRate != current.videoRate,
-      builder: (context, state) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 15.h),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(20.r),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryColor.withAlpha(77),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    // Default rates come from system config (fetched on app load and again on
+    // home pull-to-refresh) and are already in billingUnit, so they're shown
+    // without conversion.
+    final config = context.watch<SystemConfigCubit>().state;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 5.cw),
+      child: Row(
+        children: [
+          Expanded(
+            child: _CallCard(
+              icon: Icons.videocam_rounded,
+              title: AppTexts.videoCall,
+              subtitle: _rateLabel(config.defaultVideoRate, config.billingUnit),
+              background: AppColors.videoCardBg,
+              accent: AppColors.primaryColor,
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.videocallOnlineScreen),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppTexts.makeYourCall,
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.white,
-                ),
-              ),
-              SizedBox(height: 20.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.videocallOnlineScreen,
-                        );
-                      },
-                      child: _CallCard(
-                        icon: Icons.video_call,
-                        title: AppTexts.videoCall,
-                        subtitle: _rateLabel(state.videoRate, billingUnit),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15.w),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.audioCallOnlineScreen,
-                        );
-                      },
-                      child: _CallCard(
-                        icon: Icons.call,
-                        title: AppTexts.audioCall,
-                        subtitle: _rateLabel(state.audioRate, billingUnit),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          SizedBox(width: 10.cw),
+          Expanded(
+            child: _CallCard(
+              icon: Icons.call_rounded,
+              title: AppTexts.audioCall,
+              subtitle: _rateLabel(config.defaultAudioRate, config.billingUnit),
+              background: AppColors.audioCardBg,
+              accent: AppColors.audioAccent,
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.audioCallOnlineScreen),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   String _rateLabel(int? rate, String billingUnit) =>
-      RateFormatter.label(rate, billingUnit, unit: 'coins');
+      RateFormatter.raw(rate, billingUnit, unit: 'coins');
 }
 
 class _CallCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color background;
+  final Color accent;
+  final VoidCallback onTap;
 
   const _CallCard({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.background,
+    required this.accent,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: BoxDecoration(
-        color: AppColors.white.withAlpha(38),
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: AppColors.white.withAlpha(51)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(10.w),
-            decoration: BoxDecoration(
-              color: AppColors.white.withAlpha(51),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 12.cw),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: AppColors.white, size: 24.sp),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.white,
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 42.cw,
+              height: 42.cw,
+              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+              child: Icon(icon, color: AppColors.white, size: 20.csp),
             ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 9.sp,
-              color: AppColors.white.withAlpha(179),
+            SizedBox(height: 6.cw),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14.csp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.plumDeep,
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 2.cw),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 11.csp, color: AppColors.plumMuted),
+            ),
+          ],
+        ),
       ),
     );
   }

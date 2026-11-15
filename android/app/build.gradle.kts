@@ -1,23 +1,24 @@
+
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+
+    // Flutter Gradle plugin must come after Android and Kotlin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Production signing credentials, loaded from a git-ignored properties file
-// (see android/key.properties.example). Never committed — generate your own
-// keystore with:
-//   keytool -genkeypair -v -keystore <path>.jks -keyalg RSA -keysize 2048 \
-//     -validity 10000 -alias upload
+// Load production signing credentials from android/key.properties.
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasKeystoreProperties = keystorePropertiesFile.exists()
 val keystoreProperties = Properties()
+
 if (hasKeystoreProperties) {
-    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+    FileInputStream(keystorePropertiesFile).use {
+        keystoreProperties.load(it)
+    }
 }
 
 android {
@@ -37,60 +38,51 @@ android {
     defaultConfig {
         applicationId = "com.minttalk.app"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     signingConfigs {
-        if (hasKeystoreProperties) {
-            create("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+
+            // Resolve relative paths from the android/ directory.
+            storeFile = keystoreProperties.getProperty("storeFile")
+                ?.let { rootProject.file(it) }
+
+            storePassword = keystoreProperties.getProperty("storePassword")
         }
     }
 
     buildTypes {
         release {
-            // No fallback to the debug keystore. If key.properties isn't
-            // present, this build type simply has no signing config — the
-            // taskGraph check below turns that into a loud failure the
-            // moment a release task is actually requested, instead of
-            // silently shipping a debug-signed (or unsigned) artifact.
-            if (hasKeystoreProperties) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
 
-// Fail loudly, only for an actual release build, if there's no signing
-// config — rather than the previous silent fallback to the debug keystore.
-// Gated on the resolved task graph (not configuration time) so `flutter run`
-// / `flutter build apk --debug` are unaffected.
+// Fail release builds if the signing properties file is missing.
 gradle.taskGraph.whenReady {
-    val buildingRelease = allTasks.any { it.name.contains("Release") }
+    val buildingRelease = allTasks.any {
+        it.name.contains("Release", ignoreCase = true)
+    }
+
     if (buildingRelease && !hasKeystoreProperties) {
         throw GradleException(
-            "Missing android/key.properties — required to sign a release build.\n" +
-                "1. Generate a keystore: keytool -genkeypair -v -keystore <path>.jks " +
-                "-keyalg RSA -keysize 2048 -validity 10000 -alias upload\n" +
-                "2. Copy android/key.properties.example to android/key.properties and " +
-                "fill in the real storeFile/storePassword/keyAlias/keyPassword.\n" +
-                "Never commit key.properties or the .jks file — both are git-ignored.",
+            "Missing android/key.properties. " +
+            "Configure your release keystore before building for release."
         )
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // NotificationCompat.CallStyle / ServiceCompat for the ongoing-call
+    // notification (CallForegroundService.kt).
+    implementation("androidx.core:core-ktx:1.13.1")
 }

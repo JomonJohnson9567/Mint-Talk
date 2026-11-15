@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mint_talk/core/theme/color.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/host_side/host_dash/presentation/cubit/host_dash_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_cubit.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/cubit/host_profile_state.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/screen/host_profile_screen.dart';
 import 'package:mint_talk/features/host_side/host_profile_screen/presentation/widgets/host_profile_avatar.dart';
 
+/// Avatar + name row under the header; tapping it opens the host profile.
 class HostWelcomeCard extends StatelessWidget {
   final HostProfileState profile;
 
@@ -15,54 +19,33 @@ class HostWelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 4.cw),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12.r),
-          onTap: () => _openProfile(context),
+          borderRadius: BorderRadius.circular(16.r),
+          onTap: () => openHostProfile(context),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 4.h),
+            padding: EdgeInsets.symmetric(vertical: 4.cw),
             child: Row(
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 66.w,
-                      height: 66.h,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFE7EBF3),
-                          width: 1.w,
-                        ),
-                        color: AppColors.primaryColor.withValues(alpha: 0.12),
-                      ),
-                      child: HostProfileAvatar(
-                        imagePath: profile.imagePath ?? '',
-                        initials: profile.initials,
-                        size: 64,
-                      ),
+                Container(
+                  width: 68.cw,
+                  height: 68.cw,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.hostAvatarBg,
+                  ),
+                  padding: EdgeInsets.all(3.cw),
+                  child: ClipOval(
+                    child: HostProfileAvatar(
+                      imagePath: profile.imagePath ?? '',
+                      initials: profile.initials,
+                      size: 62,
                     ),
-                    Positioned(
-                      bottom: 2.h,
-                      right: 2.w,
-                      child: Container(
-                        width: 16.w,
-                        height: 16.h,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF18A957),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.white,
-                            width: 2.w,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                SizedBox(width: 16.w),
+                SizedBox(width: 14.cw),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,57 +58,31 @@ class HostWelcomeCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 13.sp,
+                                fontSize: 18.csp,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.black,
+                                color: AppColors.plumDeep,
                               ),
                             ),
                           ),
-                          SizedBox(width: 6.w),
+                          SizedBox(width: 6.cw),
                           Icon(
                             Icons.verified_rounded,
                             color: AppColors.primaryColor,
-                            size: 18.sp,
+                            size: 18.csp,
                           ),
                         ],
                       ),
-                      SizedBox(height: 5.h),
+                      SizedBox(height: 2.cw),
                       Text(
-                        profile.displayPhone,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        AppTexts.verifiedHost,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 12.csp,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.subtitleText,
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Text(
-                          profile.displayRole,
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryColor,
-                          ),
+                          color: AppColors.hostSubtitle,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: const Color(0xFF6E7787),
-                  size: 26.sp,
                 ),
               ],
             ),
@@ -134,18 +91,25 @@ class HostWelcomeCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _openProfile(BuildContext context) async {
-    final profileCubit = context.read<HostProfileCubit>();
-    await profileCubit.loadProfile();
-    if (!context.mounted) return;
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: profileCubit,
-          child: const HostProfileScreen(),
-        ),
+/// Refreshes the profile, then opens [HostProfileScreen] on the same cubit.
+/// [HostDashCubit] is passed along too — the pushed route sits above the
+/// host navigation providers, and the rate tiles read live status from it.
+Future<void> openHostProfile(BuildContext context) async {
+  final profileCubit = context.read<HostProfileCubit>();
+  final dashCubit = context.read<HostDashCubit>();
+  await profileCubit.loadProfile();
+  if (!context.mounted) return;
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: profileCubit),
+          BlocProvider.value(value: dashCubit),
+        ],
+        child: const HostProfileScreen(),
       ),
-    );
-  }
+    ),
+  );
 }

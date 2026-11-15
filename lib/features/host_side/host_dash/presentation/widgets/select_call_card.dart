@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import '../cubit/host_dash_state.dart';
+import 'host_dash_motion.dart';
 import 'pulsing_online_border.dart';
+
+/// Plum gradient shared by the waiting and incoming-call views.
+const LinearGradient _plumGradient = LinearGradient(
+  colors: [
+    AppColors.hostGoOnlineStart,
+    AppColors.primaryColor,
+    AppColors.plumDeep,
+  ],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
+List<BoxShadow> get _plumShadow => [
+  BoxShadow(
+    color: AppColors.plumDeep.withValues(alpha: 0.3),
+    blurRadius: 20,
+    offset: const Offset(0, 12),
+  ),
+];
 
 class SelectCallCard extends StatelessWidget {
   final HostDashCallFlowMode callFlowMode;
@@ -72,13 +93,8 @@ class SelectCallCard extends StatelessWidget {
     }
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 280),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        child: content,
-      ),
+      margin: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 5.cw),
+      child: HostDashSwitcher(child: content),
     );
   }
 }
@@ -105,23 +121,15 @@ class _SelectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryTint = AppColors.primaryColor.withValues(alpha: 0.1);
-    final Color readyColor = isAnyCallSelected
-        ? AppColors.primaryColor
-        : const Color(0xFFE7EBF3);
-    final Color readyTextColor = isAnyCallSelected
-        ? AppColors.white
-        : const Color(0xFF9E9E9E);
-
     return Container(
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.fromLTRB(14.cw, 18.cw, 14.cw, 14.cw),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: const Color(0xFFE7EBF3), width: 1.w),
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(color: AppColors.profileDivider, width: 1.cw),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04),
+            color: AppColors.primaryColor.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -130,108 +138,143 @@ class _SelectionView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Select the call you are ready to take',
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.black,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.cw),
+            child: Text(
+              AppTexts.hostReadyToConnect,
+              style: TextStyle(
+                fontSize: 20.csp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.plumDeep,
+              ),
             ),
           ),
-          SizedBox(height: 6.h),
-          Text(
-            'You can enable audio, video, or both.',
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.subtitleText,
+          SizedBox(height: 4.cw),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.cw),
+            child: Text(
+              AppTexts.chooseCallTypes,
+              style: TextStyle(
+                fontSize: 12.5.csp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.hostSubtitle,
+              ),
             ),
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 14.cw),
           Row(
             children: [
               Expanded(
                 child: _CallTypeTile(
                   selected: isAudioSelected,
-                  title: 'Audio Call',
-                  subtitle: 'Earn per minute',
-                  iconData: Icons.phone_rounded,
+                  title: AppTexts.audioCallLabel,
+                  iconData: Icons.call_rounded,
                   onTap: onAudioToggle,
-                  selectedTint: primaryTint,
+                  accent: AppColors.audioAccent,
+                  selectedBackground: AppColors.hostAudioTileBg,
                 ),
               ),
-              SizedBox(width: 10.w),
+              SizedBox(width: 10.cw),
               Expanded(
                 child: _CallTypeTile(
                   selected: isVideoSelected,
-                  title: 'Video Call',
-                  subtitle: 'Earn more',
+                  title: AppTexts.videoCallLabel,
                   iconData: Icons.videocam_rounded,
                   onTap: onVideoToggle,
-                  selectedTint: primaryTint,
+                  accent: AppColors.hostVideoAccent,
+                  selectedBackground: AppColors.hostVideoTileBg,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12.h),
-          GestureDetector(
-            onTap: isAnyCallSelected && !isStartingCall ? onReadyTapped : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: isStartingCall ? AppColors.primaryColor : readyColor,
-                borderRadius: BorderRadius.circular(16.r),
-                boxShadow: isAnyCallSelected || isStartingCall
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primaryColor.withValues(alpha: 0.18),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isStartingCall)
-                    SizedBox(
-                      width: 18.sp,
-                      height: 18.sp,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          readyTextColor,
-                        ),
-                      ),
-                    )
-                  else
-                    Icon(
-                      Icons.sensors_rounded,
-                      color: readyTextColor,
-                      size: 18.sp,
-                    ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    isStartingCall
-                        ? 'Connecting...'
-                        : isAnyCallSelected
-                        ? 'Ready'
-                        : 'Select a call type',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w900,
-                      color: readyTextColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          SizedBox(height: 14.cw),
+          _GoOnlineButton(
+            isEnabled: isAnyCallSelected,
+            isLoading: isStartingCall,
+            onTap: onReadyTapped,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GoOnlineButton extends StatelessWidget {
+  final bool isEnabled;
+  final bool isLoading;
+  final VoidCallback onTap;
+
+  const _GoOnlineButton({
+    required this.isEnabled,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool active = isEnabled || isLoading;
+    final Color textColor = active ? AppColors.white : AppColors.plumHint;
+
+    return GestureDetector(
+      onTap: isEnabled && !isLoading ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        width: double.infinity,
+        height: 52.cw,
+        decoration: BoxDecoration(
+          color: active ? null : AppColors.pillUnselected,
+          gradient: active
+              ? const LinearGradient(
+                  colors: [
+                    AppColors.hostGoOnlineStart,
+                    AppColors.primaryColor,
+                    AppColors.plumDeep,
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(30.r),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading) ...[
+              SizedBox(
+                width: 18.cw,
+                height: 18.cw,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              ),
+              SizedBox(width: 10.cw),
+            ],
+            Text(
+              isLoading
+                  ? AppTexts.connecting
+                  : isEnabled
+                  ? AppTexts.goOnline
+                  : AppTexts.selectACallType,
+              style: TextStyle(
+                fontSize: 16.csp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+            if (isEnabled && !isLoading) ...[
+              SizedBox(width: 10.cw),
+              Icon(Icons.arrow_forward_rounded, color: textColor, size: 20.csp),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -272,25 +315,15 @@ class _IncomingCallView extends StatelessWidget {
           constraints: BoxConstraints(minHeight: 220.h),
           padding: EdgeInsets.all(14.w),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28.r),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0E2A66), Color(0xFF07204A), Color(0xFF04142F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0A1C3F).withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(22.r),
+            gradient: _plumGradient,
+            boxShadow: _plumShadow,
           ),
           child: Stack(
             children: [
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28.r),
+                  borderRadius: BorderRadius.circular(22.r),
                   child: Stack(
                     children: [
                       Positioned(
@@ -338,7 +371,7 @@ class _IncomingCallView extends StatelessWidget {
                             height: avatarSize,
                             padding: EdgeInsets.all(8.w),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFD7E5FF),
+                              color: AppColors.hostAvatarBg,
                               borderRadius: BorderRadius.circular(24.r),
                             ),
                             child: ClipRRect(
@@ -387,14 +420,14 @@ class _IncomingCallView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _ActionCircleButton(
-                        color: const Color(0xFFE91E1E),
+                        color: AppColors.callEndedStatus,
                         icon: Icons.call_end_rounded,
                         label: 'Not now',
                         onTap: onDeclineTapped,
                         size: actionButtonSize,
                       ),
                       _ActionCircleButton(
-                        color: const Color(0xFF1FE64A),
+                        color: AppColors.callBreathingGlow,
                         icon: Icons.call_rounded,
                         label: 'Pickup',
                         onTap: onPickupTapped,
@@ -426,122 +459,82 @@ class _WaitingCallView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double cardRadius = 28.r;
+    final double cardRadius = 22.r;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double availableHeight = constraints.hasBoundedHeight
-            ? constraints.maxHeight
-            : 260.h;
-        final double topBlockHeight = availableHeight * 0.70;
-        final double loaderSize = (availableHeight * 0.17).clamp(28.0, 42.0);
-        final double titleFontSize = (availableHeight * 0.095).clamp(
-          16.0,
-          20.0,
-        );
-        final double subtitleFontSize = (availableHeight * 0.062).clamp(
-          11.0,
-          13.0,
-        );
-
-        final Widget card = Container(
-          constraints: BoxConstraints(minHeight: 220.h),
-          padding: EdgeInsets.all(14.w),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(cardRadius),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0E2A66), Color(0xFF07204A), Color(0xFF04142F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    final Widget card = Container(
+      padding: EdgeInsets.fromLTRB(16.cw, 16.cw, 16.cw, 18.cw),
+      decoration: BoxDecoration(
+        color: AppColors.hostWaitingCard,
+        borderRadius: BorderRadius.circular(cardRadius),
+      ),
+      child: Column(
+        children: [
+          // The mascot image is opaque — its background matches
+          // AppColors.hostWaitingCard, so it reads as part of the card.
+          Image.asset(
+            AppAssets.hostWaitingMascot,
+            height: 200.cw,
+            fit: BoxFit.contain,
+          ),
+          SizedBox(height: 14.cw),
+          Text(
+            AppTexts.waitingForNextHello,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20.csp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.plumDeep,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0A1C3F).withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 12),
-              ),
-            ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                height: topBlockHeight,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    LoadingAnimationWidget.progressiveDots(
-                      color: AppColors.white,
-                      size: loaderSize,
-                    ),
-                    SizedBox(height: 14.h),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        'Waiting for the call',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      'We will show the pickup view as soon as a call comes in.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: subtitleFontSize,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.88),
-                      ),
-                    ),
-                  ],
+          SizedBox(height: 6.cw),
+          Text(
+            AppTexts.nextConversationAppearsHere,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.csp,
+              fontWeight: FontWeight.w500,
+              color: AppColors.hostSubtitle,
+            ),
+          ),
+          SizedBox(height: 18.cw),
+          SizedBox(
+            width: double.infinity,
+            height: 50.cw,
+            child: OutlinedButton(
+              onPressed: onStopWaitingTapped,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+                side: BorderSide(color: AppColors.primaryColor, width: 1.5.cw),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.r),
                 ),
               ),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: onStopWaitingTapped,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.white,
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      width: 1.w,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                  ),
-                  child: Text(
-                    'Cancel waiting',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+              child: Text(
+                AppTexts.stopWaiting,
+                style: TextStyle(fontSize: 16.csp, fontWeight: FontWeight.w600),
               ),
-            ],
+            ),
           ),
-        );
+        ],
+      ),
+    );
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (!isSocketConnected) ...[
-              _ReconnectBanner(onReconnectTapped: onReconnectTapped),
-              SizedBox(height: 10.h),
-            ],
-            isSocketConnected
-                ? PulsingOnlineBorder(borderRadius: cardRadius, child: card)
-                : card,
-          ],
-        );
-      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!isSocketConnected) ...[
+          _ReconnectBanner(onReconnectTapped: onReconnectTapped),
+          SizedBox(height: 10.h),
+        ],
+        isSocketConnected
+            ? PulsingOnlineBorder(
+                borderRadius: cardRadius,
+                color: AppColors.hostVideoAccent,
+                child: card,
+              )
+            : card,
+      ],
     );
   }
 }
@@ -556,15 +549,18 @@ class _ReconnectBanner extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E5),
+        color: AppColors.audioBtnBg,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFF5C87A), width: 1.w),
+        border: Border.all(
+          color: AppColors.audioAccent.withValues(alpha: 0.4),
+          width: 1.w,
+        ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.wifi_off_rounded,
-            color: const Color(0xFFB8710A),
+            color: AppColors.audioAccent,
             size: 18.sp,
           ),
           SizedBox(width: 8.w),
@@ -574,7 +570,7 @@ class _ReconnectBanner extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF8A5A00),
+                color: AppColors.plumDeep,
               ),
             ),
           ),
@@ -582,10 +578,10 @@ class _ReconnectBanner extends StatelessWidget {
           GestureDetector(
             onTap: onReconnectTapped,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: const Color(0xFFB8710A),
-                borderRadius: BorderRadius.circular(10.r),
+                color: AppColors.primaryColor,
+                borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(
                 'Reconnect',
@@ -606,18 +602,18 @@ class _ReconnectBanner extends StatelessWidget {
 class _CallTypeTile extends StatelessWidget {
   final bool selected;
   final String title;
-  final String subtitle;
   final IconData iconData;
   final VoidCallback onTap;
-  final Color selectedTint;
+  final Color accent;
+  final Color selectedBackground;
 
   const _CallTypeTile({
     required this.selected,
     required this.title,
-    required this.subtitle,
     required this.iconData,
     required this.onTap,
-    required this.selectedTint,
+    required this.accent,
+    required this.selectedBackground,
   });
 
   @override
@@ -629,79 +625,68 @@ class _CallTypeTile extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
-          padding: EdgeInsets.all(12.w),
+          padding: EdgeInsets.fromLTRB(14.cw, 14.cw, 12.cw, 16.cw),
           decoration: BoxDecoration(
-            color: selected ? selectedTint : AppColors.white,
+            color: selected ? selectedBackground : AppColors.cardWhite,
             borderRadius: BorderRadius.circular(18.r),
             border: Border.all(
               color: selected
                   ? AppColors.primaryColor
-                  : const Color(0xFFE7EBF3),
-              width: selected ? 1.5.w : 1.w,
+                  : AppColors.profileDivider,
+              width: selected ? 1.5.cw : 1.cw,
             ),
           ),
-          child: Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 18.w,
-                  height: 18.h,
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primaryColor : AppColors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 54.cw,
+                    height: 54.cw,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(iconData, color: AppColors.white, size: 26.csp),
+                  ),
+                  const Spacer(),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: 22.cw,
+                    height: 22.cw,
+                    decoration: BoxDecoration(
                       color: selected
                           ? AppColors.primaryColor
-                          : const Color(0xFFD1D5DB),
-                      width: 1.2.w,
+                          : AppColors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.primaryColor
+                            : AppColors.plumHint,
+                        width: 1.5.cw,
+                      ),
                     ),
+                    child: selected
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: AppColors.white,
+                            size: 14.csp,
+                          )
+                        : null,
                   ),
-                  child: selected
-                      ? Icon(Icons.check, color: AppColors.white, size: 11.sp)
-                      : null,
-                ),
+                ],
               ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 44.w,
-                      height: 44.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        iconData,
-                        color: AppColors.white,
-                        size: 24.sp,
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.black,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                  ],
+              SizedBox(height: 12.cw),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15.csp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.plumDeep,
                 ),
               ),
             ],

@@ -2,197 +2,221 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/home_user_entity.dart';
 import '../cubit/host_dash_cubit.dart';
+import 'host_dash_motion.dart';
 import '../cubit/host_dash_state.dart';
 import '../../domain/entities/host_online_item_entity.dart';
 
+/// "Hosts online" summary. By default a compact strip (live count on the
+/// left, overlapping avatars on the right); with [stacked] the count sits on
+/// top and the avatars run underneath — the layout used while waiting for a
+/// call.
 class HostsOnlineGrid extends StatelessWidget {
-  const HostsOnlineGrid({super.key});
+  final bool stacked;
+
+  const HostsOnlineGrid({super.key, this.stacked = false});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HostDashCubit, HostDashState>(
-      builder: (context, state) {
-        final hosts = state.onlineHosts;
+    return BlocSelector<
+      HostDashCubit,
+      HostDashState,
+      List<HostOnlineItemEntity>
+    >(
+      selector: (state) => state.onlineHosts,
+      builder: (context, hosts) {
         final onlineCount = hosts
             .where((h) => h.status == UserStatus.online)
             .length;
         final displayCount = onlineCount > 0 ? onlineCount : hosts.length;
+        final shown = hosts.take(stacked ? 5 : 4).toList();
+        final overflow = hosts.length - shown.length;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section Header
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-              child: Row(
-                children: [
-                  Text(
-                    'Hosts Online',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  // Green Status Dot
-                  Container(
-                    width: 8.w,
-                    height: 8.h,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF18A957),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    '$displayCount Online',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF18A957),
-                    ),
-                  ),
-                ],
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14.cw, vertical: 5.cw),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16.cw,
+              vertical: stacked ? 14.cw : 12.cw,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(18.r),
+              border: Border.all(color: AppColors.profileDivider, width: 1.cw),
+            ),
+            child: HostDashSwitcher(
+              child: KeyedSubtree(
+                key: ValueKey(stacked),
+                child: stacked
+                    ? _buildStacked(displayCount, shown, overflow)
+                    : _buildStrip(displayCount, shown, overflow),
               ),
             ),
-            // Hosts Grid
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: GridView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: hosts.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 10.w,
-                  mainAxisSpacing: 12.h,
-                  childAspectRatio: 0.65,
-                ),
-                itemBuilder: (context, index) {
-                  final host = hosts[index];
-                  return HostGridItemCard(host: host);
-                },
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
   }
+
+  Widget _buildStrip(
+    int displayCount,
+    List<HostOnlineItemEntity> shown,
+    int overflow,
+  ) {
+    return Row(
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppTexts.hostsOnline,
+              style: TextStyle(
+                fontSize: 11.csp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.hostSubtitle,
+              ),
+            ),
+            SizedBox(height: 4.cw),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 9.cw,
+                  height: 9.cw,
+                  decoration: const BoxDecoration(
+                    color: AppColors.onlineIndicator,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 8.cw),
+                Text(
+                  '$displayCount ${AppTexts.online.toLowerCase()}',
+                  style: TextStyle(
+                    fontSize: 17.csp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.plumDeep,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 14.cw),
+          width: 1.cw,
+          height: 34.cw,
+          color: AppColors.profileDivider,
+        ),
+        Expanded(
+          // Scales the stack down instead of overflowing on narrow phones.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: _AvatarStack(hosts: shown, overflow: overflow, size: 40),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStacked(
+    int displayCount,
+    List<HostOnlineItemEntity> shown,
+    int overflow,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                AppTexts.hostsOnline,
+                style: TextStyle(
+                  fontSize: 15.csp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.plumDeep,
+                ),
+              ),
+            ),
+            Text(
+              '$displayCount',
+              style: TextStyle(
+                fontSize: 16.csp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.plumDeep,
+              ),
+            ),
+          ],
+        ),
+        if (shown.isNotEmpty) ...[
+          SizedBox(height: 10.cw),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: _AvatarStack(hosts: shown, overflow: overflow, size: 40),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
-class HostGridItemCard extends StatelessWidget {
-  final HostOnlineItemEntity host;
+class _AvatarStack extends StatelessWidget {
+  final List<HostOnlineItemEntity> hosts;
+  final int overflow;
+  final double size;
 
-  const HostGridItemCard({super.key, required this.host});
+  const _AvatarStack({
+    required this.hosts,
+    required this.overflow,
+    this.size = 36,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final bool isOnline = host.status == UserStatus.online;
-    final Color statusColor =
-        isOnline ? const Color(0xFF18A957) : const Color(0xFFFFB800);
-    final String statusText = isOnline ? 'Online' : 'On Call';
+    final double size = this.size.cw;
+    final double step = size * 0.78;
+    final int count = hosts.length + (overflow > 0 ? 1 : 0);
+    if (count == 0) return const SizedBox.shrink();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: const Color(0xFFE7EBF3),
-          width: 1.w,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SizedBox(
+      width: size + step * (count - 1),
+      height: size,
+      child: Stack(
         children: [
-          // Image with online / on-call status dot
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(11.r),
-                    ),
-                    child: _buildHostImage(host.imageUrl),
-                  ),
-                ),
-                // Status indicator dot at top-right
-                Positioned(
-                  top: 6.h,
-                  right: 6.w,
-                  child: Container(
-                    width: 10.w,
-                    height: 10.h,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.white,
-                        width: 1.5.w,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          for (var i = 0; i < hosts.length; i++)
+            Positioned(
+              left: step * i,
+              child: _AvatarCircle(
+                size: size,
+                child: _buildHostImage(hosts[i].imageUrl),
+              ),
             ),
-          ),
-          // Host Details at bottom of card
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 6.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  host.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.black,
+          if (overflow > 0)
+            Positioned(
+              left: step * hosts.length,
+              child: _AvatarCircle(
+                size: size,
+                color: AppColors.pillUnselected,
+                child: Center(
+                  child: Text(
+                    '+$overflow',
+                    style: TextStyle(
+                      fontSize: 12.csp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.hostSubtitle,
+                    ),
                   ),
                 ),
-                SizedBox(height: 2.h),
-                // Status Text Row (replacing star rating)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 5.w,
-                      height: 5.w,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: 3.w),
-                    Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -204,21 +228,7 @@ class HostGridItemCard extends StatelessWidget {
         imageUrl: imageUrl,
         fit: BoxFit.cover,
         errorWidget: (context, url, error) => _buildFallbackAsset(),
-        placeholder: (context, url) {
-          return Container(
-            color: AppColors.lightGrey,
-            child: const Center(
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-            ),
-          );
-        },
+        placeholder: (context, url) => Container(color: AppColors.lightGrey),
       );
     } else if (imageUrl.isNotEmpty) {
       return Image.asset(
@@ -231,9 +241,32 @@ class HostGridItemCard extends StatelessWidget {
   }
 
   Widget _buildFallbackAsset() {
-    return Image.asset(
-      'assets/images/profile setup/female.jpg',
-      fit: BoxFit.cover,
+    return Image.asset(AppAssets.femaleIcon, fit: BoxFit.cover);
+  }
+}
+
+class _AvatarCircle extends StatelessWidget {
+  final double size;
+  final Widget child;
+  final Color color;
+
+  const _AvatarCircle({
+    required this.size,
+    required this.child,
+    this.color = AppColors.hostAvatarBg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.white, width: 2.cw),
+      ),
+      child: ClipOval(child: child),
     );
   }
 }

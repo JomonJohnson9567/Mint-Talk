@@ -1,10 +1,10 @@
 name: mint_talk
-description: "A new Flutter project."
+description: "MintTalk"
 publish_to: 'none' 
 
 
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.8
@@ -47,6 +47,11 @@ dependencies:
   crypto: ^3.0.7
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
+  just_audio: ^0.10.6
+  audio_session: ^0.2.4
+  share_plus: ^13.3.1
+  uuid: ^4.5.1
+  in_app_update: ^4.2.5
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +73,7 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#F7F7F7"
+  adaptive_icon_background: "assets/icon/icon_background.png"
   adaptive_icon_foreground: "assets/icon/icon_foreground.png"
   adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"
   remove_alpha_ios: true
@@ -89,10 +94,17 @@ flutter:
       - assets/images/success/     
       - assets/images/profile setup/
       - assets/images/home/
+      - assets/images/recharge/
+      - assets/images/profile/
+      - assets/images/apply_host/
+      - assets/images/call_log/
+      - assets/images/exit/
+      - assets/images/host_dash/
+      - assets/images/host_wallet/
       - assets/host_profile_img/
       - assets/images/target.png
-      - assets/wallet.png
       - assets/icon/
+      - assets/ring/
   #   - images/a_dot_ham.jpeg
    
   # fonts:

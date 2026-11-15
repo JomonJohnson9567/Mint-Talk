@@ -1,70 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/widgets/primary_button.dart';
 
+/// Shown when the user has no recharges yet; points them back to the plans.
 class RechargeHistoryEmptyState extends StatelessWidget {
   final VoidCallback onRefresh;
 
-  const RechargeHistoryEmptyState({
-    super.key,
-    required this.onRefresh,
-  });
+  const RechargeHistoryEmptyState({super.key, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 24.cw),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 92.w,
-              height: 92.w,
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.history_rounded,
-                size: 44.sp,
-                color: AppColors.primaryColor,
-              ),
-            ),
-            SizedBox(height: 20.h),
+            Image.asset(AppAssets.rechargeMascot, width: 130.cw),
+            SizedBox(height: 16.cw),
             Text(
-              'No recharge history yet',
+              AppTexts.noRechargesYet,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22.sp,
+              style: GoogleFonts.nunito(
+                fontSize: 20.csp,
                 fontWeight: FontWeight.w800,
-                color: AppColors.black,
+                color: AppColors.plumDeep,
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 8.cw),
             Text(
-              'Your completed and pending wallet recharges will show up here.',
+              AppTexts.noRechargesYetDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14.sp,
-                height: 1.5,
-                color: AppColors.subtitleText,
+                fontSize: 13.csp,
+                color: AppColors.plumMuted,
+                height: 1.45,
               ),
             ),
-            SizedBox(height: 20.h),
-            OutlinedButton.icon(
+            SizedBox(height: 20.cw),
+            // This screen is only pushed from Recharge Plans, so going back
+            // lands the user on the plan grid.
+            PrimaryButton(
+              text: AppTexts.browsePlans,
+              width: 180.cw,
+              height: 46.cw,
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            SizedBox(height: 4.cw),
+            TextButton.icon(
               onPressed: onRefresh,
-              style: OutlinedButton.styleFrom(
+              style: TextButton.styleFrom(
                 foregroundColor: AppColors.primaryColor,
-                side: BorderSide(color: AppColors.primaryColor.withValues(alpha: 0.3)),
-                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 14.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
+              ),
+              icon: Icon(Icons.refresh_rounded, size: 18.csp),
+              label: Text(
+                AppTexts.refresh,
+                style: TextStyle(
+                  fontSize: 13.5.csp,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Refresh'),
             ),
           ],
         ),

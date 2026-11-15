@@ -1,3 +1,4 @@
+import 'package:mint_talk/core/utils/json_date_parser.dart';
 import 'package:mint_talk/core/utils/json_number_parser.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_socket_event.dart';
 import 'package:mint_talk/features/user_side/call/domain/entities/call_type.dart';
@@ -14,11 +15,12 @@ class CallSocketEventDto {
   final String? agoraChannel;
   final String? agoraToken;
   final int? duration;
-  final int? billedMinutes;
+  final int? billedUnits;
   final int? totalPointsDebited;
   final String? endReason;
   final String? hostId;
   final String? callerId;
+  final DateTime? activeAt;
 
   const CallSocketEventDto({
     required this.callId,
@@ -27,11 +29,12 @@ class CallSocketEventDto {
     this.agoraChannel,
     this.agoraToken,
     this.duration,
-    this.billedMinutes,
+    this.billedUnits,
     this.totalPointsDebited,
     this.endReason,
     this.hostId,
     this.callerId,
+    this.activeAt,
   });
 
   factory CallSocketEventDto.fromJson(Map<String, dynamic> json) {
@@ -45,11 +48,14 @@ class CallSocketEventDto {
       agoraToken: (json['agoraToken'] ?? json['rtcToken'] ?? json['token'])
           ?.toString(),
       duration: JsonNumberParser.parseInt(json['duration']),
-      billedMinutes: JsonNumberParser.parseInt(json['billedMinutes']),
+      billedUnits: JsonNumberParser.parseInt(
+        json['billedUnits'] ?? json['billedMinutes'],
+      ),
       totalPointsDebited: JsonNumberParser.parseInt(json['totalPointsDebited']),
       endReason: json['endReason']?.toString(),
       hostId: json['hostId']?.toString(),
       callerId: json['callerId']?.toString(),
+      activeAt: JsonDateParser.parse(json['activeAt']),
     );
   }
 
@@ -61,11 +67,12 @@ class CallSocketEventDto {
       agoraChannel: agoraChannel,
       agoraToken: agoraToken,
       duration: duration,
-      billedMinutes: billedMinutes,
+      billedUnits: billedUnits,
       totalPointsDebited: totalPointsDebited,
       endReason: endReason,
       hostId: hostId,
       callerId: callerId,
+      activeAt: activeAt,
     );
   }
 }

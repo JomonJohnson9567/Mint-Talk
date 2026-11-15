@@ -31,14 +31,16 @@ class HostChatListScreen extends StatelessWidget {
       child: Builder(
         builder: (context) {
           return Scaffold(
-            backgroundColor: AppColors.white,
+            backgroundColor: AppColors.homeBackground,
             appBar: CustomAppBar(
               title: AppTexts.conversations,
               automaticallyImplyLeading: true,
+              foregroundColor: AppColors.plumDeep,
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.person_add_alt_1_rounded),
-                  color: AppColors.primaryColor,
+                  tooltip: 'New message',
+                  icon: const Icon(Icons.edit_square),
+                  color: AppColors.plumDeep,
                   onPressed: () => _showNewMessageSheet(context),
                 ),
               ],

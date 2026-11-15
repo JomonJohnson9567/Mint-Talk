@@ -28,7 +28,7 @@ class VideoCallOnlineUser {
   factory VideoCallOnlineUser.fromHostEntity(HostEntity host) {
     UserStatus status = UserStatus.offline;
     if (host.presence != null) {
-      if (host.presence!.busy) {
+      if (host.presence!.isOnCall) {
         status = UserStatus.onCall;
       } else if (host.presence!.status == 'online') {
         status = UserStatus.online;

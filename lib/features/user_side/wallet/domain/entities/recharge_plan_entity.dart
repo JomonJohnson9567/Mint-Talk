@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'plan_tier.dart';
+
 /// A recharge plan, whether sourced from the backend catalogue or from the
 /// static fallback list in `recharge_plans/data/models/recharge_plan_data.dart`.
 ///
@@ -37,6 +39,19 @@ class RechargePlanEntity extends Equatable {
       (bonusPoints != null && bonusPoints! > 0
           ? '+$bonusPoints Bonus'
           : (name ?? ''));
+
+  /// Coin count as a number — [points] for API plans, otherwise parsed from
+  /// the static fallback string (e.g. `'10,00,000'`).
+  int get coinAmount {
+    if (points != null) return points!;
+    if (_staticCoins != null) {
+      return int.tryParse(_staticCoins.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    }
+    return 0;
+  }
+
+  /// Silver / Gold / Platinum category, parsed from [name].
+  PlanTier get tier => PlanTier.fromName(name);
 
   double get numericPrice {
     if (rawPrice != null) return rawPrice!.toDouble();

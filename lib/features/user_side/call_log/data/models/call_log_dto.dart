@@ -9,7 +9,7 @@ class CallLogDto {
   final String status;
   final String callType;
   final int duration;
-  final int billedMinutes;
+  final int billedUnits;
   final num totalPointsDebited;
   final String endReason;
   final DateTime? createdAt;
@@ -21,7 +21,7 @@ class CallLogDto {
     required this.status,
     required this.callType,
     required this.duration,
-    required this.billedMinutes,
+    required this.billedUnits,
     required this.totalPointsDebited,
     required this.endReason,
     this.createdAt,
@@ -31,7 +31,9 @@ class CallLogDto {
     return CallLogDto(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       caller: json['callerId'] is Map<String, dynamic>
-          ? CallParticipantDto.fromJson(json['callerId'] as Map<String, dynamic>)
+          ? CallParticipantDto.fromJson(
+              json['callerId'] as Map<String, dynamic>,
+            )
           : null,
       host: json['hostId'] is Map<String, dynamic>
           ? CallParticipantDto.fromJson(json['hostId'] as Map<String, dynamic>)
@@ -39,8 +41,13 @@ class CallLogDto {
       status: (json['status'] ?? '').toString(),
       callType: (json['callType'] ?? 'audio').toString(),
       duration: JsonNumberParser.parseInt(json['duration']) ?? 0,
-      billedMinutes: JsonNumberParser.parseInt(json['billedMinutes']) ?? 0,
-      totalPointsDebited: JsonNumberParser.parseInt(json['totalPointsDebited']) ?? 0,
+      billedUnits:
+          JsonNumberParser.parseInt(
+            json['billedUnits'] ?? json['billedMinutes'],
+          ) ??
+          0,
+      totalPointsDebited:
+          JsonNumberParser.parseInt(json['totalPointsDebited']) ?? 0,
       endReason: (json['endReason'] ?? '').toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
@@ -56,7 +63,7 @@ class CallLogDto {
       status: status,
       callType: callType,
       duration: duration,
-      billedMinutes: billedMinutes,
+      billedUnits: billedUnits,
       totalPointsDebited: totalPointsDebited,
       endReason: endReason,
       createdAt: createdAt,

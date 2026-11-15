@@ -1,58 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
 
+/// One code box. Display only — typing goes to the hidden field in
+/// [OtpInputRow], which owns the whole code.
 class OtpDigitField extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
+  final String digit;
+  final bool isActive;
   final bool hasError;
-  final TextInputAction textInputAction;
-  final ValueChanged<String> onChanged;
 
   const OtpDigitField({
     super.key,
-    required this.controller,
-    required this.focusNode,
+    required this.digit,
+    required this.isActive,
     required this.hasError,
-    required this.textInputAction,
-    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 50.w,
-      height: 50.h,
+    final border = hasError
+        ? Border.all(color: AppColors.red, width: 1.5)
+        : isActive
+        ? Border.all(color: AppColors.plumDeep, width: 2)
+        : Border.all(color: AppColors.lavenderBorder, width: 1.5);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      height: 58.h,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.grey.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(
-          color: hasError
-              ? AppColors.red
-              : AppColors.primaryColor.withValues(alpha: 0.5),
-        ),
+        color: AppColors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(12.r),
+        border: border,
       ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        textInputAction: textInputAction,
-        maxLength: 1,
-        autofillHints: const [AutofillHints.oneTimeCode],
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(1),
-        ],
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-        ),
-        style: TextStyle(fontSize: 16.sp, color: AppColors.black),
-        onChanged: onChanged,
-      ),
+      child: digit.isNotEmpty
+          ? Text(
+              digit,
+              style: TextStyle(
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.plumDeep,
+              ),
+            )
+          : isActive
+          ? Container(width: 2, height: 24.h, color: AppColors.plumDeep)
+          : null,
     );
   }
 }

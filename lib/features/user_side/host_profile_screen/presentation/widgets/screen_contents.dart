@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/widgets/back_title_header.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_profile_header.dart';
 import 'package:mint_talk/features/user_side/host_profile_screen/presentation/widgets/host_special_categories.dart';
@@ -18,7 +20,20 @@ class ScreenContents extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<BlockedUsersCubit, BlockedUsersState>(
       listener: (context, state) {
-        if (state is BlockedUsersLoaded && state.actionMessage != null) {
+        if (state is BlockedUsersLoaded &&
+            state.lastAction == BlockAction.blocked) {
+          // The app-level messenger outlives this route, so the snackbar
+          // stays up on the host list the user lands back on.
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${host.fullName.isNotEmpty ? host.fullName : 'Host'} has been blocked',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.of(context).pop();
+        } else if (state is BlockedUsersLoaded && state.actionMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.actionMessage!),
@@ -36,23 +51,39 @@ class ScreenContents extends StatelessWidget {
         }
       },
       child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+        padding: EdgeInsets.fromLTRB(16.cw, 12.cw, 16.cw, 24.cw),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: 10.h),
-            SizedBox(height: 10.h),
+            Row(
+              children: [
+                const Expanded(
+                  child: BackTitleHeader(
+                    title: AppTexts.profileDetails,
+                    subtitle: AppTexts.hostProfileSubtitle,
+                  ),
+                ),
+                SizedBox(
+                  width: 68.cw,
+                  height: 68.cw,
+                  child: const HostProfileMascot(),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.cw),
             HostProfileHeader(
+              hostId: host.id,
               name: host.fullName,
               isOnline: host.presence?.isAvailableForCalls ?? false,
+              isBusy: host.presence?.isOnCall ?? false,
               imageUrl: host.avatarUrl,
             ),
-            SizedBox(height: 24.h),
+            SizedBox(height: 22.cw),
             HostActionButtons(host: host),
-            SizedBox(height: 24.h),
+            SizedBox(height: 22.cw),
             const HostSpecialCategories(),
-            SizedBox(height: 40.h),
+            SizedBox(height: 14.cw),
             const HostWarningBanner(),
-            SizedBox(height: 24.h),
           ],
         ),
       ),

@@ -67,10 +67,11 @@ class HostProfileModel extends HostProfileEntity {
     if (dob.isNotEmpty) {
       data['dob'] = _formatDobForApi(dob);
     }
-    if (selectedCategories.isNotEmpty) {
-      data['categories'] = selectedCategories;
-    }
-    if (avatarAsset.isNotEmpty) {
+    // Always sent (even empty) so a host clearing every category persists.
+    data['categories'] = selectedCategories;
+    // Only server URLs — a local file or bundled asset path is meaningless
+    // to the backend and to other users' devices.
+    if (avatarAsset.startsWith('http') || avatarAsset.startsWith('/uploads/')) {
       data['avatarUrl'] = avatarAsset;
     }
     return data;

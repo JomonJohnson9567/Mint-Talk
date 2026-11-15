@@ -92,11 +92,7 @@ class HostProfileAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         color: AppColors.primaryColor.withValues(alpha: 0.12),
       ),
-      child: ClipOval(
-        child: avatarChild ?? hardcodedFallback,
-      ),
+      child: ClipOval(child: avatarChild ?? hardcodedFallback),
     );
   }
 }
-
-

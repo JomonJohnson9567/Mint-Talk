@@ -51,31 +51,34 @@ class PhoneFormCubit extends Cubit<PhoneFormState> {
       countryCode,
     );
 
-    emit(state.copyWith(
-      phoneNumber: normalizedPhone,
-      status: PhoneFormStatus.loading,
-      apiErrorMessage: () => null,
-    ));
+    emit(
+      state.copyWith(
+        phoneNumber: normalizedPhone,
+        status: PhoneFormStatus.loading,
+        apiErrorMessage: () => null,
+      ),
+    );
 
     final result = await _sendOtpUseCase(
-      SendOtpParams(
-        phone: normalizedPhone,
-        countryCode: normalizedCountryCode,
-      ),
+      SendOtpParams(phone: normalizedPhone, countryCode: normalizedCountryCode),
     );
 
     result.fold(
       (failure) {
         if (failure is RateLimitFailure) {
-          emit(state.copyWith(
-            status: PhoneFormStatus.rateLimited,
-            apiErrorMessage: () => AuthFlowHelpers.otpFailureMessage(failure),
-          ));
+          emit(
+            state.copyWith(
+              status: PhoneFormStatus.rateLimited,
+              apiErrorMessage: () => AuthFlowHelpers.otpFailureMessage(failure),
+            ),
+          );
         } else {
-          emit(state.copyWith(
-            status: PhoneFormStatus.error,
-            apiErrorMessage: () => AuthFlowHelpers.otpFailureMessage(failure),
-          ));
+          emit(
+            state.copyWith(
+              status: PhoneFormStatus.error,
+              apiErrorMessage: () => AuthFlowHelpers.otpFailureMessage(failure),
+            ),
+          );
         }
       },
       (_) {
@@ -86,9 +89,11 @@ class PhoneFormCubit extends Cubit<PhoneFormState> {
 
   /// Reset the status back to initial (e.g. after navigating away).
   void resetStatus() {
-    emit(state.copyWith(
-      status: PhoneFormStatus.initial,
-      apiErrorMessage: () => null,
-    ));
+    emit(
+      state.copyWith(
+        status: PhoneFormStatus.initial,
+        apiErrorMessage: () => null,
+      ),
+    );
   }
 }

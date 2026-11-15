@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/errors/dio_failure_mapper.dart';
+import 'package:mint_talk/core/errors/exceptions.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import 'package:mint_talk/core/utils/token_manager.dart';
@@ -40,6 +41,10 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(
         mapDioExceptionToFailure(e, fallbackMessage: 'Failed to send OTP'),
       );
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -82,6 +87,10 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(
         mapDioExceptionToFailure(e, fallbackMessage: 'OTP verification failed'),
       );
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -119,12 +128,31 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, String?>> syncCurrentUserRole() async {
+  Future<Either<Failure, String?>> syncCurrentUser() async {
     try {
       final user = await _remoteDataSource.getCurrentUser();
       await _localDataSource.saveRole(user.role);
+      // Only overwrite rates the response actually carries, so a payload
+      // without them doesn't wipe the cached values.
+      if (user.audioRate != null) {
+        await _localDataSource.saveAudioRate(user.audioRate);
+      }
+      if (user.videoRate != null) {
+        await _localDataSource.saveVideoRate(user.videoRate);
+      }
+      if (user.referralCode?.trim().isNotEmpty ?? false) {
+        await _localDataSource.saveReferralCode(user.referralCode);
+      }
       return Right(user.role);
     } catch (e) {
+      // The request's 401 already ran a forced logout (session revoked on
+      // another device) — tokens are gone and login is on screen. Don't
+      // report a cached role, or the splash would navigate Home on top.
+      if (!await _tokenManager.hasRefreshToken()) {
+        return const Left(
+          UnauthorizedFailure(message: 'Session ended. Please log in again.'),
+        );
+      }
       // Offline, or a transient server error — don't block launch; fall
       // back to whatever role was cached from the last successful login.
       try {
@@ -185,7 +213,8 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String?> getRole() => _localDataSource.getRole();
 
   @override
-  Future<String?> getProfileImagePath() => _localDataSource.getProfileImagePath();
+  Future<String?> getProfileImagePath() =>
+      _localDataSource.getProfileImagePath();
 
   @override
   Future<String?> getReferralCode() => _localDataSource.getReferralCode();
@@ -206,20 +235,23 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool?> getIsVideoAllowed() => _localDataSource.getIsVideoAllowed();
 
   @override
-  Future<void> saveFullName(String? fullName) => _localDataSource.saveFullName(fullName);
+  Future<void> saveFullName(String? fullName) =>
+      _localDataSource.saveFullName(fullName);
 
   @override
   Future<void> saveDob(String? dob) => _localDataSource.saveDob(dob);
 
   @override
-  Future<void> saveGender(String? gender) => _localDataSource.saveGender(gender);
+  Future<void> saveGender(String? gender) =>
+      _localDataSource.saveGender(gender);
 
   @override
   Future<void> saveReferralCode(String? referralCode) =>
       _localDataSource.saveReferralCode(referralCode);
 
   @override
-  Future<void> saveProfileImagePath(String? path) => _localDataSource.saveProfileImagePath(path);
+  Future<void> saveProfileImagePath(String? path) =>
+      _localDataSource.saveProfileImagePath(path);
 
   @override
   Future<void> saveAudioRate(int? rate) => _localDataSource.saveAudioRate(rate);

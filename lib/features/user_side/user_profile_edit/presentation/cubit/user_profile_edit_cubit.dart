@@ -48,6 +48,8 @@ class UserProfileEditCubit extends Cubit<UserProfileEditState> {
           gender: values[3] ?? '',
           imagePath: values[4] ?? '',
           termsAcceptedAt: values[5] ?? '',
+          initialFullName: values[0] ?? '',
+          initialImagePath: values[4] ?? '',
         ),
       );
     } catch (_) {

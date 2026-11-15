@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_icon_square.dart';
+import 'leave_form_field.dart';
 
 class LeaveTypeDropdown extends StatelessWidget {
   final String? selectedType;
@@ -23,8 +26,9 @@ class LeaveTypeDropdown extends StatelessWidget {
   void _showBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (context) {
         return SafeArea(
@@ -32,30 +36,37 @@ class LeaveTypeDropdown extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.h),
+                padding: EdgeInsets.symmetric(vertical: 16.cw),
                 child: Text(
                   'Select Leave Type',
                   style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
+                    fontSize: 18.csp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.plumDeep,
                   ),
                 ),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.profileDivider),
               ..._leaveTypes.map((type) {
                 final isSelected = type == selectedType;
                 return ListTile(
                   title: Text(
                     type,
                     style: TextStyle(
-                      fontSize: 16.sp,
-                      color: isSelected ? AppColors.primaryColor : AppColors.black,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 15.csp,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : AppColors.plumDeep,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle_rounded, color: AppColors.primaryColor)
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.primaryColor,
+                        )
                       : null,
                   onTap: () {
                     onChanged(type);
@@ -75,64 +86,33 @@ class LeaveTypeDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Leave Type',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        SizedBox(height: 8.h),
-        InkWell(
+        const LeaveFieldLabel('Leave Type'),
+        LeaveFieldBox(
           onTap: () => _showBottomSheet(context),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              border: Border.all(color: const Color(0xFFDCDDF7), width: 1.5),
-              borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryColor.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(10.r),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF0FC),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Icon(
-                    Icons.work_outline_rounded,
-                    color: AppColors.primaryColor,
-                    size: 22.sp,
+          child: Row(
+            children: [
+              const HostIconSquare(icon: Icons.work_outline_rounded),
+              SizedBox(width: 14.cw),
+              Expanded(
+                child: Text(
+                  selectedType ?? 'Select Leave Type',
+                  style: TextStyle(
+                    fontSize: 15.csp,
+                    color: selectedType == null
+                        ? AppColors.hostSubtitle
+                        : AppColors.plumDeep,
+                    fontWeight: selectedType == null
+                        ? FontWeight.w400
+                        : FontWeight.w600,
                   ),
                 ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Text(
-                    selectedType ?? 'Select Leave Type',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: selectedType == null ? AppColors.subtitleText : AppColors.black,
-                      fontWeight: selectedType == null ? FontWeight.normal : FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: AppColors.black,
-                  size: 24.sp,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.plumDeep,
+                size: 24.csp,
+              ),
+            ],
           ),
         ),
       ],

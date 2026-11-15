@@ -12,10 +12,9 @@ class HostProfileState extends Equatable {
   final String? gender;
   final String? role;
   final String? imagePath;
+  final String? referralCode;
   final int? audioRate;
   final int? videoRate;
-  final bool? isAudioAllowed;
-  final bool? isVideoAllowed;
   final String? errorMessage;
 
   const HostProfileState({
@@ -27,10 +26,9 @@ class HostProfileState extends Equatable {
     this.gender,
     this.role,
     this.imagePath,
+    this.referralCode,
     this.audioRate,
     this.videoRate,
-    this.isAudioAllowed,
-    this.isVideoAllowed,
     this.errorMessage,
   });
 
@@ -64,6 +62,11 @@ class HostProfileState extends Equatable {
     return '${value[0].toUpperCase()}${value.substring(1).toLowerCase()}';
   }
 
+  bool get hasReferralCode => referralCode?.trim().isNotEmpty ?? false;
+
+  String get displayReferralCode =>
+      hasReferralCode ? referralCode!.trim().toUpperCase() : 'Not available';
+
   String get displayRole {
     final value = role?.trim() ?? '';
     if (value.isEmpty) return 'Host account';
@@ -87,10 +90,9 @@ class HostProfileState extends Equatable {
     String? gender,
     String? role,
     String? imagePath,
+    String? referralCode,
     int? audioRate,
     int? videoRate,
-    bool? isAudioAllowed,
-    bool? isVideoAllowed,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -103,10 +105,9 @@ class HostProfileState extends Equatable {
       gender: gender ?? this.gender,
       role: role ?? this.role,
       imagePath: imagePath ?? this.imagePath,
+      referralCode: referralCode ?? this.referralCode,
       audioRate: audioRate ?? this.audioRate,
       videoRate: videoRate ?? this.videoRate,
-      isAudioAllowed: isAudioAllowed ?? this.isAudioAllowed,
-      isVideoAllowed: isVideoAllowed ?? this.isVideoAllowed,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -121,10 +122,9 @@ class HostProfileState extends Equatable {
     gender,
     role,
     imagePath,
+    referralCode,
     audioRate,
     videoRate,
-    isAudioAllowed,
-    isVideoAllowed,
     errorMessage,
   ];
 }

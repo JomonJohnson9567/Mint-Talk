@@ -50,8 +50,9 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
     required super.billingPolicy,
     required super.createdAt,
     super.ratePerMinute,
-    super.billedMinutes,
+    super.billedUnits,
     super.billedPoints,
+    super.remainingEarningInr,
     super.callInfo,
     super.metadata,
   });
@@ -85,8 +86,11 @@ class HostEarningEntryModel extends HostEarningEntryEntity {
       netEarningInr: (json['netEarningINR'] as num? ?? 0).toDouble(),
       billingPolicy: json['billingPolicy'] as String? ?? '',
       ratePerMinute: (json['ratePerMinute'] as num?)?.toInt(),
-      billedMinutes: (json['billedMinutes'] as num?)?.toInt() ?? flatDuration,
+      billedUnits:
+          ((json['billedUnits'] ?? json['billedMinutes']) as num?)?.toInt() ??
+          flatDuration,
       billedPoints: (json['billedPoints'] as num?)?.toInt(),
+      remainingEarningInr: (json['remainingEarningINR'] as num?)?.toDouble(),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       callInfo: callInfo,
@@ -101,6 +105,7 @@ class HostEarningsLedgerModel extends HostEarningsLedgerEntity {
   const HostEarningsLedgerModel({
     required super.summary,
     required super.earnings,
+    super.withdrawableBalanceInr,
     required super.page,
     required super.limit,
     required super.total,
@@ -108,9 +113,8 @@ class HostEarningsLedgerModel extends HostEarningsLedgerEntity {
 
   factory HostEarningsLedgerModel.fromJson(Map<String, dynamic> json) {
     final data = (json['data'] as Map<String, dynamic>? ?? const {});
-    final summary = HostEarningsLedgerSummaryModel.fromJson(
-      data['summary'] as Map<String, dynamic>? ?? const {},
-    );
+    final summaryJson = data['summary'] as Map<String, dynamic>? ?? const {};
+    final summary = HostEarningsLedgerSummaryModel.fromJson(summaryJson);
     // Some API doc samples key the list as "items" instead of "earnings".
     final earningsJson =
         (data['earnings'] as List?) ?? (data['items'] as List?) ?? const [];
@@ -122,6 +126,11 @@ class HostEarningsLedgerModel extends HostEarningsLedgerEntity {
     return HostEarningsLedgerModel(
       summary: summary,
       earnings: earnings,
+      withdrawableBalanceInr:
+          ((data['withdrawableBalanceINR'] ??
+                      summaryJson['withdrawableBalanceINR'])
+                  as num?)
+              ?.toDouble(),
       page: (data['page'] as num?)?.toInt() ?? 1,
       limit: (data['limit'] as num?)?.toInt() ?? earnings.length,
       total: (data['total'] as num?)?.toInt() ?? earnings.length,

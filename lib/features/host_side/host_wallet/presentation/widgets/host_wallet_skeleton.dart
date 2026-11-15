@@ -1,137 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
+/// Mirrors the wallet layout: hero banner, balance card, three summary tiles
+/// and the recent withdrawals list.
 class HostWalletSkeleton extends StatelessWidget {
   const HostWalletSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tileRadius = BorderRadius.circular(16.r);
+
     return SkeletonShimmer(
       child: SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8.h),
-          // Hero section skeleton
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-            child: Row(
-              children: [
-                SkeletonBox(
-                  width: 52.w,
-                  height: 52.w,
-                  shape: BoxShape.circle,
-                ),
-                SizedBox(width: 14.w),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SkeletonBox(width: 120.w, height: 16.h),
-                    SizedBox(height: 6.h),
-                    SkeletonBox(width: 180.w, height: 12.h),
-                  ],
-                )
-              ],
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16.cw, 4.cw, 16.cw, 24.cw),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SkeletonBox(
+              height: 120.cw,
+              borderRadius: BorderRadius.circular(20.r),
             ),
-          ),
-          SizedBox(height: 12.h),
-
-          // Balance card skeleton
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: SkeletonBox(
-              width: double.infinity,
-              height: 140.h,
+            SizedBox(height: 14.cw),
+            SkeletonBox(
+              height: 140.cw,
               borderRadius: BorderRadius.circular(22.r),
             ),
-          ),
-          SizedBox(height: 20.h),
-
-          // Summary row skeleton (Row of 3 cards)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                3,
-                (index) => Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: index == 2 ? 0 : 10.w),
+            SizedBox(height: 14.cw),
+            Row(
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  if (i > 0) SizedBox(width: 10.cw),
+                  Expanded(
                     child: SkeletonBox(
-                      height: 84.h,
-                      borderRadius: BorderRadius.circular(16.r),
+                      height: 104.cw,
+                      borderRadius: tileRadius,
                     ),
                   ),
+                ],
+              ],
+            ),
+            SizedBox(height: 22.cw),
+            SkeletonBox(width: 170.cw, height: 18.cw),
+            SizedBox(height: 12.cw),
+            ...List.generate(
+              3,
+              (index) => Padding(
+                padding: EdgeInsets.only(bottom: 10.cw),
+                child: SkeletonBox(
+                  height: 66.cw,
+                  borderRadius: BorderRadius.circular(18.r),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: 24.h),
-
-          // History section header skeleton
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SkeletonBox(width: 130.w, height: 18.h),
-                SizedBox(height: 16.h),
-              ],
-            ),
-          ),
-
-          // History list skeleton (List of 3 items)
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
-                child: Container(
-                  padding: EdgeInsets.all(14.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(color: const Color(0xFFE7EBF3)),
-                  ),
-                  child: Row(
-                    children: [
-                      SkeletonBox(
-                        width: 42.w,
-                        height: 42.w,
-                        shape: BoxShape.circle,
-                      ),
-                      SizedBox(width: 14.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SkeletonBox(width: 100.w, height: 14.h),
-                            SizedBox(height: 6.h),
-                            SkeletonBox(width: 70.w, height: 11.h),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          SkeletonBox(width: 60.w, height: 14.h),
-                          SizedBox(height: 6.h),
-                          SkeletonBox(width: 45.w, height: 11.h),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

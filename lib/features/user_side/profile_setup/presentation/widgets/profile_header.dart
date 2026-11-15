@@ -10,22 +10,27 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           AppTexts.setupProfile,
-          style: GoogleFonts.manrope(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.w700,
-            color: AppColors.black,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            fontSize: 26.sp,
+            fontWeight: FontWeight.w900,
+            color: AppColors.plumDeep,
+            height: 1.1,
+            letterSpacing: -0.6,
           ),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 6.h),
         Text(
           AppTexts.fillDetails,
           textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(
+          style: TextStyle(
             fontSize: 14.sp,
-            color: AppColors.textGrey,
+            color: AppColors.plumMuted,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

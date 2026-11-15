@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/widgets/wallet_sheet_handle.dart';
 
@@ -11,13 +12,15 @@ class WithdrawalSuccessBottomSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+            color: AppColors.cardWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -28,7 +31,7 @@ class WithdrawalSuccessBottomSheet extends StatelessWidget {
                 width: 84.w,
                 height: 84.w,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF4E73F8),
+                  color: AppColors.primaryColor,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -39,22 +42,22 @@ class WithdrawalSuccessBottomSheet extends StatelessWidget {
               ),
               SizedBox(height: 22.h),
               Text(
-                'Withdrawal Initiated',
+                AppTexts.withdrawalSubmitted,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 23.sp,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryColor,
+                  color: AppColors.plumDeep,
                 ),
               ),
               SizedBox(height: 12.h),
               Text(
-                'Your withdrawal request has been submitted successfully. The amount will be credited to your bank account within 2-3 business days.',
+                AppTexts.withdrawalSubmittedDesc,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13.sp,
                   height: 1.5,
-                  color: AppColors.subtitleText,
+                  color: AppColors.hostSubtitle,
                 ),
               ),
               SizedBox(height: 22.h),
@@ -72,7 +75,7 @@ class WithdrawalSuccessBottomSheet extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: Text(
-                    'Done',
+                    AppTexts.done,
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,

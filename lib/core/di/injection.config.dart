@@ -99,18 +99,26 @@ import '../../features/host_side/host_targets/domain/usecases/get_host_targets_u
     as _i431;
 import '../../features/host_side/host_wallet/data/datasources/host_wallet_remote_datasource.dart'
     as _i960;
+import '../../features/host_side/host_wallet/data/datasources/pending_withdrawal_local_datasource.dart'
+    as _i149;
 import '../../features/host_side/host_wallet/data/repositories/host_wallet_repository_impl.dart'
     as _i572;
 import '../../features/host_side/host_wallet/domain/repositories/host_wallet_repository.dart'
     as _i586;
 import '../../features/host_side/host_wallet/domain/usecases/get_host_wallet_overview_usecase.dart'
     as _i933;
+import '../../features/host_side/host_wallet/domain/usecases/get_unconfirmed_withdrawal_usecase.dart'
+    as _i499;
 import '../../features/host_side/host_wallet/domain/usecases/request_withdrawal_usecase.dart'
     as _i706;
 import '../../features/host_side/host_wallet/presentation/cubit/host_wallet_cubit.dart'
     as _i217;
+import '../../features/shared/block_users/data/blocked_hosts_store.dart'
+    as _i163;
 import '../../features/shared/block_users/data/datasources/block_remote_data_source.dart'
     as _i465;
+import '../../features/shared/block_users/data/host_visibility_sync.dart'
+    as _i195;
 import '../../features/shared/block_users/data/repositories/block_repository_impl.dart'
     as _i316;
 import '../../features/shared/block_users/domain/repositories/block_repository.dart'
@@ -171,6 +179,8 @@ import '../../features/shared/notifications/domain/usecases/mark_notification_re
     as _i1029;
 import '../../features/shared/notifications/domain/usecases/watch_new_notifications_usecase.dart'
     as _i1050;
+import '../../features/shared/notifications/domain/usecases/watch_notification_reconnects_usecase.dart'
+    as _i640;
 import '../../features/shared/notifications/presentation/cubit/notifications_cubit.dart'
     as _i611;
 import '../../features/shared/profile/data/datasources/profile_remote_data_source.dart'
@@ -211,8 +221,8 @@ import '../../features/user_side/apply_for_host/domain/usecases/join_as_host_use
     as _i102;
 import '../../features/user_side/apply_for_host/domain/usecases/submit_host_application_usecase.dart'
     as _i211;
-import '../../features/user_side/apply_for_host/domain/usecases/upload_image_usecase.dart'
-    as _i340;
+import '../../features/user_side/apply_for_host/domain/usecases/upload_verification_photo_usecase.dart'
+    as _i594;
 import '../../features/user_side/apply_for_host/presentation/cubit/apply_for_host_cubit.dart'
     as _i891;
 import '../../features/user_side/apply_for_host/presentation/cubit/host_application_status_cubit.dart'
@@ -235,6 +245,8 @@ import '../../features/user_side/call/domain/usecases/end_call_usecase.dart'
     as _i1018;
 import '../../features/user_side/call/domain/usecases/get_call_details_usecase.dart'
     as _i830;
+import '../../features/user_side/call/domain/usecases/get_call_token_usecase.dart'
+    as _i959;
 import '../../features/user_side/call/domain/usecases/initiate_call_usecase.dart'
     as _i866;
 import '../../features/user_side/call/domain/usecases/reject_call_usecase.dart'
@@ -283,6 +295,8 @@ import '../../features/user_side/home/domain/usecases/get_hosts_usecase.dart'
     as _i663;
 import '../../features/user_side/home/domain/usecases/watch_host_presence_usecase.dart'
     as _i562;
+import '../../features/user_side/home/domain/usecases/watch_host_profile_updates_usecase.dart'
+    as _i409;
 import '../../features/user_side/home/presentation/bloc/home_cubit.dart'
     as _i129;
 import '../../features/user_side/online_users/presentation/cubit/online_users_cubit.dart'
@@ -351,17 +365,40 @@ import '../../features/user_side/wallet/domain/usecases/verify_payment_usecase.d
     as _i821;
 import '../../features/user_side/wallet/presentation/cubit/wallet_cubit.dart'
     as _i285;
+import '../cubit/app_update_cubit.dart' as _i328;
+import '../cubit/call_background_ui_cubit.dart' as _i333;
+import '../cubit/developer_mode_cubit.dart' as _i298;
 import '../navigations/navigation_service.dart' as _i173;
 import '../network/api_client.dart' as _i557;
 import '../network/dio_provider.dart' as _i651;
 import '../services/agora/agora_service.dart' as _i449;
 import '../services/agora/i_agora_service.dart' as _i10;
+import '../services/app_update/app_update_service.dart' as _i981;
+import '../services/app_update/i_app_update_service.dart' as _i563;
+import '../services/audio/incoming_ringer_service.dart' as _i181;
+import '../services/audio/ringback_tone_service.dart' as _i6;
+import '../services/call_background/call_background_service.dart' as _i783;
+import '../services/call_background/i_call_background_service.dart' as _i36;
 import '../services/connectivity/connectivity_service.dart' as _i1015;
+import '../services/device_audio/device_audio_service.dart' as _i319;
+import '../services/device_audio/i_device_audio_service.dart' as _i387;
+import '../services/device_security/device_security_service.dart' as _i345;
+import '../services/device_security/i_device_security_service.dart' as _i196;
+import '../services/incoming_call_alert/i_incoming_call_alert_service.dart'
+    as _i1012;
+import '../services/incoming_call_alert/incoming_call_alert_service.dart'
+    as _i207;
 import '../services/permissions/call_permission_service.dart' as _i405;
+import '../services/proximity/i_proximity_service.dart' as _i565;
+import '../services/proximity/proximity_service.dart' as _i41;
 import '../services/razorpay_service.dart' as _i976;
+import '../services/screen_capture/i_screen_capture_guard.dart' as _i297;
+import '../services/screen_capture/screen_capture_guard.dart' as _i965;
+import '../services/session/session_manager.dart' as _i489;
 import '../services/socket/i_presence_socket_service.dart' as _i541;
 import '../services/socket/presence_socket_service.dart' as _i349;
 import '../transitions/cubit/snack_bar_cubit.dart' as _i358;
+import '../utils/server_clock.dart' as _i875;
 import '../utils/token_manager.dart' as _i833;
 import 'storage_module.dart' as _i371;
 
@@ -387,10 +424,21 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.secureStorage,
     );
     gh.lazySingleton<_i173.NavigationService>(() => _i173.NavigationService());
-    gh.lazySingleton<_i361.Dio>(() => dioModule.dio);
     gh.lazySingleton<_i976.RazorpayService>(() => _i976.RazorpayService());
+    gh.lazySingleton<_i875.ServerClock>(() => _i875.ServerClock());
+    gh.lazySingleton<_i163.BlockedHostsStore>(() => _i163.BlockedHostsStore());
+    gh.lazySingleton<_i6.IRingbackToneService>(() => _i6.RingbackToneService());
+    gh.lazySingleton<_i1012.IIncomingCallAlertService>(
+      () => _i207.IncomingCallAlertService(),
+    );
+    gh.lazySingleton<_i387.IDeviceAudioService>(
+      () => _i319.DeviceAudioService(),
+    );
     gh.lazySingleton<_i1015.IConnectivityService>(
       () => _i1015.ConnectivityService(),
+    );
+    gh.lazySingleton<_i196.IDeviceSecurityService>(
+      () => _i345.DeviceSecurityService(),
     );
     gh.lazySingleton<_i10.IAgoraService>(() => _i449.AgoraService());
     gh.lazySingleton<_i145.EnvConfig>(
@@ -400,25 +448,36 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i852.IAuthLocalDataSource>(
       () => const _i852.AuthLocalDataSourceImpl(),
     );
+    gh.lazySingleton<_i36.ICallBackgroundService>(
+      () => _i783.CallBackgroundService(),
+    );
     gh.lazySingleton<_i405.ICallPermissionService>(
       () => _i405.CallPermissionService(),
     );
-    gh.lazySingleton<_i557.ApiClient>(() => _i557.ApiClient(gh<_i361.Dio>()));
-    gh.lazySingleton<_i399.HostDashRemoteDataSource>(
-      () => _i399.HostDashRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    gh.lazySingleton<_i297.IScreenCaptureGuard>(
+      () => _i965.ScreenCaptureGuard(),
+    );
+    gh.lazySingleton<_i563.IAppUpdateService>(() => _i981.AppUpdateService());
+    gh.lazySingleton<_i181.IIncomingRingerService>(
+      () => _i181.IncomingRingerService(
+        gh<_i6.IRingbackToneService>(),
+        gh<_i387.IDeviceAudioService>(),
+      ),
     );
     gh.lazySingleton<_i145.EnvConfig>(
       () => _i145.DevEnvConfig(),
       registerFor: {_dev},
     );
-    gh.lazySingleton<_i259.RechargeHistoryRemoteDataSource>(
-      () => _i259.RechargeHistoryRemoteDataSourceImpl(gh<_i557.ApiClient>()),
-    );
-    gh.lazySingleton<_i924.ReferralStatusRemoteDataSource>(
-      () => _i924.ReferralStatusRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    gh.lazySingleton<_i565.IProximityService>(() => _i41.ProximityService());
+    gh.lazySingleton<_i361.Dio>(() => dioModule.dio(gh<_i875.ServerClock>()));
+    gh.factory<_i333.CallBackgroundUiCubit>(
+      () => _i333.CallBackgroundUiCubit(gh<_i36.ICallBackgroundService>()),
     );
     gh.lazySingleton<_i833.TokenManager>(
       () => _i833.TokenManager(secureStorage: gh<_i558.FlutterSecureStorage>()),
+    );
+    gh.factory<_i328.AppUpdateCubit>(
+      () => _i328.AppUpdateCubit(gh<_i563.IAppUpdateService>()),
     );
     gh.lazySingleton<_i327.HostApplicationLocalDataSource>(
       () => _i327.HostApplicationLocalDataSourceImpl(
@@ -433,15 +492,51 @@ extension GetItInjectableX on _i174.GetIt {
       () =>
           _i964.OnlineUsersCubit(getHostsUseCase: gh<_i663.GetHostsUseCase>()),
     );
-    gh.lazySingleton<_i649.RechargeHistoryRepository>(
-      () => _i338.RechargeHistoryRepositoryImpl(
-        gh<_i259.RechargeHistoryRemoteDataSource>(),
-      ),
-    );
     gh.lazySingleton<_i541.IPresenceSocketService>(
       () => _i349.PresenceSocketService(
         gh<_i145.EnvConfig>(),
         gh<_i833.TokenManager>(),
+      ),
+    );
+    gh.lazySingleton<_i149.PendingWithdrawalLocalDataSource>(
+      () => _i149.PendingWithdrawalLocalDataSourceImpl(
+        gh<_i558.FlutterSecureStorage>(),
+        gh<_i852.IAuthLocalDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i298.DeveloperModeCubit>(
+      () => _i298.DeveloperModeCubit(gh<_i196.IDeviceSecurityService>()),
+    );
+    gh.lazySingleton<_i195.HostVisibilitySync>(
+      () => _i195.HostVisibilitySync(
+        gh<_i541.IPresenceSocketService>(),
+        gh<_i163.BlockedHostsStore>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i557.ApiClient>(() => _i557.ApiClient(gh<_i361.Dio>()));
+    gh.lazySingleton<_i399.HostDashRemoteDataSource>(
+      () => _i399.HostDashRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i259.RechargeHistoryRemoteDataSource>(
+      () => _i259.RechargeHistoryRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i924.ReferralStatusRemoteDataSource>(
+      () => _i924.ReferralStatusRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i489.SessionManager>(
+      () => _i489.SessionManager(
+        gh<_i833.TokenManager>(),
+        gh<_i852.IAuthLocalDataSource>(),
+        gh<_i541.IPresenceSocketService>(),
+        gh<_i173.NavigationService>(),
+        gh<_i163.BlockedHostsStore>(),
+        gh<_i1012.IIncomingCallAlertService>(),
+      ),
+    );
+    gh.lazySingleton<_i649.RechargeHistoryRepository>(
+      () => _i338.RechargeHistoryRepositoryImpl(
+        gh<_i259.RechargeHistoryRemoteDataSource>(),
       ),
     );
     gh.lazySingleton<_i133.HostDashRepository>(
@@ -562,17 +657,9 @@ extension GetItInjectableX on _i174.GetIt {
       () =>
           _i342.FavoritesRepositoryImpl(gh<_i269.FavoritesRemoteDataSource>()),
     );
-    gh.lazySingleton<_i620.BlockRepository>(
-      () => _i316.BlockRepositoryImpl(gh<_i465.BlockRemoteDataSource>()),
-    );
     gh.lazySingleton<_i1003.HostTargetsRepository>(
       () => _i738.HostTargetsRepositoryImpl(
         gh<_i1011.HostTargetsRemoteDataSource>(),
-      ),
-    );
-    gh.lazySingleton<_i586.HostWalletRepository>(
-      () => _i572.HostWalletRepositoryImpl(
-        gh<_i960.HostWalletRemoteDataSource>(),
       ),
     );
     gh.lazySingleton<_i962.SystemConfigRepository>(
@@ -582,15 +669,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i790.GetReferralStatusUseCase>(
       () => _i790.GetReferralStatusUseCase(gh<_i33.ReferralStatusRepository>()),
-    );
-    gh.factory<_i154.BlockUserUseCase>(
-      () => _i154.BlockUserUseCase(gh<_i620.BlockRepository>()),
-    );
-    gh.factory<_i266.GetBlockedListUseCase>(
-      () => _i266.GetBlockedListUseCase(gh<_i620.BlockRepository>()),
-    );
-    gh.factory<_i415.UnblockUserUseCase>(
-      () => _i415.UnblockUserUseCase(gh<_i620.BlockRepository>()),
     );
     gh.factory<_i791.GetNotificationsUseCase>(
       () => _i791.GetNotificationsUseCase(gh<_i952.NotificationsRepository>()),
@@ -687,17 +765,16 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i563.GetSystemConfigUseCase>(
       () => _i563.GetSystemConfigUseCase(gh<_i962.SystemConfigRepository>()),
     );
-    gh.factory<_i668.BlockedUsersCubit>(
-      () => _i668.BlockedUsersCubit(
-        getBlockedListUseCase: gh<_i266.GetBlockedListUseCase>(),
-        blockUserUseCase: gh<_i154.BlockUserUseCase>(),
-        unblockUserUseCase: gh<_i415.UnblockUserUseCase>(),
-      ),
-    );
     gh.lazySingleton<_i294.ICallRepository>(
       () => _i544.CallRepositoryImpl(
         gh<_i449.ICallRemoteDataSource>(),
         gh<_i541.IPresenceSocketService>(),
+      ),
+    );
+    gh.lazySingleton<_i620.BlockRepository>(
+      () => _i316.BlockRepositoryImpl(
+        gh<_i465.BlockRemoteDataSource>(),
+        gh<_i163.BlockedHostsStore>(),
       ),
     );
     gh.lazySingleton<_i106.AcceptCallUseCase>(
@@ -714,6 +791,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i830.GetCallDetailsUseCase>(
       () => _i830.GetCallDetailsUseCase(gh<_i294.ICallRepository>()),
+    );
+    gh.lazySingleton<_i959.GetCallTokenUseCase>(
+      () => _i959.GetCallTokenUseCase(gh<_i294.ICallRepository>()),
     );
     gh.lazySingleton<_i866.InitiateCallUseCase>(
       () => _i866.InitiateCallUseCase(gh<_i294.ICallRepository>()),
@@ -732,31 +812,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i224.WatchNewMessagesUseCase>(
       () => _i224.WatchNewMessagesUseCase(gh<_i562.ChatRepository>()),
     );
-    gh.factory<_i559.CallScreenCubit>(
-      () => _i559.CallScreenCubit(
-        gh<_i866.InitiateCallUseCase>(),
-        gh<_i106.AcceptCallUseCase>(),
-        gh<_i415.ActivateCallUseCase>(),
-        gh<_i1018.EndCallUseCase>(),
-        gh<_i692.CancelCallUseCase>(),
-        gh<_i10.IAgoraService>(),
-        gh<_i294.ICallRepository>(),
-        gh<_i145.EnvConfig>(),
-        gh<_i405.ICallPermissionService>(),
-        gh<_i787.AuthRepository>(),
-        gh<_i1015.IConnectivityService>(),
-        gh<_i541.IPresenceSocketService>(),
-      ),
-    );
     gh.lazySingleton<_i271.CallLogRepository>(
       () => _i493.CallLogRepositoryImpl(gh<_i554.CallLogRemoteDataSource>()),
-    );
-    gh.factory<_i933.GetHostWalletOverviewUseCase>(
-      () =>
-          _i933.GetHostWalletOverviewUseCase(gh<_i586.HostWalletRepository>()),
-    );
-    gh.factory<_i706.RequestWithdrawalUseCase>(
-      () => _i706.RequestWithdrawalUseCase(gh<_i586.HostWalletRepository>()),
     );
     gh.factory<_i725.ConnectHostPresenceUseCase>(
       () => _i725.ConnectHostPresenceUseCase(gh<_i136.HostRepository>()),
@@ -767,17 +824,32 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i562.WatchHostPresenceUseCase>(
       () => _i562.WatchHostPresenceUseCase(gh<_i136.HostRepository>()),
     );
+    gh.factory<_i409.WatchHostProfileUpdatesUseCase>(
+      () => _i409.WatchHostProfileUpdatesUseCase(gh<_i136.HostRepository>()),
+    );
+    gh.lazySingleton<_i586.HostWalletRepository>(
+      () => _i572.HostWalletRepositoryImpl(
+        gh<_i960.HostWalletRemoteDataSource>(),
+        gh<_i149.PendingWithdrawalLocalDataSource>(),
+      ),
+    );
     gh.factory<_i75.ReportCallMisconductUseCase>(
       () => _i75.ReportCallMisconductUseCase(gh<_i858.CallReportRepository>()),
     );
-    gh.factory<_i217.HostWalletCubit>(
-      () => _i217.HostWalletCubit(
-        gh<_i933.GetHostWalletOverviewUseCase>(),
-        gh<_i706.RequestWithdrawalUseCase>(),
-      ),
-    );
     gh.factory<_i199.ReferralCubit>(
       () => _i199.ReferralCubit(gh<_i141.VerifyReferralCode>()),
+    );
+    gh.factory<_i285.WalletCubit>(
+      () => _i285.WalletCubit(
+        initializeWalletUseCase: gh<_i601.InitializeWalletUseCase>(),
+        getWalletBalanceUseCase: gh<_i98.GetWalletBalanceUseCase>(),
+        createOrderUseCase: gh<_i961.CreateOrderUseCase>(),
+        verifyPaymentUseCase: gh<_i821.VerifyPaymentUseCase>(),
+        getPlansUseCase: gh<_i284.GetPlansUseCase>(),
+        authRepository: gh<_i787.AuthRepository>(),
+        razorpayService: gh<_i976.RazorpayService>(),
+        watchNewNotificationsUseCase: gh<_i1050.WatchNewNotificationsUseCase>(),
+      ),
     );
     gh.factory<_i945.CallReportCubit>(
       () => _i945.CallReportCubit(
@@ -827,8 +899,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i456.HostApplicationRepository>(),
       ),
     );
-    gh.factory<_i340.UploadImageUseCase>(
-      () => _i340.UploadImageUseCase(gh<_i456.HostApplicationRepository>()),
+    gh.factory<_i594.UploadVerificationPhotoUseCase>(
+      () => _i594.UploadVerificationPhotoUseCase(
+        gh<_i456.HostApplicationRepository>(),
+      ),
     );
     gh.factory<_i663.GetHostsUseCase>(
       () => _i663.GetHostsUseCase(gh<_i136.HostRepository>()),
@@ -841,23 +915,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i48.LogoutUseCase>(
       () => _i48.LogoutUseCase(gh<_i787.AuthRepository>()),
-    );
-    gh.factory<_i986.HostDashCubit>(
-      () => _i986.HostDashCubit(
-        gh<_i57.GetHostDashboardDataUseCase>(),
-        gh<_i663.GetHostsUseCase>(),
-        gh<_i787.AuthRepository>(),
-        gh<_i541.IPresenceSocketService>(),
-        gh<_i833.TokenManager>(),
-      ),
-    );
-    gh.factory<_i891.ApplyForHostCubit>(
-      () => _i891.ApplyForHostCubit(
-        gh<_i211.SubmitHostApplicationUseCase>(),
-        gh<_i340.UploadImageUseCase>(),
-        gh<_i456.HostApplicationRepository>(),
-        gh<_i787.AuthRepository>(),
-      ),
     );
     gh.factory<_i299.GetPerformanceAnalyticsUseCase>(
       () => _i299.GetPerformanceAnalyticsUseCase(
@@ -872,18 +929,27 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i952.NotificationsRepository>(),
       ),
     );
-    gh.factory<_i129.HomeCubit>(
-      () => _i129.HomeCubit(
-        gh<_i562.WatchHostPresenceUseCase>(),
-        gh<_i725.ConnectHostPresenceUseCase>(),
-        gh<_i369.DisconnectHostPresenceUseCase>(),
-        gh<_i663.GetHostsUseCase>(),
-        gh<_i787.AuthRepository>(),
-        gh<_i833.TokenManager>(),
-        gh<_i381.GetFavoriteHostsUseCase>(),
-        gh<_i381.AddFavoriteUseCase>(),
-        gh<_i193.RemoveFavoriteUseCase>(),
+    gh.factory<_i640.WatchNotificationReconnectsUseCase>(
+      () => _i640.WatchNotificationReconnectsUseCase(
+        gh<_i952.NotificationsRepository>(),
       ),
+    );
+    gh.factory<_i891.ApplyForHostCubit>(
+      () => _i891.ApplyForHostCubit(
+        gh<_i211.SubmitHostApplicationUseCase>(),
+        gh<_i594.UploadVerificationPhotoUseCase>(),
+        gh<_i456.HostApplicationRepository>(),
+        gh<_i787.AuthRepository>(),
+      ),
+    );
+    gh.factory<_i154.BlockUserUseCase>(
+      () => _i154.BlockUserUseCase(gh<_i620.BlockRepository>()),
+    );
+    gh.factory<_i266.GetBlockedListUseCase>(
+      () => _i266.GetBlockedListUseCase(gh<_i620.BlockRepository>()),
+    );
+    gh.factory<_i415.UnblockUserUseCase>(
+      () => _i415.UnblockUserUseCase(gh<_i620.BlockRepository>()),
     );
     gh.factory<_i779.AcceptHostTermsUseCase>(
       () => _i779.AcceptHostTermsUseCase(gh<_i456.HostApplicationRepository>()),
@@ -912,17 +978,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i32.UploadProfileImageUseCase>(
       () => _i32.UploadProfileImageUseCase(gh<_i418.ProfileRepository>()),
     );
-    gh.factory<_i285.WalletCubit>(
-      () => _i285.WalletCubit(
-        initializeWalletUseCase: gh<_i601.InitializeWalletUseCase>(),
-        getWalletBalanceUseCase: gh<_i98.GetWalletBalanceUseCase>(),
-        createOrderUseCase: gh<_i961.CreateOrderUseCase>(),
-        verifyPaymentUseCase: gh<_i821.VerifyPaymentUseCase>(),
-        getPlansUseCase: gh<_i284.GetPlansUseCase>(),
-        authRepository: gh<_i787.AuthRepository>(),
-        razorpayService: gh<_i976.RazorpayService>(),
-      ),
-    );
     gh.factory<_i276.UserRechargeHistoryCubit>(
       () => _i276.UserRechargeHistoryCubit(
         gh<_i481.GetRechargeHistoryUseCase>(),
@@ -944,6 +999,35 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.NavigationService>(),
       ),
     );
+    gh.factory<_i559.CallScreenCubit>(
+      () => _i559.CallScreenCubit(
+        gh<_i866.InitiateCallUseCase>(),
+        gh<_i106.AcceptCallUseCase>(),
+        gh<_i415.ActivateCallUseCase>(),
+        gh<_i1018.EndCallUseCase>(),
+        gh<_i692.CancelCallUseCase>(),
+        gh<_i10.IAgoraService>(),
+        gh<_i294.ICallRepository>(),
+        gh<_i145.EnvConfig>(),
+        gh<_i405.ICallPermissionService>(),
+        gh<_i1015.IConnectivityService>(),
+        gh<_i541.IPresenceSocketService>(),
+        gh<_i959.GetCallTokenUseCase>(),
+        gh<_i6.IRingbackToneService>(),
+        gh<_i387.IDeviceAudioService>(),
+        gh<_i489.SessionManager>(),
+        gh<_i875.ServerClock>(),
+        gh<_i565.IProximityService>(),
+        gh<_i36.ICallBackgroundService>(),
+      ),
+    );
+    gh.factory<_i668.BlockedUsersCubit>(
+      () => _i668.BlockedUsersCubit(
+        getBlockedListUseCase: gh<_i266.GetBlockedListUseCase>(),
+        blockUserUseCase: gh<_i154.BlockUserUseCase>(),
+        unblockUserUseCase: gh<_i415.UnblockUserUseCase>(),
+      ),
+    );
     gh.factory<_i497.ReferralStatusCubit>(
       () => _i497.ReferralStatusCubit(
         gh<_i790.GetReferralStatusUseCase>(),
@@ -960,6 +1044,32 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i117.LogoutCubit>(
       () => _i117.LogoutCubit(gh<_i48.LogoutUseCase>()),
     );
+    gh.factory<_i129.HomeCubit>(
+      () => _i129.HomeCubit(
+        gh<_i562.WatchHostPresenceUseCase>(),
+        gh<_i725.ConnectHostPresenceUseCase>(),
+        gh<_i663.GetHostsUseCase>(),
+        gh<_i787.AuthRepository>(),
+        gh<_i833.TokenManager>(),
+        gh<_i381.GetFavoriteHostsUseCase>(),
+        gh<_i381.AddFavoriteUseCase>(),
+        gh<_i193.RemoveFavoriteUseCase>(),
+        gh<_i266.GetBlockedListUseCase>(),
+        gh<_i163.BlockedHostsStore>(),
+        gh<_i409.WatchHostProfileUpdatesUseCase>(),
+      ),
+    );
+    gh.factory<_i986.HostDashCubit>(
+      () => _i986.HostDashCubit(
+        gh<_i57.GetHostDashboardDataUseCase>(),
+        gh<_i663.GetHostsUseCase>(),
+        gh<_i787.AuthRepository>(),
+        gh<_i541.IPresenceSocketService>(),
+        gh<_i833.TokenManager>(),
+        gh<_i1012.IIncomingCallAlertService>(),
+        gh<_i405.ICallPermissionService>(),
+      ),
+    );
     gh.factory<_i1021.GetCallStatisticsUseCase>(
       () => _i1021.GetCallStatisticsUseCase(gh<_i271.CallLogRepository>()),
     );
@@ -972,6 +1082,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i864.NewMessagePickerCubit>(
       () => _i864.NewMessagePickerCubit(gh<_i148.GetHostCallLogsUseCase>()),
     );
+    gh.factory<_i322.HostAnalyticsCubit>(
+      () => _i322.HostAnalyticsCubit(
+        getPerformanceAnalyticsUseCase:
+            gh<_i299.GetPerformanceAnalyticsUseCase>(),
+        getCallStatisticsUseCase: gh<_i1021.GetCallStatisticsUseCase>(),
+        getHostTargetsUseCase: gh<_i431.GetHostTargetsUseCase>(),
+        watchNewNotificationsUseCase: gh<_i1050.WatchNewNotificationsUseCase>(),
+      ),
+    );
     gh.factory<_i91.OtpVerificationCubit>(
       () => _i91.OtpVerificationCubit(
         gh<_i503.VerifyOtpUseCase>(),
@@ -980,6 +1099,18 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i991.PhoneFormCubit>(
       () => _i991.PhoneFormCubit(gh<_i663.SendOtpUseCase>()),
+    );
+    gh.factory<_i933.GetHostWalletOverviewUseCase>(
+      () =>
+          _i933.GetHostWalletOverviewUseCase(gh<_i586.HostWalletRepository>()),
+    );
+    gh.factory<_i499.GetUnconfirmedWithdrawalUseCase>(
+      () => _i499.GetUnconfirmedWithdrawalUseCase(
+        gh<_i586.HostWalletRepository>(),
+      ),
+    );
+    gh.factory<_i706.RequestWithdrawalUseCase>(
+      () => _i706.RequestWithdrawalUseCase(gh<_i586.HostWalletRepository>()),
     );
     gh.factory<_i610.CallLogCubit>(
       () => _i610.CallLogCubit(
@@ -1002,14 +1133,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1032.GetHostApplicationStatusUseCase>(),
       ),
     );
-    gh.factory<_i322.HostAnalyticsCubit>(
-      () => _i322.HostAnalyticsCubit(
-        getPerformanceAnalyticsUseCase:
-            gh<_i299.GetPerformanceAnalyticsUseCase>(),
-        getCallStatisticsUseCase: gh<_i1021.GetCallStatisticsUseCase>(),
-        getHostTargetsUseCase: gh<_i431.GetHostTargetsUseCase>(),
-      ),
-    );
     gh.factory<_i611.NotificationsCubit>(
       () => _i611.NotificationsCubit(
         gh<_i791.GetNotificationsUseCase>(),
@@ -1017,11 +1140,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1029.MarkNotificationReadUseCase>(),
         gh<_i279.MarkAllNotificationsReadUseCase>(),
         gh<_i1050.WatchNewNotificationsUseCase>(),
+        gh<_i640.WatchNotificationReconnectsUseCase>(),
+        gh<_i489.SessionManager>(),
       ),
     );
     gh.factory<_i62.ProfileImageCubit>(
       () => _i62.ProfileImageCubit(
         uploadProfileImageUseCase: gh<_i32.UploadProfileImageUseCase>(),
+      ),
+    );
+    gh.factory<_i217.HostWalletCubit>(
+      () => _i217.HostWalletCubit(
+        gh<_i933.GetHostWalletOverviewUseCase>(),
+        gh<_i706.RequestWithdrawalUseCase>(),
+        gh<_i499.GetUnconfirmedWithdrawalUseCase>(),
+        gh<_i1050.WatchNewNotificationsUseCase>(),
       ),
     );
     gh.factory<_i575.HostCallLogCubit>(

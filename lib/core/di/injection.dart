@@ -9,4 +9,5 @@ final getIt = GetIt.instance;
   preferRelativeImports: true,
   asExtension: true,
 )
-void configureDependencies({String? environment}) => getIt.init(environment: environment);
+void configureDependencies({String? environment}) => 
+getIt.init(environment: environment);

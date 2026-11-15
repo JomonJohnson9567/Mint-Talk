@@ -9,12 +9,14 @@ import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import 'package:mint_talk/core/network/interceptors/auth_interceptor.dart';
 import 'package:mint_talk/core/network/interceptors/error_interceptor.dart';
 import 'package:mint_talk/core/network/interceptors/logger_interceptor.dart';
+import 'package:mint_talk/core/network/interceptors/server_time_interceptor.dart';
 import 'package:mint_talk/core/network/pinned_certificates.dart';
+import 'package:mint_talk/core/utils/server_clock.dart';
 
 @module
 abstract class DioModule {
   @lazySingleton
-  Dio get dio {
+  Dio dio(ServerClock serverClock) {
     final dio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
@@ -31,6 +33,9 @@ abstract class DioModule {
       AuthInterceptor(dio),
       LoggerInterceptor(),
       ErrorInterceptor(),
+      // Last, so its send timestamp is taken right before the request
+      // leaves — see ServerTimeInterceptor.
+      ServerTimeInterceptor(serverClock),
     ]);
 
     _applyCertificatePinning(dio);

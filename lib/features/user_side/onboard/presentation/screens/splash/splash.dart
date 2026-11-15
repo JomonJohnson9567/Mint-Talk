@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mint_talk/core/constants/app_assets.dart';
+import 'package:mint_talk/core/cubit/app_update_cubit.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/utils/app_logger.dart';
@@ -27,6 +28,11 @@ class _SplashView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<AppStartCubit, AppStartState>(
       listener: (context, state) {
+        // Every branch below leaves the splash — start the Play Store
+        // update check now so its prompt lands on the next screen.
+        if (state is! AppStartInitial && state is! AppStartLoading) {
+          context.read<AppUpdateCubit>().checkForUpdate();
+        }
         if (state is AppStartUnauthenticated) {
           Navigator.pushReplacementNamed(context, AppRoutes.welcome);
         } else if (state is AppStartNeedsProfile) {

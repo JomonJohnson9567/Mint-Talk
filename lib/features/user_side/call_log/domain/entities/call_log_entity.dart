@@ -8,7 +8,7 @@ class CallLogEntity extends Equatable {
   final String status;
   final String callType;
   final int duration;
-  final int billedMinutes;
+  final int billedUnits;
   final num totalPointsDebited;
   final String endReason;
   final DateTime? createdAt;
@@ -20,7 +20,7 @@ class CallLogEntity extends Equatable {
     required this.status,
     required this.callType,
     required this.duration,
-    required this.billedMinutes,
+    required this.billedUnits,
     required this.totalPointsDebited,
     required this.endReason,
     this.createdAt,
@@ -28,15 +28,15 @@ class CallLogEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        caller,
-        host,
-        status,
-        callType,
-        duration,
-        billedMinutes,
-        totalPointsDebited,
-        endReason,
-        createdAt,
-      ];
+    id,
+    caller,
+    host,
+    status,
+    callType,
+    duration,
+    billedUnits,
+    totalPointsDebited,
+    endReason,
+    createdAt,
+  ];
 }

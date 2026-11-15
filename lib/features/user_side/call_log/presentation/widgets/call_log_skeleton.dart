@@ -1,45 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
 /// Skeleton loading placeholder for [CallLogContents] while call logs
-/// load. Mirrors [CallLogItem]'s avatar + name + time layout.
+/// load. Mirrors [CallLogItem]'s avatar + two lines + call button layout.
 class CallLogSkeleton extends StatelessWidget {
   const CallLogSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
     return SkeletonShimmer(
-      child: ListView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: 10),
-        itemCount: 8,
-        itemBuilder: (context, index) => Container(
-          margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: const Color(0xFFE7EBF3)),
-          ),
-          child: Row(
-            children: [
-              SkeletonBox(width: 50.w, height: 50.w, shape: BoxShape.circle),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SkeletonBox(width: 130.w, height: 15.h),
-                    SizedBox(height: 8.h),
-                    SkeletonBox(width: 90.w, height: 11.h),
-                  ],
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 20.cw),
+          SkeletonBox(width: 80.cw, height: 18.cw),
+          for (var i = 0; i < 6; i++)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.cw),
+              child: Row(
+                children: [
+                  SkeletonBox(
+                    width: 56.cw,
+                    height: 56.cw,
+                    shape: BoxShape.circle,
+                  ),
+                  SizedBox(width: 14.cw),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(width: 110.cw, height: 15.cw),
+                        SizedBox(height: 8.cw),
+                        SkeletonBox(width: 80.cw, height: 12.cw),
+                      ],
+                    ),
+                  ),
+                  SkeletonBox(width: 56.cw, height: 12.cw),
+                  SizedBox(width: 12.cw),
+                  SkeletonBox(
+                    width: 46.cw,
+                    height: 46.cw,
+                    shape: BoxShape.circle,
+                  ),
+                ],
               ),
-              SkeletonBox(width: 24.w, height: 24.w, shape: BoxShape.circle),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

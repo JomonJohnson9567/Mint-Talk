@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/features/shared/notifications/presentation/widgets/mark_all_read_action.dart';
@@ -9,14 +10,16 @@ class UserNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Notifications',
+    return const Scaffold(
+      backgroundColor: AppColors.rechargeBackground,
+      appBar: CustomAppBar(
+        title: AppTexts.notifications,
         automaticallyImplyLeading: true,
+        centerTitle: false,
+        foregroundColor: AppColors.plumDeep,
         actions: [MarkAllReadAction()],
       ),
-      backgroundColor: AppColors.white,
-      body: const NotificationsListBody(),
+      body: SafeArea(bottom: false, child: NotificationsListBody()),
     );
   }
 }

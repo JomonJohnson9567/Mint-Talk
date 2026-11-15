@@ -54,11 +54,11 @@ class UserRechargeHistoryState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        history,
-        visibleHistory,
-        errorMessage,
-        hasMore,
-        userId,
-      ];
+    status,
+    history,
+    visibleHistory,
+    errorMessage,
+    hasMore,
+    userId,
+  ];
 }

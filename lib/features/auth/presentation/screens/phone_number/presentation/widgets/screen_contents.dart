@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,12 +15,18 @@ import 'package:mint_talk/features/auth/presentation/screens/phone_number/presen
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_cubit.dart';
 import 'package:mint_talk/core/transitions/utils/morphing_flight_shuttle.dart';
 import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/cubit/phone_form_state.dart';
+import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/widgets/legal_footer.dart';
+import 'package:mint_talk/core/widgets/mint_talk_logo.dart';
+import 'package:mint_talk/features/auth/presentation/screens/phone_number/presentation/widgets/wave_top_clipper.dart';
 
 class ScreenContents extends StatelessWidget {
   const ScreenContents({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final padding = MediaQuery.paddingOf(context);
+    final waveDepth = 40.h;
+
     return BlocListener<PhoneFormCubit, PhoneFormState>(
       listenWhen: (prev, curr) => prev.status != curr.status,
       listener: (context, state) {
@@ -56,155 +60,192 @@ class ScreenContents extends StatelessWidget {
           );
         }
       },
-      child: Stack(
-        children: [
-          // Top Image Section
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 280.h,
-            child: Center(
-              child: Hero(
-                tag: 'morphing_image',
-                flightShuttleBuilder: morphingImageFlightShuttleBuilder,
-                child: Image.asset(AppAssets.phoneEntry, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-          // Bottom Sheet Section
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Stack(
-              children: [
-                // 1. Hero Background (Visual Only)
-                Positioned.fill(
-                  child: Hero(
-                    tag: 'morphing_bottom_container',
-                    flightShuttleBuilder: morphingContainerFlightShuttleBuilder,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(30.r),
-                          ),
-                        ),
-                      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The illustration bleeds slightly past both screen edges so the
+          // five mascots fill the space above the card, as in the design.
+          final mascotBleed = constraints.maxWidth * 0.03;
+
+          return Stack(
+            children: [
+              // Mascot illustration, faded into the cream background at the top
+              Positioned(
+                top: padding.top + 2.h,
+                left: -mascotBleed,
+                right: -mascotBleed,
+                child: Hero(
+                  tag: 'morphing_image',
+                  flightShuttleBuilder: morphingImageFlightShuttleBuilder,
+                  child: ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (rect) => const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black],
+                      stops: [0.0, 0.15],
+                    ).createShader(rect),
+                    child: Image.asset(
+                      AppAssets.loginMascots,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
                     ),
                   ),
                 ),
-                // 2. The Content
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 24.w,
-                    vertical: 15.h,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 80.w,
-                            height: 4.h,
-                            decoration: BoxDecoration(
-                              color: AppColors.black.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(2.r),
+              ),
+              Positioned(
+                top: padding.top + 2.h,
+                left: 0,
+                right: 0,
+                child: const Center(child: MintTalkLogo()),
+              ),
+              // Wave-topped card
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: Stack(
+                    children: [
+                      // 1. Hero Background (Visual Only)
+                      Positioned.fill(
+                        child: Hero(
+                          tag: 'morphing_bottom_container',
+                          flightShuttleBuilder:
+                              morphingContainerFlightShuttleBuilder,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: ClipPath(
+                              clipper: WaveTopClipper(depth: waveDepth),
+                              child: const ColoredBox(
+                                color: AppColors.cardWhite,
+                              ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 20.h),
-                        const HeaderText(),
-                        SizedBox(height: 20.h),
-                        BlocBuilder<CountrySelectorCubit, CountrySelectorState>(
-                          builder: (context, countryState) {
-                            return BlocBuilder<PhoneFormCubit, PhoneFormState>(
-                              builder: (context, phoneState) {
-                                return PhoneInputSection(
-                                  selectedCountry: countryState.country,
-                                  errorText: phoneState.error,
-                                  onPhoneChanged: (value) {
-                                    context
-                                        .read<PhoneFormCubit>()
-                                        .phoneNumberChanged(
-                                          value,
-                                          countryCode:
-                                              countryState.country.countryCode,
-                                        );
-                                  },
-                                  onCountryTap: () async {
-                                    final country =
-                                        await showModalBottomSheet<Country>(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          backgroundColor: Colors.transparent,
-                                          builder: (context) => BlocProvider(
-                                            create: (context) =>
-                                                CountrySearchCubit()
-                                                  ..loadCountries(),
-                                            child: const CountryPickerSheet(),
-                                          ),
-                                        );
-                                    if (country != null && context.mounted) {
-                                      context
-                                          .read<CountrySelectorCubit>()
-                                          .updateCountry(country);
-                                    }
-                                  },
-                                );
-                              },
-                            );
-                          },
+                      ),
+                      // 2. The Content
+                      SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          waveDepth - 4.h,
+                          20.w,
+                          padding.bottom + 8.h,
                         ),
-                        SizedBox(height: 32.h),
-                        
-                        BlocBuilder<PhoneFormCubit, PhoneFormState>(
-                          builder: (context, state) {
-                            final isLoading =
-                                state.status == PhoneFormStatus.loading;
-
-                            return PrimaryButton(
-                              text: isLoading ? 'Sending...' : AppTexts.sendOtp,
-                              onPressed: isLoading
-                                  ? null
-                                  : () {
-                                      FocusManager.instance.primaryFocus?.unfocus();
-                                      if (state.isValid) {
-                                        final countryState = context
-                                            .read<CountrySelectorCubit>()
-                                            .state;
-                                        context.read<PhoneFormCubit>().sendOtp(
-                                              phone: state.phoneNumber,
-                                              countryCode:
-                                                  countryState.country.phoneCode,
-                                            );
-                                      } else {
-                                        context
-                                            .read<PhoneFormCubit>()
-                                            .validate(
-                                              countryCode: context
-                                                  .read<CountrySelectorCubit>()
-                                                  .state
-                                                  .country
-                                                  .countryCode,
-                                            );
-                                      }
-                                    },
-                            );
-                          },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const HeaderText(),
+                            SizedBox(height: 24.h),
+                            _buildPhoneInput(),
+                            SizedBox(height: 22.h),
+                            _buildSendOtpButton(),
+                            SizedBox(height: 12.h),
+                            const LegalFooter(),
+                          ],
                         ),
-                        SizedBox(height: 20.h),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildPhoneInput() {
+    return BlocBuilder<CountrySelectorCubit, CountrySelectorState>(
+      builder: (context, countryState) {
+        return BlocBuilder<PhoneFormCubit, PhoneFormState>(
+          builder: (context, phoneState) {
+            return PhoneInputSection(
+              selectedCountry: countryState.country,
+              errorText: phoneState.error,
+              helperText: AppTexts.weWillSendCode,
+              labelStyle: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.plumDeep,
+              ),
+              backgroundColor: AppColors.white,
+              border: Border.all(color: AppColors.lavenderBorder, width: 1.5),
+              borderRadius: 16.r,
+              height: 50.h,
+              accentColor: AppColors.plumDeep,
+              dividerColor: AppColors.lavenderBorder,
+              textStyle: TextStyle(
+                fontSize: 15.sp,
+                color: AppColors.plumDeep,
+                fontWeight: FontWeight.w500,
+              ),
+              hintStyle: TextStyle(
+                fontSize: 15.sp,
+                color: AppColors.plumHint,
+                fontWeight: FontWeight.w400,
+              ),
+              helperStyle: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.plumMuted,
+              ),
+              onPhoneChanged: (value) {
+                context.read<PhoneFormCubit>().phoneNumberChanged(
+                  value,
+                  countryCode: countryState.country.countryCode,
+                );
+              },
+              onCountryTap: () async {
+                final country = await showModalBottomSheet<Country>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => BlocProvider(
+                    create: (context) => CountrySearchCubit()..loadCountries(),
+                    child: const CountryPickerSheet(),
+                  ),
+                );
+                if (country != null && context.mounted) {
+                  context.read<CountrySelectorCubit>().updateCountry(country);
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSendOtpButton() {
+    return BlocBuilder<PhoneFormCubit, PhoneFormState>(
+      builder: (context, state) {
+        final isLoading = state.status == PhoneFormStatus.loading;
+
+        return PrimaryButton(
+          text: isLoading ? 'Sending...' : AppTexts.sendOtp,
+          height: 50.h,
+          trailingIcon: Icons.arrow_forward_rounded,
+          textStyle: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
+          onPressed: isLoading
+              ? null
+              : () {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  final country = context
+                      .read<CountrySelectorCubit>()
+                      .state
+                      .country;
+                  if (state.isValid) {
+                    context.read<PhoneFormCubit>().sendOtp(
+                      phone: state.phoneNumber,
+                      countryCode: country.phoneCode,
+                    );
+                  } else {
+                    context.read<PhoneFormCubit>().validate(
+                      countryCode: country.countryCode,
+                    );
+                  }
+                },
+        );
+      },
     );
   }
 }

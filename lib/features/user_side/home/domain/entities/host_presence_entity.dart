@@ -32,21 +32,30 @@ class HostPresenceEntity extends Equatable {
   /// source of truth for that check so call-gating logic doesn't drift
   /// between the host grid, profile screen, and tab filters.
   bool get isAvailableForCalls =>
-      status == 'online' &&
-      !busy &&
-      state != 'busy' &&
-      (audioAvailable || videoAvailable);
+      status == 'online' && !isOnCall && (audioAvailable || videoAvailable);
+
+  /// Whether this host is currently in a call.
+  ///
+  /// A disconnected host is never "on call": a stale `state: busy` or
+  /// `busy: true` can outlive the host's socket, so `status` is checked
+  /// first. While connected, the backend's derived `state` is authoritative
+  /// when present, falling back to the raw `busy` flag.
+  bool get isOnCall {
+    if (status != 'online') return false;
+    if (state.isNotEmpty) return state == 'busy';
+    return busy;
+  }
 
   @override
   List<Object?> get props => [
-        userId,
-        role,
-        status,
-        lastSeen,
-        updatedAt,
-        busy,
-        audioAvailable,
-        videoAvailable,
-        state,
-      ];
+    userId,
+    role,
+    status,
+    lastSeen,
+    updatedAt,
+    busy,
+    audioAvailable,
+    videoAvailable,
+    state,
+  ];
 }

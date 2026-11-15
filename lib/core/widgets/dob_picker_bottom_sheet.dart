@@ -10,7 +10,8 @@ import 'package:mint_talk/core/theme/color.dart';
 ///
 /// Shows a [CupertinoDatePicker] inside a modal bottom sheet.
 /// [currentDob] is the currently selected date string in DD/MM/YYYY format (can be empty).
-/// [onDateSelected] is called each time the user scrolls to a new date, with the formatted string.
+/// [onDateSelected] is called each time the user scrolls to a new date, with the formatted string,
+/// and again with the shown date when the check button confirms and closes the sheet.
 class DobPickerBottomSheet {
   DobPickerBottomSheet._();
 
@@ -20,11 +21,7 @@ class DobPickerBottomSheet {
     required ValueChanged<String> onDateSelected,
   }) {
     final now = DateTime.now();
-    final eighteenYearsAgo = DateTime(
-      now.year - 18,
-      now.month,
-      now.day,
-    );
+    final eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
 
     DateTime initialDate = eighteenYearsAgo;
     if (currentDob.isNotEmpty) {
@@ -40,6 +37,9 @@ class DobPickerBottomSheet {
       } catch (_) {}
     }
 
+    String format(DateTime date) => "${date.day}/${date.month}/${date.year}";
+    var selectedDate = initialDate;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -51,15 +51,10 @@ class DobPickerBottomSheet {
             topRight: Radius.circular(24),
           ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: 10.0,
-              sigmaY: 10.0,
-            ),
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
             child: Container(
               height: 350.h,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-              ),
+              decoration: const BoxDecoration(color: AppColors.white),
               child: Column(
                 children: [
                   Padding(
@@ -81,12 +76,13 @@ class DobPickerBottomSheet {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Close',
+                          tooltip: 'Done',
                           icon: Icon(
-                            AppIcons.close,
-                            color: Colors.black,
+                            AppIcons.check,
+                            color: AppColors.actionBlue,
                           ),
                           onPressed: () {
+                            onDateSelected(format(selectedDate));
                             Navigator.of(context).pop();
                           },
                         ),
@@ -109,9 +105,8 @@ class DobPickerBottomSheet {
                         minimumDate: DateTime(1900),
                         maximumDate: now,
                         onDateTimeChanged: (DateTime newDate) {
-                          final formatted =
-                              "${newDate.day}/${newDate.month}/${newDate.year}";
-                          onDateSelected(formatted);
+                          selectedDate = newDate;
+                          onDateSelected(format(newDate));
                         },
                       ),
                     ),

@@ -34,10 +34,7 @@ class LeaveHistoryList extends StatelessWidget {
           return Center(
             child: Text(
               'No leave requests yet.',
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: AppColors.subtitleText,
-              ),
+              style: TextStyle(fontSize: 13.sp, color: AppColors.hostSubtitle),
             ),
           );
         }
@@ -57,9 +54,9 @@ class LeaveHistoryList extends StatelessWidget {
             return Container(
               padding: EdgeInsets.all(14.w),
               decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(color: AppColors.borderSoft),
+                color: AppColors.cardWhite,
+                borderRadius: BorderRadius.circular(18.r),
+                border: Border.all(color: AppColors.profileDivider),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +70,11 @@ class LeaveHistoryList extends StatelessWidget {
                           color: statusColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.event_available_rounded, color: statusColor, size: 18.sp),
+                        child: Icon(
+                          Icons.event_available_rounded,
+                          color: statusColor,
+                          size: 18.sp,
+                        ),
                       ),
                       SizedBox(width: 12.w),
                       Expanded(
@@ -85,7 +86,7 @@ class LeaveHistoryList extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.black,
+                                color: AppColors.plumDeep,
                               ),
                             ),
                             SizedBox(height: 2.h),
@@ -93,14 +94,17 @@ class LeaveHistoryList extends StatelessWidget {
                               _formatDate(item.createdAt),
                               style: TextStyle(
                                 fontSize: 11.sp,
-                                color: AppColors.subtitleText,
+                                color: AppColors.hostSubtitle,
                               ),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 5.h,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999.r),
@@ -121,7 +125,7 @@ class LeaveHistoryList extends StatelessWidget {
                     item.reason,
                     style: TextStyle(
                       fontSize: 12.sp,
-                      color: AppColors.subtitleText,
+                      color: AppColors.hostSubtitle,
                     ),
                   ),
                 ],

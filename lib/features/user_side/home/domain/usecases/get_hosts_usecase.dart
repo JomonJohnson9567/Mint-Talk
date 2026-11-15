@@ -11,11 +11,7 @@ class GetHostsParams extends Equatable {
   final int? page;
   final int? limit;
 
-  const GetHostsParams({
-    this.isOnline,
-    this.page,
-    this.limit,
-  });
+  const GetHostsParams({this.isOnline, this.page, this.limit});
 
   @override
   List<Object?> get props => [isOnline, page, limit];
@@ -37,4 +33,3 @@ class GetHostsUseCase implements UseCase<PaginatedHostsEntity, GetHostsParams> {
     return repository.getAllHosts(page: params.page, limit: params.limit);
   }
 }
-

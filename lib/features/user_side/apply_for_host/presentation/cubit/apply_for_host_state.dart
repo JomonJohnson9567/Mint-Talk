@@ -2,12 +2,23 @@ import 'package:equatable/equatable.dart';
 
 enum ApplyForHostStatus { initial, loading, submitting, success, failure }
 
+/// Result of the live `/user/referral-verify` check, mirrored from
+/// `ReferralCubit` so this cubit stays decoupled from it.
+enum ReferralCheck { idle, checking, valid, invalid }
+
 class ApplyForHostState extends Equatable {
   final String name;
   final String dob;
   final String bio;
+  /// Local file shown as the in-form preview only.
   final String selfiePath;
-  final String selfieUrl;
+
+  /// Private id from the verification-photo upload; empty until uploaded.
+  final String verificationPhotoId;
+
+  /// Optional — empty means no referral code entered.
+  final String referralCode;
+  final ReferralCheck referralStatus;
 
   final bool isUploadingSelfie;
 
@@ -20,7 +31,9 @@ class ApplyForHostState extends Equatable {
     this.dob = '',
     this.bio = '',
     this.selfiePath = '',
-    this.selfieUrl = '',
+    this.verificationPhotoId = '',
+    this.referralCode = '',
+    this.referralStatus = ReferralCheck.idle,
     this.isUploadingSelfie = false,
     this.status = ApplyForHostStatus.initial,
     this.errorMessage,
@@ -33,8 +46,9 @@ class ApplyForHostState extends Equatable {
       dob.isNotEmpty &&
       bio.trim().length >= 10 &&
       selfiePath.isNotEmpty &&
-      selfieUrl.isNotEmpty &&
+      verificationPhotoId.isNotEmpty &&
       !isUploadingSelfie &&
+      (referralCode.isEmpty || referralStatus == ReferralCheck.valid) &&
       fieldErrors.values.every((error) => error.isEmpty);
 
   ApplyForHostState copyWith({
@@ -42,7 +56,9 @@ class ApplyForHostState extends Equatable {
     String? dob,
     String? bio,
     String? selfiePath,
-    String? selfieUrl,
+    String? verificationPhotoId,
+    String? referralCode,
+    ReferralCheck? referralStatus,
     bool? isUploadingSelfie,
     ApplyForHostStatus? status,
     String? errorMessage,
@@ -53,7 +69,9 @@ class ApplyForHostState extends Equatable {
       dob: dob ?? this.dob,
       bio: bio ?? this.bio,
       selfiePath: selfiePath ?? this.selfiePath,
-      selfieUrl: selfieUrl ?? this.selfieUrl,
+      verificationPhotoId: verificationPhotoId ?? this.verificationPhotoId,
+      referralCode: referralCode ?? this.referralCode,
+      referralStatus: referralStatus ?? this.referralStatus,
       isUploadingSelfie: isUploadingSelfie ?? this.isUploadingSelfie,
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -67,7 +85,9 @@ class ApplyForHostState extends Equatable {
     dob,
     bio,
     selfiePath,
-    selfieUrl,
+    verificationPhotoId,
+    referralCode,
+    referralStatus,
     isUploadingSelfie,
     status,
     errorMessage,

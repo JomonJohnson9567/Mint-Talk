@@ -17,7 +17,7 @@ class _MockGetCallDetailsUseCase extends Mock implements GetCallDetailsUseCase {
 
 CallSessionEntity _session({
   int duration = 0,
-  int billedMinutes = 0,
+  int billedUnits = 0,
   int totalPointsDebited = 0,
 }) {
   return CallSessionEntity(
@@ -27,7 +27,7 @@ CallSessionEntity _session({
     status: 'ended',
     callType: CallType.audio,
     duration: duration,
-    billedMinutes: billedMinutes,
+    billedUnits: billedUnits,
     totalPointsDebited: totalPointsDebited,
     ratePerMinute: 10,
     endReason: 'ended_by_user',
@@ -48,7 +48,7 @@ void main() {
     'when it already carries real billing numbers',
     () async {
       final cubit = CallSummaryCubit(
-        session: _session(duration: 125, billedMinutes: 3, totalPointsDebited: 30),
+        session: _session(duration: 125, billedUnits: 3, totalPointsDebited: 30),
         isHost: false,
         getCallDetailsUseCase: getCallDetailsUseCase,
       );
@@ -56,7 +56,7 @@ void main() {
       // No await at all — this must already be the final state synchronously.
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '2m 5s');
-      expect(cubit.state.billedMinutes, 3);
+      expect(cubit.state.billedUnits, 3);
       expect(cubit.state.pointsValue, 30);
       verifyNever(() => getCallDetailsUseCase(any()));
 
@@ -84,7 +84,7 @@ void main() {
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.title, isNotEmpty);
       expect(cubit.state.durationText, isNull);
-      expect(cubit.state.billedMinutes, isNull);
+      expect(cubit.state.billedUnits, isNull);
       expect(cubit.state.pointsValue, isNull);
 
       await cubit.close();
@@ -102,9 +102,9 @@ void main() {
         // the second — reproduces the reported bug where billedMinutes/
         // points update but duration does not, in the same response cycle.
         if (attempt == 1) {
-          return Right(_session(billedMinutes: 3, totalPointsDebited: 30));
+          return Right(_session(billedUnits: 3, totalPointsDebited: 30));
         }
-        return Right(_session(duration: 130, billedMinutes: 3, totalPointsDebited: 30));
+        return Right(_session(duration: 130, billedUnits: 3, totalPointsDebited: 30));
       });
 
       final cubit = CallSummaryCubit(
@@ -115,11 +115,11 @@ void main() {
       );
 
       expect(cubit.state.durationText, isNull);
-      expect(cubit.state.billedMinutes, isNull);
+      expect(cubit.state.billedUnits, isNull);
 
       // First retry (1s) resolves billing but not duration.
       await Future<void>.delayed(const Duration(seconds: 1, milliseconds: 300));
-      expect(cubit.state.billedMinutes, 3);
+      expect(cubit.state.billedUnits, 3);
       expect(cubit.state.pointsValue, 30);
       expect(cubit.state.durationText, isNull);
 
@@ -157,7 +157,7 @@ void main() {
       // never silently swapped for the local 95s tally.
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '0s');
-      expect(cubit.state.billedMinutes, 0);
+      expect(cubit.state.billedUnits, 0);
       expect(cubit.state.pointsValue, 0);
       verify(() => getCallDetailsUseCase('call-1')).called(3);
 
@@ -211,7 +211,7 @@ void main() {
         if (attempt < 2) {
           return Right(_session(duration: 7));
         }
-        return Right(_session(duration: 61, billedMinutes: 1, totalPointsDebited: 10));
+        return Right(_session(duration: 61, billedUnits: 1, totalPointsDebited: 10));
       });
 
       final cubit = CallSummaryCubit(
@@ -225,7 +225,7 @@ void main() {
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '1m 1s');
-      expect(cubit.state.billedMinutes, 1);
+      expect(cubit.state.billedUnits, 1);
       expect(cubit.state.pointsValue, 10);
       expect(attempt, 2);
 
@@ -249,7 +249,7 @@ void main() {
         if (attempt < 2) {
           return Right(_session(duration: 240));
         }
-        return Right(_session(duration: 240, billedMinutes: 4, totalPointsDebited: 40));
+        return Right(_session(duration: 240, billedUnits: 4, totalPointsDebited: 40));
       });
 
       final cubit = CallSummaryCubit(
@@ -263,13 +263,13 @@ void main() {
       // stays a skeleton until the background refinement catches up.
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, isNull);
+      expect(cubit.state.billedUnits, isNull);
 
       await Future<void>.delayed(const Duration(seconds: 3, milliseconds: 500));
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, 4);
+      expect(cubit.state.billedUnits, 4);
       expect(cubit.state.pointsValue, 40);
       expect(attempt, 2);
 
@@ -295,13 +295,13 @@ void main() {
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, isNull);
+      expect(cubit.state.billedUnits, isNull);
 
       await Future<void>.delayed(const Duration(seconds: 6, milliseconds: 500));
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.durationText, '4m 0s');
-      expect(cubit.state.billedMinutes, 0);
+      expect(cubit.state.billedUnits, 0);
       expect(cubit.state.pointsValue, 0);
       verify(() => getCallDetailsUseCase('call-1')).called(3);
 

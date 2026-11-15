@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/di/injection.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/features/user_side/profile_screen/presentation/widgets/profile_tile.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/user_side/profile_screen/presentation/widgets/profile_menu_card.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_cubit.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/cubit/logout/logout_state.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/widgets/contact_us_bottom_sheet.dart';
 import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_action_bottom_sheet.dart';
+import 'package:mint_talk/features/user_side/settings/presentation/widgets/settings_page_header.dart';
 
 class SettingsContents extends StatelessWidget {
   const SettingsContents({super.key});
@@ -62,56 +63,46 @@ class SettingsContents extends StatelessWidget {
   }
 
   Widget _buildSettingsList(BuildContext context, bool isLoading) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(16.cw, 12.cw, 16.cw, 24.cw),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildContactUs(context),
-          _buildTermsAndConditions(),
-          _buildAboutUs(),
+          const SettingsPageHeader(),
+          SizedBox(height: 20.cw),
+          ProfileMenuCard(
+            items: [
+              ProfileMenuItem(
+                icon: Icons.support_agent_rounded,
+                label: AppTexts.contactUs,
+                onTap: () => ContactUsBottomSheetPresenter.show(context),
+              ),
+              ProfileMenuItem(
+                icon: Icons.description_rounded,
+                label: AppTexts.termsConditions,
+                onTap: () {},
+              ),
+              ProfileMenuItem(
+                icon: Icons.info_rounded,
+                label: AppTexts.aboutUs,
+                onTap: () {},
+              ),
+            ],
+          ),
+          SizedBox(height: 12.cw),
           _buildLogout(context, isLoading),
+          SizedBox(height: 12.cw),
           _buildDeleteAccount(context),
         ],
       ),
     );
   }
 
-  Widget _buildContactUs(BuildContext context) {
-    return ProfileTile(
-      icon: Icons.email,
-      iconColor: AppColors.contactIcon,
-      iconBackgroundColor: AppColors.contactIcon.withValues(alpha: 0.2),
-      title: AppTexts.contactUs,
-      onTap: () => ContactUsBottomSheetPresenter.show(context),
-    );
-  }
-
-  Widget _buildTermsAndConditions() {
-    return ProfileTile(
-      icon: Icons.description,
-      iconColor: AppColors.termsIcon,
-      iconBackgroundColor: AppColors.termsIcon.withValues(alpha: 0.2),
-      title: AppTexts.termsConditions,
-      onTap: () {},
-    );
-  }
-
-  Widget _buildAboutUs() {
-    return ProfileTile(
-      icon: Icons.info,
-      iconColor: AppColors.aboutIcon,
-      iconBackgroundColor: AppColors.aboutIcon.withValues(alpha: 0.2),
-      title: AppTexts.aboutUs,
-      onTap: () {},
-    );
-  }
-
   Widget _buildLogout(BuildContext context, bool isLoading) {
-    return ProfileTile(
-      icon: Icons.logout,
-      iconColor: AppColors.favIcon,
-      iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
-      title: AppTexts.logout,
+    return ProfileActionRow(
+      icon: Icons.logout_rounded,
+      label: AppTexts.logOut,
+      isLoading: isLoading,
       onTap: () {
         if (isLoading) return;
         SettingsActionBottomSheetPresenter.showLogout(
@@ -123,11 +114,12 @@ class SettingsContents extends StatelessWidget {
   }
 
   Widget _buildDeleteAccount(BuildContext context) {
-    return ProfileTile(
-      icon: Icons.delete_forever_outlined,
-      iconColor: AppColors.favIcon,
-      iconBackgroundColor: AppColors.favIcon.withValues(alpha: 0.2),
-      title: AppTexts.deleteAccount,
+    return ProfileActionRow(
+      icon: Icons.delete_forever_rounded,
+      label: AppTexts.deleteAccountRow,
+      iconColor: AppColors.linkMagenta,
+      labelColor: AppColors.linkMagenta,
+      backgroundColor: AppColors.linkMagenta.withValues(alpha: 0.08),
       onTap: () => SettingsActionBottomSheetPresenter.showDeleteAccount(
         context,
         onConfirm: () {

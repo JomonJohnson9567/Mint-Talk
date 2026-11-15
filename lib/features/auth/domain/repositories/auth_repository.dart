@@ -25,13 +25,14 @@ abstract class AuthRepository {
   /// Checks if the user has completed their profile setup.
   Future<Either<Failure, bool>> checkIsProfileComplete();
 
-  /// Fetches the current user's role from the backend and updates the
-  /// local cache, called on every app launch so the launch-time UI
-  /// decision reflects reality instead of a possibly-stale cached value
-  /// (e.g. a host application approved while the app was closed). Falls
-  /// back to the previously cached role if the fetch fails (offline, or a
-  /// transient server error) rather than blocking launch.
-  Future<Either<Failure, String?>> syncCurrentUserRole();
+  /// Fetches the current user from the backend and refreshes the cached
+  /// role and host call rates, called on every app launch so the
+  /// launch-time UI reflects reality instead of possibly-stale cached
+  /// values (e.g. a host application approved while the app was closed).
+  /// Returns the role. Falls back to the previously cached role if the
+  /// fetch fails (offline, or a transient server error) rather than
+  /// blocking launch.
+  Future<Either<Failure, String?>> syncCurrentUser();
 
   /// Checks if the user has successfully completed OTP verification.
   Future<Either<Failure, bool>> checkIsOtpVerified();

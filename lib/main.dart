@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mint_talk/app.dart';
+import 'package:mint_talk/core/cubit/developer_mode_cubit.dart';
 import 'package:mint_talk/core/di/injection.dart';
-// ignore: unused_import
-import 'package:screen_protector/screen_protector.dart'; // re-needed once re-enabled below
+import 'package:mint_talk/core/services/session/session_manager.dart';
+import 'package:mint_talk/features/shared/block_users/data/host_visibility_sync.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,11 +14,12 @@ Future<void> main() async {
   _validateRequiredEnvVars(env);
 
   configureDependencies(environment: env);
+  getIt<SessionManager>().startMonitoring();
+  getIt<HostVisibilitySync>().start();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-  // TODO(security): screenshot restriction temporarily disabled for testing.
-  // Re-enable before any release build — see ScreenProtector.preventScreenshotOn().
-  // await ScreenProtector.preventScreenshotOn();
+  // Resolved before the first frame so a blocked device never flashes the
+  // app (splash, auth, socket) before the Developer-options block appears.
+  await getIt<DeveloperModeCubit>().check();
 
   runApp(const MyApp());
 }

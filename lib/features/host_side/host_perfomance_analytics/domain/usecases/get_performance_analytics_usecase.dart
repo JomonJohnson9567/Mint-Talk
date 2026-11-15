@@ -7,13 +7,15 @@ import '../repositories/performance_analytics_repository.dart';
 
 @injectable
 class GetPerformanceAnalyticsUseCase
-    implements UseCase<HostEarningsLedgerEntity, NoParams> {
+    implements UseCase<HostEarningsLedgerEntity, EarningsLedgerScope> {
   final PerformanceAnalyticsRepository repository;
 
   GetPerformanceAnalyticsUseCase(this.repository);
 
   @override
-  Future<Either<Failure, HostEarningsLedgerEntity>> call(NoParams params) {
-    return repository.getPerformanceAnalytics();
+  Future<Either<Failure, HostEarningsLedgerEntity>> call(
+    EarningsLedgerScope scope,
+  ) {
+    return repository.getPerformanceAnalytics(scope: scope);
   }
 }

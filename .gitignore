@@ -60,3 +60,7 @@ app.*.map.json
 android/key.properties
 *.jks
 *.keystore
+key.properties
+
+# Node deps for the local socket.io test server
+test/support/socket_io_server/node_modules/

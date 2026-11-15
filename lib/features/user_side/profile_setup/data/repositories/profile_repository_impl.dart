@@ -26,7 +26,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
         ValidationFailure(message: 'Validation failed', errors: e.errors),
       );
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to create profile'));
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'Failed to create profile',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -43,7 +48,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
         ValidationFailure(message: 'Validation failed', errors: e.errors),
       );
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to update profile'));
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'Failed to update profile',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -55,7 +65,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final result = await remoteDataSource.verifyReferralCode(referralCode);
       return Right(result);
     } on DioException catch (e) {
-      return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to verify referral code'));
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'Failed to verify referral code',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

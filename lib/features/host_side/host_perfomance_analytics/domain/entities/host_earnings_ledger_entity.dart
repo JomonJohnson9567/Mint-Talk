@@ -1,5 +1,9 @@
 import 'package:equatable/equatable.dart';
 
+/// `recent` = earnings not yet paid out (they clear once a withdrawal is
+/// paid); `history` = the full ledger.
+enum EarningsLedgerScope { recent, history }
+
 class HostEarningsLedgerSummaryEntity extends Equatable {
   final double totalGrossInr;
   final double totalNetInr;
@@ -15,11 +19,11 @@ class HostEarningsLedgerSummaryEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        totalGrossInr,
-        totalNetInr,
-        totalBilledPoints,
-        totalCalls,
-      ];
+    totalGrossInr,
+    totalNetInr,
+    totalBilledPoints,
+    totalCalls,
+  ];
 }
 
 class HostEarningCallInfoEntity extends Equatable {
@@ -47,9 +51,12 @@ class HostEarningEntryEntity extends Equatable {
   final double netEarningInr;
   final String billingPolicy;
   final int? ratePerMinute;
-  final int? billedMinutes;
+  final int? billedUnits;
   final int? billedPoints;
   final DateTime createdAt;
+
+  /// Part of this earning not yet withdrawn (recent scope only).
+  final double? remainingEarningInr;
   final HostEarningCallInfoEntity? callInfo;
   final Map<String, dynamic>? metadata;
 
@@ -62,8 +69,9 @@ class HostEarningEntryEntity extends Equatable {
     required this.billingPolicy,
     required this.createdAt,
     this.ratePerMinute,
-    this.billedMinutes,
+    this.billedUnits,
     this.billedPoints,
+    this.remainingEarningInr,
     this.callInfo,
     this.metadata,
   });
@@ -73,24 +81,28 @@ class HostEarningEntryEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        hostId,
-        earningType,
-        grossEarningInr,
-        netEarningInr,
-        billingPolicy,
-        ratePerMinute,
-        billedMinutes,
-        billedPoints,
-        createdAt,
-        callInfo,
-        metadata,
-      ];
+    id,
+    hostId,
+    earningType,
+    grossEarningInr,
+    netEarningInr,
+    billingPolicy,
+    ratePerMinute,
+    billedUnits,
+    billedPoints,
+    createdAt,
+    remainingEarningInr,
+    callInfo,
+    metadata,
+  ];
 }
 
 class HostEarningsLedgerEntity extends Equatable {
   final HostEarningsLedgerSummaryEntity summary;
   final List<HostEarningEntryEntity> earnings;
+
+  /// Authoritative available balance; null when the API omitted it.
+  final double? withdrawableBalanceInr;
   final int page;
   final int limit;
   final int total;
@@ -98,6 +110,7 @@ class HostEarningsLedgerEntity extends Equatable {
   const HostEarningsLedgerEntity({
     required this.summary,
     required this.earnings,
+    this.withdrawableBalanceInr,
     required this.page,
     required this.limit,
     required this.total,
@@ -106,5 +119,12 @@ class HostEarningsLedgerEntity extends Equatable {
   bool get hasMore => page * limit < total;
 
   @override
-  List<Object?> get props => [summary, earnings, page, limit, total];
+  List<Object?> get props => [
+    summary,
+    earnings,
+    withdrawableBalanceInr,
+    page,
+    limit,
+    total,
+  ];
 }

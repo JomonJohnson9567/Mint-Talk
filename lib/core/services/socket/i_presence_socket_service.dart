@@ -32,6 +32,13 @@ abstract class IPresenceSocketService {
   /// [newNotifications] (no per-conversation subscribe call needed).
   Stream<Map<String, dynamic>> get newChatMessages;
 
+  /// Raw `visibility_updated` payloads — `visible: false` means a host must
+  /// disappear from this user's lists (e.g. after a block).
+  Stream<Map<String, dynamic>> get visibilityUpdates;
+
+  /// Raw `profile_updated` payloads (new `avatarUrl`, name, …) for a user.
+  Stream<Map<String, dynamic>> get profileUpdates;
+
   /// Emits `true` the moment the underlying socket handshake completes and
   /// `false` the moment it drops (explicit disconnect, transport error, or a
   /// connect attempt that failed outright) — de-duplicated so listeners only
@@ -40,6 +47,21 @@ abstract class IPresenceSocketService {
   /// (e.g. a host waiting for calls) should use this instead of inferring it
   /// from [presenceUpdates], which only carries *other* users' presence.
   Stream<bool> get connectionStatus;
+
+  /// Whether the socket handshake is complete right now.
+  ///
+  /// [connectionStatus] only carries *transitions* and does not replay, so a
+  /// listener that subscribes while the socket is already connected never
+  /// sees `true`. Read this to seed state at subscribe time.
+  bool get isConnected;
+
+  /// True when the socket is down and nothing will bring it back on its
+  /// own: no connect attempt or token-refresh reconnect is in flight, the
+  /// socket_io Manager isn't backing off (the server closed the socket or
+  /// rejected the handshake), and the app didn't disconnect on purpose.
+  /// Callers that must stay online (a host waiting for calls) should call
+  /// [connect] again when this is true.
+  bool get isStalled;
 
   /// Opens the socket connection with the given [accessToken].
   void connect(String accessToken);

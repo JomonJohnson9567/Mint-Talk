@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import '../cubit/notifications_cubit.dart';
 
+/// App-bar action that marks every notification read; hidden once nothing is
+/// unread.
 class MarkAllReadAction extends StatelessWidget {
   const MarkAllReadAction({super.key});
 
@@ -15,14 +19,18 @@ class MarkAllReadAction extends StatelessWidget {
 
     if (!hasUnread) return const SizedBox.shrink();
 
-    return TextButton(
-      onPressed: () => context.read<NotificationsCubit>().markAllAsRead(),
-      child: Text(
-        'Mark all read',
-        style: TextStyle(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primaryColor,
+    return Padding(
+      padding: EdgeInsets.only(right: 6.cw),
+      child: TextButton.icon(
+        onPressed: () => context.read<NotificationsCubit>().markAllAsRead(),
+        style: TextButton.styleFrom(foregroundColor: AppColors.primaryColor),
+        icon: Icon(Icons.done_all_rounded, size: 18.csp),
+        label: Text(
+          AppTexts.markAllRead,
+          style: GoogleFonts.nunito(
+            fontSize: 13.5.csp,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );

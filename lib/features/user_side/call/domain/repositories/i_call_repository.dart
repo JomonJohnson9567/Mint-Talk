@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:mint_talk/core/errors/failures.dart';
 import '../entities/call_session_entity.dart';
 import '../entities/call_socket_event.dart';
+import '../entities/call_token_entity.dart';
 import '../entities/call_type.dart';
 
 abstract class ICallRepository {
@@ -32,4 +33,7 @@ abstract class ICallRepository {
   Future<Either<Failure, CallSessionEntity>> endCall(String callId);
 
   Future<Either<Failure, CallSessionEntity>> getCallDetails(String callId);
+
+  /// POST /calls/:callId/token — RTC token for the local participant.
+  Future<Either<Failure, CallTokenEntity>> fetchCallToken(String callId);
 }

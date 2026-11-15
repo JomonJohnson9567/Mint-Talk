@@ -12,7 +12,7 @@ class WalletSheetHandle extends StatelessWidget {
         width: 44.w,
         height: 5.h,
         decoration: BoxDecoration(
-          color: AppColors.lightGrey,
+          color: AppColors.lavenderBorder,
           borderRadius: BorderRadius.circular(999.r),
         ),
       ),

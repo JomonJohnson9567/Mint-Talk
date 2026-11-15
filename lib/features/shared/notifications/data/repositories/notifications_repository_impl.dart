@@ -23,6 +23,11 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       _presenceSocketService.newNotifications.map(NotificationDto.fromJson);
 
   @override
+  Stream<void> watchReconnects() => _presenceSocketService.connectionStatus
+      .where((connected) => connected)
+      .map((_) {});
+
+  @override
   Future<Either<Failure, PaginatedNotificationsEntity>> getNotifications({
     int? page,
     int? limit,

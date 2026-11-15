@@ -50,12 +50,23 @@ class ApiClient {
     Duration? connectTimeout,
     Duration? sendTimeout,
     Duration? receiveTimeout,
+    // Sends the token but opts out of AuthInterceptor's refresh/forced-logout
+    // handling — for a request whose 401 must not end the session itself
+    // (e.g. /auth/logout, which already clears everything locally).
+    bool skipSessionHandling = false,
+    // Per-request headers merged over the BaseOptions defaults — e.g. the
+    // `Idempotency-Key` a withdrawal request must carry.
+    Map<String, dynamic>? headers,
   }) async {
     final response = await _dio.post(
       endpoint,
       data: body,
       options: Options(
-        extra: {'requiresAuth': requiresAuth},
+        headers: headers,
+        extra: {
+          'requiresAuth': requiresAuth,
+          if (skipSessionHandling) 'skipSessionHandling': true,
+        },
         connectTimeout: connectTimeout,
         sendTimeout: sendTimeout,
         receiveTimeout: receiveTimeout,

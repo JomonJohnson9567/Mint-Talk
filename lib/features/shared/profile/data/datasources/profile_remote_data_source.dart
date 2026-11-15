@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:injectable/injectable.dart';
 import 'package:mint_talk/core/constants/api_endpoints_user.dart';
 import '../../../../../core/errors/exceptions.dart';
@@ -19,10 +20,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<ProfileImageDto> uploadProfileImage(String imagePath) async {
     try {
-      final file = await MultipartFile.fromFile(
-        imagePath,
-        filename: imagePath.split('/').last,
-      );
+      final filename = imagePath.split('/').last;
+      // Preset avatars are bundled assets, not files on disk — upload their
+      // bytes so the backend stores a real URL users can load. Dio infers
+      // the image content type from the filename extension.
+      final file = imagePath.startsWith('assets/')
+          ? MultipartFile.fromBytes(
+              (await rootBundle.load(imagePath)).buffer.asUint8List(),
+              filename: filename,
+            )
+          : await MultipartFile.fromFile(imagePath, filename: filename);
 
       final response = await apiClient.postMultipart(
         ApiEndpoints.profileImage,

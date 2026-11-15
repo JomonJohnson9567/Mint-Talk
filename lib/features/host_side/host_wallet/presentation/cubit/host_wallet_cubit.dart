@@ -1,246 +1,298 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/usecases/usecase.dart';
+import 'package:mint_talk/core/utils/indian_number_format.dart';
 import 'package:mint_talk/features/host_side/host_wallet/domain/entities/host_wallet_entities.dart';
+import 'package:mint_talk/features/host_side/host_wallet/domain/entities/withdrawal_amount_validator.dart';
 import 'package:mint_talk/features/host_side/host_wallet/domain/usecases/get_host_wallet_overview_usecase.dart';
+import 'package:mint_talk/features/host_side/host_wallet/domain/usecases/get_unconfirmed_withdrawal_usecase.dart';
 import 'package:mint_talk/features/host_side/host_wallet/domain/usecases/request_withdrawal_usecase.dart';
-import 'package:mint_talk/features/host_side/host_wallet/domain/entities/host_bank_account.dart';
 import 'package:mint_talk/features/host_side/host_wallet/presentation/cubit/host_wallet_state.dart';
+import 'package:mint_talk/features/shared/notifications/domain/entities/notification_entity.dart';
+import 'package:mint_talk/features/shared/notifications/domain/usecases/watch_new_notifications_usecase.dart';
 
+/// Wallet screen state. Lives exactly as long as the wallet route, so
+/// "while the screen is visible" = while this cubit is open and the app is
+/// in the foreground.
+///
+/// Balances, totals and statuses always come from the latest
+/// `/withdrawals/my-requests` response — nothing is deducted or restored
+/// locally; every action is followed by a refresh instead.
 @injectable
-class HostWalletCubit extends Cubit<HostWalletState> {
-  final GetHostWalletOverviewUseCase getHostWalletOverviewUseCase;
-  final RequestWithdrawalUseCase requestWithdrawalUseCase;
+class HostWalletCubit extends Cubit<HostWalletState>
+    with WidgetsBindingObserver {
+  final GetHostWalletOverviewUseCase _getOverview;
+  final RequestWithdrawalUseCase _requestWithdrawal;
+  final GetUnconfirmedWithdrawalUseCase _getUnconfirmed;
+  final WatchNewNotificationsUseCase _watchNotifications;
+
+  /// Refresh cadence while a withdrawal is `processing` (spec: 20–30 s).
+  @visibleForTesting
+  static Duration processingPollInterval = const Duration(seconds: 25);
+
+  Timer? _pollTimer;
+  StreamSubscription<NotificationEntity>? _notificationSub;
+  Future<void>? _loadInFlight;
+  bool _appInForeground = true;
 
   HostWalletCubit(
-    this.getHostWalletOverviewUseCase,
-    this.requestWithdrawalUseCase,
-  )
-      : super(
-          const HostWalletState(
-            bankAccounts: [
-              HostBankAccount(
-                id: 'bank_1',
-                accountHolderName: 'Remani Nair',
-                accountNumber: '9876543456',
-                ifscCode: 'SBIN0001234',
-                bankName: 'State Bank Of India',
-                branchName: 'Kochi Main Branch',
-              ),
-              HostBankAccount(
-                id: 'bank_2',
-                accountHolderName: 'Anjali Jose',
-                accountNumber: '6543217890',
-                ifscCode: 'HDFC0002456',
-                bankName: 'HDFC Bank',
-                branchName: 'Thrissur Town Branch',
-              ),
-            ],
-          ),
-        );
+    this._getOverview,
+    this._requestWithdrawal,
+    this._getUnconfirmed,
+    this._watchNotifications,
+  ) : super(const HostWalletState()) {
+    WidgetsBinding.instance.addObserver(this);
+    _notificationSub = _watchNotifications().listen(_onNotification);
+  }
 
-  Future<void> loadWallet() async {
-    emit(state.copyWith(status: HostWalletStatus.loading, errorMessage: ''));
-    final result = await getHostWalletOverviewUseCase(NoParams());
+  /// First load on opening the wallet. A request left unconfirmed by a
+  /// timeout or an app restart is resumed with its original key and body.
+  Future<void> initialize() async {
+    await loadWallet();
+    if (!isClosed && state.unconfirmedRequest != null) {
+      await retryUnconfirmedWithdrawal();
+    }
+  }
+
+  /// Refreshes balance, summary, accounts, eligibility and history. Calls
+  /// made while one is running share it.
+  Future<void> loadWallet() => _loadInFlight ??= _load().whenComplete(() {
+    _loadInFlight = null;
+  });
+
+  Future<void> _load() async {
+    if (state.overview == null) {
+      emit(state.copyWith(status: HostWalletStatus.loading, errorMessage: ''));
+    }
+
+    final result = await _getOverview(NoParams());
+    final unconfirmed = await _getUnconfirmed();
+    if (isClosed) return;
+
     result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: HostWalletStatus.failure,
-          errorMessage: failure.message,
-        ),
-      ),
-      (overview) => emit(
-        state.copyWith(
-          status: HostWalletStatus.loaded,
-          overview: overview,
-        ),
-      ),
-    );
-  }
-
-  void selectBankAccount(HostBankAccount bankAccount) {
-    emit(
-      state.copyWith(
-        selectedBankAccount: bankAccount,
-        errorMessage: '',
-      ),
-    );
-  }
-
-  void updateAccountHolderName(String value) {
-    emit(state.copyWith(accountHolderName: value, errorMessage: ''));
-  }
-
-  void updateAccountNumber(String value) {
-    emit(state.copyWith(accountNumber: value, errorMessage: ''));
-  }
-
-  void updateConfirmAccountNumber(String value) {
-    emit(state.copyWith(confirmAccountNumber: value, errorMessage: ''));
-  }
-
-  void updateIfscCode(String value) {
-    emit(state.copyWith(ifscCode: value.toUpperCase(), errorMessage: ''));
-  }
-
-  void updateBankName(String value) {
-    emit(state.copyWith(bankName: value, errorMessage: ''));
-  }
-
-  void updateBranchName(String value) {
-    emit(state.copyWith(branchName: value, errorMessage: ''));
-  }
-
-  void updateWithdrawalAmount(String value) {
-    emit(state.copyWith(withdrawalAmount: value, errorMessage: ''));
-  }
-
-  void selectPayoutMethod(String method) {
-    emit(state.copyWith(payoutMethod: method, errorMessage: ''));
-  }
-
-  void updateUpiId(String value) {
-    emit(state.copyWith(upiId: value, errorMessage: ''));
-  }
-
-  void clearBankForm() {
-    emit(
-      state.copyWith(
-        accountHolderName: '',
-        accountNumber: '',
-        confirmAccountNumber: '',
-        ifscCode: '',
-        bankName: '',
-        branchName: '',
-        errorMessage: '',
-      ),
-    );
-  }
-
-  bool addBankAccount() {
-    final accountHolderName = state.accountHolderName.trim();
-    final accountNumber = state.accountNumber.trim();
-    final confirmAccountNumber = state.confirmAccountNumber.trim();
-    final ifscCode = state.ifscCode.trim();
-    final bankName = state.bankName.trim();
-    final branchName = state.branchName.trim();
-
-    if (accountHolderName.isEmpty ||
-        accountNumber.isEmpty ||
-        confirmAccountNumber.isEmpty ||
-        ifscCode.isEmpty ||
-        bankName.isEmpty ||
-        branchName.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Please fill all the bank details.'));
-      return false;
-    }
-
-    if (accountNumber != confirmAccountNumber) {
-      emit(state.copyWith(errorMessage: 'Account numbers do not match.'));
-      return false;
-    }
-
-    final newBankAccount = HostBankAccount(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      accountHolderName: accountHolderName,
-      accountNumber: accountNumber,
-      ifscCode: ifscCode,
-      bankName: bankName,
-      branchName: branchName,
-    );
-
-    emit(
-      state.copyWith(
-        bankAccounts: [...state.bankAccounts, newBankAccount],
-        selectedBankAccount: newBankAccount,
-        errorMessage: '',
-      ),
-    );
-    clearBankForm();
-    return true;
-  }
-
-  Future<bool> submitWithdrawalRequest() async {
-    final isUpi = state.payoutMethod == 'upi';
-    final selectedBank = state.selectedBankAccount;
-    final upiId = state.upiId.trim();
-    final amountText = state.withdrawalAmount.trim();
-
-    if (isUpi) {
-      if (upiId.isEmpty) {
-        emit(state.copyWith(errorMessage: 'Please enter a UPI ID.'));
-        return false;
-      }
-    } else if (selectedBank == null) {
-      emit(state.copyWith(errorMessage: 'Please select a bank account.'));
-      return false;
-    }
-
-    if (amountText.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Enter a withdrawal amount.'));
-      return false;
-    }
-
-    final amount = double.tryParse(amountText);
-    if (amount == null || amount <= 0) {
-      emit(state.copyWith(errorMessage: 'Enter a valid withdrawal amount.'));
-      return false;
-    }
-
-    if (amount > state.availableBalance) {
-      emit(state.copyWith(errorMessage: 'Amount exceeds available balance.'));
-      return false;
-    }
-
-    emit(
-      state.copyWith(
-        requestStatus: HostWalletRequestStatus.submitting,
-        errorMessage: '',
-      ),
-    );
-
-    final result = await requestWithdrawalUseCase(
-      isUpi
-          ? HostWithdrawalRequestParams(
-              amount: amount,
-              payoutMethod: 'upi',
-              upiId: upiId,
-            )
-          : HostWithdrawalRequestParams(
-              amount: amount,
-              payoutMethod: 'bank_transfer',
-              bankName: selectedBank!.bankName,
-              accountNumber: selectedBank.accountNumber,
-              ifsc: selectedBank.ifscCode,
-              holderName: selectedBank.accountHolderName,
-            ),
-    );
-
-    return await result.fold<Future<bool>>(
-      (failure) async {
+      (failure) {
+        // Keep showing the last good data on a failed background refresh.
+        if (state.overview != null) return;
         emit(
           state.copyWith(
-            requestStatus: HostWalletRequestStatus.failure,
+            status: HostWalletStatus.failure,
             errorMessage: failure.message,
           ),
         );
-        return false;
       },
-      (_) async {
+      (overview) {
+        final methods = overview.selectableAccounts
+            .map((account) => account.method)
+            .toSet();
+        final keepSelection = methods.contains(state.selectedPayoutMethod);
         emit(
           state.copyWith(
-            requestStatus: HostWalletRequestStatus.success,
-            withdrawalAmount: '',
-            upiId: '',
+            status: HostWalletStatus.loaded,
+            overview: overview,
             errorMessage: '',
+            selectedPayoutMethod: keepSelection
+                ? state.selectedPayoutMethod
+                : (methods.isEmpty ? null : methods.first),
+            clearSelectedPayoutMethod: !keepSelection && methods.isEmpty,
+            unconfirmedRequest: unconfirmed,
+            clearUnconfirmedRequest: unconfirmed == null,
           ),
         );
-        await loadWallet();
-        return true;
       },
+    );
+    _syncPolling();
+  }
+
+  void updateWithdrawalAmount(String value) {
+    emit(state.copyWith(withdrawalAmount: value, requestMessage: ''));
+  }
+
+  /// Picks a verified, active account's method; others are ignored.
+  void selectPayoutMethod(String method) {
+    final selectable = state.payoutAccounts.any(
+      (account) => account.isSelectable && account.method == method,
+    );
+    if (!selectable) return;
+    emit(state.copyWith(selectedPayoutMethod: method, requestMessage: ''));
+  }
+
+  /// Resets the sheet's transient fields before it opens.
+  void prepareWithdrawalSheet() {
+    emit(
+      state.copyWith(
+        withdrawalAmount: '',
+        requestMessage: '',
+        requestStatus: HostWalletRequestStatus.idle,
+      ),
     );
   }
 
-  String get maskedSelectedAccountNumber =>
-      state.selectedBankAccount?.maskedAccountNumber ?? '';
+  Future<bool> submitWithdrawal() async {
+    if (state.isSubmitting) return false;
+
+    final block = state.withdrawalBlock;
+    if (block != null) {
+      emit(state.copyWith(requestMessage: withdrawalBlockMessage(state)));
+      return false;
+    }
+
+    final amountError = state.amountError;
+    if (amountError != null) {
+      emit(state.copyWith(requestMessage: amountErrorMessage(state)));
+      return false;
+    }
+
+    final method = state.selectedPayoutMethod;
+    if (method == null) {
+      emit(state.copyWith(requestMessage: AppTexts.selectPayoutAccount));
+      return false;
+    }
+
+    return _send(
+      HostWithdrawalRequestParams(
+        amount: WithdrawalAmountValidator.parse(state.withdrawalAmount)!,
+        payoutMethod: method,
+      ),
+    );
+  }
+
+  /// Re-sends the unconfirmed request with exactly its original body, so
+  /// the repository reuses its `Idempotency-Key`.
+  Future<bool> retryUnconfirmedWithdrawal() async {
+    final pending = state.unconfirmedRequest;
+    if (pending == null || state.isSubmitting) return false;
+    return _send(
+      HostWithdrawalRequestParams(
+        amount: pending.amount,
+        payoutMethod: pending.payoutMethod,
+      ),
+    );
+  }
+
+  Future<bool> _send(HostWithdrawalRequestParams params) async {
+    emit(
+      state.copyWith(
+        requestStatus: HostWalletRequestStatus.submitting,
+        requestMessage: '',
+      ),
+    );
+
+    final result = await _requestWithdrawal(params);
+    final unconfirmed = await _getUnconfirmed();
+    if (isClosed) return result.isRight();
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          requestStatus: HostWalletRequestStatus.failure,
+          requestMessage: unconfirmed != null
+              ? AppTexts.withdrawalUnconfirmed
+              : failure.message,
+          unconfirmedRequest: unconfirmed,
+          clearUnconfirmedRequest: unconfirmed == null,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          requestStatus: HostWalletRequestStatus.success,
+          withdrawalAmount: '',
+          requestMessage: '',
+          clearUnconfirmedRequest: true,
+        ),
+      ),
+    );
+
+    // Success or not, the server's view (balance, pending/processing,
+    // eligibility) may have changed — never assume it. A poll started
+    // before the POST answered may hold pre-request data, so let it finish
+    // and load again rather than sharing it.
+    await _loadInFlight;
+    await loadWallet();
+    return result.isRight();
+  }
+
+  void _onNotification(NotificationEntity notification) {
+    final text = '${notification.type} ${notification.title}'.toLowerCase();
+    if (text.contains('withdraw') || text.contains('payout')) {
+      loadWallet();
+    }
+  }
+
+  /// Polls only while a withdrawal is `processing` and the app is in the
+  /// foreground; there is no payout socket event to wait for instead.
+  void _syncPolling() {
+    final shouldPoll =
+        !isClosed &&
+        _appInForeground &&
+        (state.overview?.hasProcessingWithdrawal ?? false);
+    if (!shouldPoll) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      return;
+    }
+    _pollTimer ??= Timer.periodic(processingPollInterval, (_) => loadWallet());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _appInForeground = true;
+      loadWallet();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _appInForeground = false;
+      _syncPolling();
+    }
+  }
+
+  @override
+  Future<void> close() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
+    _notificationSub?.cancel();
+    return super.close();
+  }
+}
+
+String _inr(double value) => IndianNumberFormat.format(value);
+
+/// Host-facing text for [HostWalletState.withdrawalBlock].
+String? withdrawalBlockMessage(HostWalletState state) {
+  return switch (state.withdrawalBlock) {
+    null => null,
+    WithdrawalBlock.balanceMismatch => AppTexts.withdrawBlockedBalanceMismatch,
+    WithdrawalBlock.unconfirmedRequest => AppTexts.withdrawalUnconfirmedNotice(
+      _inr(state.unconfirmedRequest!.amount),
+    ),
+    WithdrawalBlock.hostInactive => AppTexts.withdrawBlockedHostInactive,
+    WithdrawalBlock.hostNotApproved => AppTexts.withdrawBlockedHostNotApproved,
+    WithdrawalBlock.pendingWithdrawal => AppTexts.withdrawBlockedPending,
+    WithdrawalBlock.noVerifiedAccount =>
+      AppTexts.withdrawBlockedNoVerifiedAccount,
+    WithdrawalBlock.belowMinimum => AppTexts.withdrawBlockedBelowMinimum(
+      _inr(state.minWithdrawalAmount),
+    ),
+    WithdrawalBlock.ineligible =>
+      state.ineligibleMessage ?? AppTexts.withdrawBlockedGeneric,
+  };
+}
+
+/// Host-facing text for [HostWalletState.amountError].
+String? amountErrorMessage(HostWalletState state) {
+  return switch (state.amountError) {
+    null => null,
+    WithdrawalAmountError.empty => AppTexts.amountErrorEmpty,
+    WithdrawalAmountError.invalid => AppTexts.amountErrorInvalid,
+    WithdrawalAmountError.tooManyDecimals => AppTexts.amountErrorDecimals,
+    WithdrawalAmountError.belowMinimum => AppTexts.amountErrorBelowMinimum(
+      _inr(state.minWithdrawalAmount),
+    ),
+    WithdrawalAmountError.aboveBalance => AppTexts.amountErrorAboveBalance(
+      _inr(state.availableBalance),
+    ),
+  };
 }

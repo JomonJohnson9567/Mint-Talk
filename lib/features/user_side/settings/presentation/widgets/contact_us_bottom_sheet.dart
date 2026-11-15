@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/transitions/cubit/snack_bar_state.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/core/widgets/top_snackbar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactUsBottomSheetPresenter {
   ContactUsBottomSheetPresenter._();
@@ -22,6 +26,8 @@ class ContactUsBottomSheet extends StatelessWidget {
 
   static const String _whatsAppImageUrl =
       'https://cdn-icons-png.flaticon.com/512/733/733585.png';
+  // wa.me expects the number with country code and no '+'.
+  static const String _supportNumber = '918921355574';
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +35,16 @@ class ContactUsBottomSheet extends StatelessWidget {
       top: false,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+        padding: EdgeInsets.fromLTRB(20.cw, 12.cw, 20.cw, 24.cw),
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          color: AppColors.cardWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.cw)),
+          border: const Border(
+            top: BorderSide(color: AppColors.profileDivider),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withAlpha(20),
+              color: AppColors.primaryColor.withValues(alpha: 0.08),
               blurRadius: 24,
               offset: const Offset(0, -8),
             ),
@@ -45,63 +54,164 @@ class ContactUsBottomSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 44.w,
-              height: 5.h,
+              width: 44.cw,
+              height: 5.cw,
               decoration: BoxDecoration(
-                color: AppColors.lightGrey,
+                color: AppColors.lavenderBorder,
                 borderRadius: BorderRadius.circular(100.r),
               ),
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 20.cw),
+            const _SupportBadge(whatsAppImageUrl: _whatsAppImageUrl),
+            SizedBox(height: 18.cw),
             Container(
-              width: 88.w,
-              height: 88.w,
-              padding: EdgeInsets.all(18.w),
+              padding: EdgeInsets.symmetric(horizontal: 12.cw, vertical: 6.cw),
               decoration: BoxDecoration(
-                color: AppColors.contactIcon.withAlpha(20),
-                shape: BoxShape.circle,
+                color: AppColors.popularCardBg,
+                borderRadius: BorderRadius.circular(999.r),
               ),
-              child: _WhatsAppImage(imageUrl: _whatsAppImageUrl, size: 52.w),
+              child: Text(
+                AppTexts.contactUsChip,
+                style: TextStyle(
+                  fontSize: 12.csp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.linkMagenta,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ),
-            SizedBox(height: 18.h),
+            SizedBox(height: 14.cw),
             Text(
               AppTexts.contactUsTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.black,
+                fontSize: 22.csp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.plumDeep,
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 10.cw),
             Text(
               AppTexts.contactUsDescription,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: 14.csp,
                 height: 1.5,
-                color: AppColors.grey,
+                color: AppColors.plumMuted,
               ),
             ),
-            SizedBox(height: 24.h),
+            SizedBox(height: 24.cw),
             _WhatsAppContactButton(
               imageUrl: _whatsAppImageUrl,
-              onPressed: () {},
+              onPressed: () => _openWhatsApp(context),
             ),
-            SizedBox(height: 12.h),
+            SizedBox(height: 12.cw),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryColor,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 18.cw,
+                  vertical: 8.cw,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999.r),
+                ),
+              ),
               child: Text(
                 AppTexts.close,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: 14.csp,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.grey,
+                  color: AppColors.plumMuted,
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    final uri = Uri.parse(
+      'https://wa.me/$_supportNumber'
+      '?text=${Uri.encodeComponent(AppTexts.contactUsWhatsAppMessage)}',
+    );
+
+    var launched = false;
+    try {
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+
+    if (!context.mounted) return;
+    if (launched) {
+      Navigator.of(context).pop();
+    } else {
+      showTopSnackBar(
+        context,
+        AppTexts.whatsAppOpenFailed,
+        type: SnackBarType.error,
+      );
+    }
+  }
+}
+
+/// Plum support badge with a small WhatsApp logo pinned to its corner.
+class _SupportBadge extends StatelessWidget {
+  final String whatsAppImageUrl;
+
+  const _SupportBadge({required this.whatsAppImageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 88.cw,
+      height: 88.cw,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 88.cw,
+            height: 88.cw,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.popularCardBg, AppColors.videoCardBg],
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.lavenderBorder, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryColor.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.support_agent_rounded,
+              color: AppColors.primaryColor,
+              size: 42.csp,
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 30.cw,
+              height: 30.cw,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.profileDivider),
+              ),
+              child: _WhatsAppImage(imageUrl: whatsAppImageUrl, size: 18.cw),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -123,11 +233,11 @@ class _WhatsAppContactButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.contactIcon,
+          backgroundColor: AppColors.primaryColor,
           foregroundColor: AppColors.white,
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+          padding: EdgeInsets.symmetric(horizontal: 20.cw, vertical: 16.cw),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18.r),
+            borderRadius: BorderRadius.circular(30.r),
           ),
           elevation: 0,
         ),
@@ -136,15 +246,15 @@ class _WhatsAppContactButton extends StatelessWidget {
           children: [
             _WhatsAppImage(
               imageUrl: imageUrl,
-              size: 22.w,
+              size: 22.cw,
               tintColor: AppColors.white,
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 10.cw),
             Flexible(
               child: Text(
                 AppTexts.contactUsButton,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 15.csp, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -177,7 +287,7 @@ class _WhatsAppImage extends StatelessWidget {
         return Icon(
           Icons.chat_rounded,
           size: size,
-          color: tintColor ?? AppColors.contactIcon,
+          color: tintColor ?? AppColors.primaryColor,
         );
       },
       placeholder: (context, url) {
@@ -191,7 +301,7 @@ class _WhatsAppImage extends StatelessWidget {
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  tintColor ?? AppColors.contactIcon,
+                  tintColor ?? AppColors.primaryColor,
                 ),
               ),
             ),

@@ -1,70 +1,41 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 
 class WalletSummaryItem {
   final IconData icon;
-  final Color iconBgColor;
   final Color iconColor;
+  final Color iconBackground;
   final String label;
   final String amount;
 
   const WalletSummaryItem({
     required this.icon,
-    required this.iconBgColor,
     required this.iconColor,
+    required this.iconBackground,
     required this.label,
     required this.amount,
   });
 }
 
+/// Equal-height row of white withdrawable / approved / pending tiles.
 class WalletSummaryRow extends StatelessWidget {
   final List<WalletSummaryItem> items;
 
-  const WalletSummaryRow({
-    super.key,
-    this.items = const [
-      WalletSummaryItem(
-        icon: Icons.account_balance_wallet_rounded,
-        iconBgColor: Color(0xFFEEEFFC),
-        iconColor: Color(0xFF4A52DA),
-        label: 'Total Earnings',
-        amount: '₹ 12,540',
-      ),
-      WalletSummaryItem(
-        icon: Icons.upload_rounded,
-        iconBgColor: Color(0xFFE6F4FF),
-        iconColor: Color(0xFF1E88E5),
-        label: 'Total Withdrawn',
-        amount: '₹ 8,430',
-      ),
-      WalletSummaryItem(
-        icon: Icons.access_time_rounded,
-        iconBgColor: Color(0xFFFFF3E0),
-        iconColor: Color(0xFFFF8F00),
-        label: 'Pending',
-        amount: '₹ 1,230',
-      ),
-    ],
-  });
+  const WalletSummaryRow({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+    return IntrinsicHeight(
       child: Row(
-        children: items
-            .map(
-              (item) => Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4.w),
-                  child: _SummaryCard(item: item),
-                ),
-              ),
-            )
-            .toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) SizedBox(width: 10.cw),
+            Expanded(child: _SummaryCard(item: items[i])),
+          ],
+        ],
       ),
     );
   }
@@ -78,53 +49,43 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+      padding: EdgeInsets.all(14.cw),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.borderSoft),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28.w,
-                height: 28.h,
-                decoration: BoxDecoration(
-                  color: item.iconBgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(item.icon, size: 14.sp, color: item.iconColor),
-              ),
-              const Spacer(),
-              Icon(Icons.chevron_right_rounded, size: 14.sp, color: AppColors.subtitleText),
-            ],
+          Container(
+            width: 38.cw,
+            height: 38.cw,
+            decoration: BoxDecoration(
+              color: item.iconBackground,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(item.icon, color: item.iconColor, size: 20.csp),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 12.cw),
           Text(
             item.label,
-            style: TextStyle(
-              fontSize: 9.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.subtitleText,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5.csp, color: AppColors.hostSubtitle),
           ),
-          SizedBox(height: 3.h),
-          Text(
-            item.amount,
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.black,
+          SizedBox(height: 2.cw),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              item.amount,
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 18.csp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.plumDeep,
+              ),
             ),
           ),
         ],

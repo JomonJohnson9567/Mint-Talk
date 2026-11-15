@@ -40,5 +40,6 @@ class AppRoutes {
   static const String hostApplicationStatus = '/hostApplicationStatus';
   static const String applyForLeave = '/applyForLeave';
   static const String blockedUsersScreen = '/blockedUsersScreen';
+  static const String hostBlockedUsersScreen = '/hostBlockedUsersScreen';
   static const String hostNotificationsScreen = '/hostNotificationsScreen';
 }

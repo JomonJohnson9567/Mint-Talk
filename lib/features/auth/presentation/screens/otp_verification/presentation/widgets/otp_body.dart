@@ -1,12 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/navigations/app_routes.dart';
 import 'package:mint_talk/core/theme/color.dart';
-import 'package:mint_talk/core/transitions/utils/morphing_flight_shuttle.dart';
 import 'package:mint_talk/core/widgets/primary_button.dart';
 import 'package:mint_talk/features/auth/presentation/screens/otp_verification/presentation/cubit/otp_verification/otp_verification_cubit.dart';
 import 'package:mint_talk/features/auth/presentation/screens/otp_verification/presentation/widgets/otp_header.dart';
@@ -37,135 +34,125 @@ class OtpBody extends StatelessWidget {
                 : AppRoutes.setupProfile,
             (route) => false,
           );
-        } else if (state.status == OtpStatus.failure) {
-          _showSnackBar(
-            context,
-            message: state.errorMessage ?? 'Verification failed',
-            backgroundColor: Colors.red.shade700,
-          );
-        } else if (state.status == OtpStatus.rateLimited) {
-          _showSnackBar(
-            context,
-            message: state.errorMessage ?? 'Too many attempts. Please wait.',
-            backgroundColor: Colors.orange.shade700,
-          );
         } else if (state.status == OtpStatus.resent) {
+          // Errors are shown inline under the code boxes, so only the
+          // success confirmation needs a snackbar.
           _showSnackBar(
             context,
-            message: 'OTP resent successfully',
+            message: 'A new code is on its way.',
             backgroundColor: Colors.green.shade700,
           );
         }
       },
       builder: (context, state) {
-        return Stack(
+        final isSubmitting = state.status == OtpStatus.submitting;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Positioned.fill(
-              child: Hero(
-                tag: 'morphing_bottom_container',
-                flightShuttleBuilder: morphingContainerFlightShuttleBuilder,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(30.r),
-                      ),
-                    ),
-                  ),
-                ),
+            OtpHeader(phone: phone, countryCode: countryCode),
+            SizedBox(height: 18.h),
+            const OtpInputRow(),
+            if (state.errorMessage != null &&
+                state.status != OtpStatus.resent) ...[
+              SizedBox(height: 8.h),
+              Text(
+                state.errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.red, fontSize: 12.sp),
               ),
+            ],
+            SizedBox(height: 14.h),
+            Center(child: _buildResend(context, state)),
+            SizedBox(height: 14.h),
+            PrimaryButton(
+              text: AppTexts.verifyAndContinue,
+              height: 48.h,
+              textStyle: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              disabledBackgroundColor: AppColors.primaryColor.withValues(
+                alpha: 0.22,
+              ),
+              disabledForegroundColor: AppColors.plumMuted,
+              isLoading: isSubmitting,
+              onPressed: state.isOtpComplete && !isSubmitting
+                  ? () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      context.read<OtpVerificationCubit>().submitOtp(
+                        phone: phone,
+                        countryCode: countryCode,
+                      );
+                    }
+                  : null,
             ),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.h),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 80.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20.h),
-                    OtpHeader(phone: phone, countryCode: countryCode),
-                    SizedBox(height: 32.h),
-                    const OtpInputRow(),
-                    if (state.errorMessage != null &&
-                        state.status != OtpStatus.resent) ...[
-                      SizedBox(height: 10.h),
-                      Center(
-                        child: Text(
-                          state.errorMessage!,
-                          style: TextStyle(color: Colors.red, fontSize: 14.sp),
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: 16.h),
-                    Center(
-                      child: state.canResend
-                          ? TextButton(
-                              onPressed: state.status == OtpStatus.resending
-                                  ? null
-                                  : () {
-                                      context
-                                          .read<OtpVerificationCubit>()
-                                          .resendOtp(
-                                            phone: phone,
-                                            countryCode: countryCode,
-                                          );
-                                    },
-                              child: Text(
-                                state.status == OtpStatus.resending
-                                    ? 'Resending...'
-                                    : 'Resend OTP',
-                                style: TextStyle(
-                                  color: AppColors.primaryColor,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              'Resend OTP in ${state.resendCooldown}s',
-                              style: TextStyle(
-                                color: AppColors.grey,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                    ),
-                    SizedBox(height: 24.h),
-                    if (state.status == OtpStatus.submitting)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      PrimaryButton(
-                        text: AppTexts.verify,
-                        onPressed: state.isOtpComplete
-                            ? () {
-                                FocusManager.instance.primaryFocus?.unfocus();
-                                context.read<OtpVerificationCubit>().submitOtp(
-                                  phone: phone,
-                                  countryCode: countryCode,
-                                );
-                              }
-                            : null,
-                      ),
-                    SizedBox(height: 20.h),
-                  ],
+            SizedBox(height: 10.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_rounded,
+                  size: 14.sp,
+                  color: AppColors.plumMuted,
                 ),
-              ),
+                SizedBox(width: 5.w),
+                Text(
+                  AppTexts.numberStaysPrivate,
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.plumMuted),
+                ),
+              ],
             ),
           ],
         );
       },
     );
+  }
+
+  Widget _buildResend(BuildContext context, OtpVerificationState state) {
+    if (!state.canResend) {
+      return Text(
+        '${AppTexts.resendCodeIn} ${_formatCooldown(state.resendCooldown)}',
+        style: TextStyle(
+          fontSize: 13.sp,
+          color: AppColors.plumMuted,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+
+    final isResending = state.status == OtpStatus.resending;
+
+    // Compact so the layout doesn't jump when the countdown text is swapped
+    // for this button.
+    return TextButton(
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onPressed: isResending
+          ? null
+          : () => context.read<OtpVerificationCubit>().resendOtp(
+              phone: phone,
+              countryCode: countryCode,
+            ),
+      child: Text(
+        isResending ? 'Resending...' : AppTexts.resendCode,
+        style: TextStyle(
+          fontSize: 13.sp,
+          color: AppColors.plumDeep,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  /// 24 → "00:24"
+  String _formatCooldown(int seconds) {
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
+    final remainder = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$remainder';
   }
 
   void _showSnackBar(

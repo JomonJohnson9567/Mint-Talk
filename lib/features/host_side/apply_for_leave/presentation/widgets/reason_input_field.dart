@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_icon_square.dart';
+import 'leave_form_field.dart';
 
 class ReasonInputField extends StatelessWidget {
   final String reason;
@@ -17,62 +20,47 @@ class ReasonInputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Reason for Leave',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Container(
-          height: 120.h,
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.all(10.r),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF0FC),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Icon(
-                  Icons.edit_note_rounded,
-                  color: AppColors.primaryColor,
-                  size: 22.sp,
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: TextField(
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  decoration: const InputDecoration(
-                    hintText: 'Please provide a brief explanation...',
-                    hintStyle: TextStyle(
-                      color: AppColors.subtitleText,
-                      fontWeight: FontWeight.normal,
+        const LeaveFieldLabel('Reason for leave'),
+        LeaveFieldBox(
+          padding: EdgeInsets.all(14.cw),
+          child: SizedBox(
+            height: 110.cw,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const HostIconSquare(icon: Icons.edit_note_rounded),
+                SizedBox(width: 14.cw),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 10.cw),
+                    child: TextField(
+                      maxLines: null,
+                      expands: true,
+                      keyboardType: TextInputType.multiline,
+                      textAlignVertical: TextAlignVertical.top,
+                      decoration: InputDecoration(
+                        hintText: AppTexts.leaveReasonHint,
+                        hintStyle: TextStyle(
+                          fontSize: 14.5.csp,
+                          color: AppColors.hostSubtitle,
+                          height: 1.4,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: TextStyle(
+                        fontSize: 14.5.csp,
+                        color: AppColors.plumDeep,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                      onChanged: onChanged,
                     ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
                   ),
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    color: AppColors.black,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  onChanged: onChanged,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

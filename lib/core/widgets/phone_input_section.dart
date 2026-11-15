@@ -23,6 +23,11 @@ class PhoneInputSection extends StatelessWidget {
   final double? height;
   final TextStyle? textStyle;
   final TextStyle? hintStyle;
+  final String? hintText;
+  final String? helperText;
+  final TextStyle? helperStyle;
+  final Color? accentColor;
+  final Color? dividerColor;
 
   const PhoneInputSection({
     super.key,
@@ -39,6 +44,11 @@ class PhoneInputSection extends StatelessWidget {
     this.height,
     this.textStyle,
     this.hintStyle,
+    this.hintText,
+    this.helperText,
+    this.helperStyle,
+    this.accentColor,
+    this.dividerColor,
   });
 
   @override
@@ -46,20 +56,23 @@ class PhoneInputSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label ?? AppTexts.mobileNumber,
-          style:
-              labelStyle ??
-              TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.black,
-              ),
+        Padding(
+          padding: EdgeInsets.only(left: 4.w),
+          child: Text(
+            label ?? AppTexts.mobileNumber,
+            style:
+                labelStyle ??
+                TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.black,
+                ),
+          ),
         ),
         SizedBox(height: 8.h),
         Container(
           height: height ?? 50.h,
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: backgroundColor ?? AppColors.grey.withAlpha(153),
             border: border,
@@ -74,31 +87,31 @@ class PhoneInputSection extends StatelessWidget {
                   children: [
                     Text(
                       selectedCountry.flagEmoji,
-                      style: TextStyle(fontSize: 20.sp),
+                      style: TextStyle(fontSize: 24.sp),
                     ),
-                    SizedBox(width: 4.w),
+                    SizedBox(width: 8.w),
                     Text(
                       '+${selectedCountry.phoneCode}',
                       style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.black,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w500,
+                        color: accentColor ?? AppColors.black,
                       ),
                     ),
-                    SizedBox(width: 4.w),
+                    SizedBox(width: 18.w),
                     Icon(
                       AppIcons.arrowDown,
-                      size: 16.sp,
-                      color: AppColors.textGrey,
+                      size: 18.sp,
+                      color: accentColor ?? AppColors.textGrey,
                     ),
                   ],
                 ),
               ),
               Container(
                 width: 1.w,
-                height: 24.h,
-                color: AppColors.grey.withAlpha(77),
-                margin: EdgeInsets.symmetric(horizontal: 12.w),
+                height: 26.h,
+                color: dividerColor ?? AppColors.grey.withAlpha(77),
+                margin: EdgeInsets.symmetric(horizontal: 16.w),
               ),
               Expanded(
                 child: TextFormField(
@@ -107,7 +120,7 @@ class PhoneInputSection extends StatelessWidget {
                   onChanged: onPhoneChanged,
                   decoration: InputDecoration(
                     border: InputBorder.none,
-                    hintText: AppTexts.enterYourPhoneNumber,
+                    hintText: hintText ?? AppTexts.enterYourPhoneNumber,
                     hintStyle:
                         hintStyle ?? const TextStyle(color: AppColors.textGrey),
                     isDense: true,
@@ -131,6 +144,17 @@ class PhoneInputSection extends StatelessWidget {
             child: Text(
               errorText!,
               style: TextStyle(color: Colors.red, fontSize: 12.sp),
+            ),
+          ),
+        ] else if (helperText != null) ...[
+          SizedBox(height: 8.h),
+          Padding(
+            padding: EdgeInsets.only(left: 4.w),
+            child: Text(
+              helperText!,
+              style:
+                  helperStyle ??
+                  TextStyle(color: AppColors.textGrey, fontSize: 12.sp),
             ),
           ),
         ],

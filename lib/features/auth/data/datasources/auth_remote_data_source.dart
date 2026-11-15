@@ -105,15 +105,11 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
     // A response can carry more than one Set-Cookie header (refresh token
     // alongside a session/CSRF cookie, etc.) — `Headers.value()` throws in
     // that case, so read the raw list instead of the single-value helper.
-    final setCookieHeaders = response.headers['set-cookie'];
-    if (setCookieHeaders != null) {
-      for (final header in setCookieHeaders) {
-        final refreshToken = _extractRefreshToken(header);
-        if (refreshToken != null) {
-          await _tokenManager.saveRefreshToken(refreshToken);
-          break;
-        }
-      }
+    final refreshToken =
+        extractRefreshTokenFromSetCookie(response.headers['set-cookie']) ??
+        extractRefreshTokenFromBody(body);
+    if (refreshToken != null) {
+      await _tokenManager.saveRefreshToken(refreshToken);
     }
 
     // ── Parse user and access token ───────────────────────────────────
@@ -168,6 +164,10 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiEndpoints.logout,
       requiresAuth: true,
+      // A 401 here (session already revoked) is harmless — the repository
+      // clears local state regardless — so don't let it trigger a second,
+      // forced-logout navigation on top of the user's own logout.
+      skipSessionHandling: true,
     );
 
     // For 204, body may be empty and still valid. Only reject explicit failure payloads.
@@ -178,19 +178,5 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
         message: response['message'] as String? ?? 'Failed to logout',
       );
     }
-  }
-
-  /// Extracts the `refreshToken` value from a `Set-Cookie` header string.
-  String? _extractRefreshToken(String setCookieHeader) {
-    // Cookie format: refreshToken=<value>; Path=/; HttpOnly; ...
-    final cookies = setCookieHeader.split(',');
-    for (final cookie in cookies) {
-      final trimmed = cookie.trim();
-      if (trimmed.startsWith('refreshToken=')) {
-        final value = trimmed.split(';').first;
-        return value.substring('refreshToken='.length);
-      }
-    }
-    return null;
   }
 }

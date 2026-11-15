@@ -5,7 +5,8 @@ class HostApplicationModel extends HostApplicationEntity {
     required super.name,
     required super.dob,
     required super.bio,
-    required super.selfieUrl,
+    required super.verificationPhotoId,
+    super.referralCode,
   });
 
   factory HostApplicationModel.fromEntity(HostApplicationEntity entity) {
@@ -13,25 +14,21 @@ class HostApplicationModel extends HostApplicationEntity {
       name: entity.name,
       dob: entity.dob,
       bio: entity.bio,
-      selfieUrl: entity.selfieUrl,
-    );
-  }
-
-  factory HostApplicationModel.fromJson(Map<String, dynamic> json) {
-    return HostApplicationModel(
-      name: json['name'] as String? ?? '',
-      dob: json['dob'] as String? ?? '',
-      bio: json['bio'] as String? ?? '',
-      selfieUrl: json['selfieUrl'] as String? ?? json['selfie'] as String? ?? '',
+      verificationPhotoId: entity.verificationPhotoId,
+      referralCode: entity.referralCode,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final code = referralCode?.trim();
     return {
       'name': name,
       'dob': _isoDob(dob),
       'bio': bio,
-      'selfieUrl': selfieUrl,
+      // The backend no longer accepts `selfieUrl`.
+      'verificationPhotoId': verificationPhotoId,
+      // Optional — only sent when the applicant entered one.
+      if (code != null && code.isNotEmpty) 'referralCode': code,
     };
   }
 

@@ -1,74 +1,93 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mint_talk/core/constants/app_texts.dart';
-
 import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 
+/// Nunito section title above a cream card of topic pills.
 class HostSpecialCategories extends StatelessWidget {
   const HostSpecialCategories({super.key});
+
+  static const _categories = [
+    (Icons.favorite_rounded, AppTexts.empathy),
+    (Icons.volunteer_activism_rounded, AppTexts.compassion),
+    (Icons.people_alt_rounded, AppTexts.loneliness),
+    (Icons.psychology_rounded, AppTexts.problemSolving),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 2.cw),
+          child: Text(
+            AppTexts.specialCategories,
+            style: GoogleFonts.nunito(
+              fontSize: 18.csp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.plumDeep,
+            ),
+          ),
+        ),
+        SizedBox(height: 10.cw),
+        Container(
+          padding: EdgeInsets.all(14.cw),
+          decoration: BoxDecoration(
+            color: AppColors.cardWhite,
+            borderRadius: BorderRadius.circular(18.cw),
+            border: Border.all(color: AppColors.profileDivider),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryColor.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Wrap(
+            spacing: 8.cw,
+            runSpacing: 8.cw,
+            children: [
+              for (final (icon, label) in _categories)
+                _CategoryPill(icon: icon, label: label),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.cw, vertical: 8.cw),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withAlpha(13),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: AppColors.grey.withAlpha(26)),
+        color: AppColors.popularCardBg,
+        borderRadius: BorderRadius.circular(20.cw),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppTexts.specialCategories,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          _buildCategoryItem(AppTexts.empathy),
-          _buildCategoryItem(AppTexts.compassion),
-          _buildCategoryItem(AppTexts.loneliness),
-          _buildCategoryItem(AppTexts.problemSolving),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem(String text) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8.w,
-            height: 8.w,
-            decoration: const BoxDecoration(
-              color: AppColors.green, // Bullet color
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
+          Icon(icon, size: 16.csp, color: AppColors.primaryColor),
+          SizedBox(width: 6.cw),
+          // Flexible so the long "problem solving" label wraps instead of
+          // overflowing on narrow phones.
+          Flexible(
             child: Text(
-              text,
+              label,
               style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.black.withAlpha(204),
-                fontWeight: FontWeight.w500,
+                fontSize: 13.csp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.plumDeep,
               ),
             ),
           ),

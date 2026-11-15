@@ -6,6 +6,7 @@ import 'package:mint_talk/core/errors/failures.dart';
 import 'package:mint_talk/core/services/socket/i_presence_socket_service.dart';
 import '../../domain/entities/call_session_entity.dart';
 import '../../domain/entities/call_socket_event.dart';
+import '../../domain/entities/call_token_entity.dart';
 import '../../domain/entities/call_type.dart';
 import '../../domain/repositories/i_call_repository.dart';
 import '../datasources/call_remote_data_source.dart';
@@ -128,6 +129,28 @@ class CallRepositoryImpl implements ICallRepository {
       return Right(dto.toEntity());
     } on DioException catch (e) {
       return Left(mapDioExceptionToFailure(e, fallbackMessage: 'Failed to fetch call details'));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CallTokenEntity>> fetchCallToken(String callId) async {
+    try {
+      final dto = await _remoteDataSource.fetchCallToken(callId);
+      if (dto.token.isEmpty) {
+        return const Left(
+          ServerFailure(message: 'Agora token missing from response'),
+        );
+      }
+      return Right(dto.toEntity());
+    } on DioException catch (e) {
+      return Left(
+        mapDioExceptionToFailure(
+          e,
+          fallbackMessage: 'Failed to fetch call token',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

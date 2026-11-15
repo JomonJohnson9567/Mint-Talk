@@ -29,7 +29,7 @@ void main() {
       final entity = dto.toEntity();
 
       expect(entity.duration, 240);
-      expect(entity.billedMinutes, 4);
+      expect(entity.billedUnits, 4);
       expect(entity.totalPointsDebited, 480);
     },
   );
@@ -52,7 +52,7 @@ void main() {
       final entity = dto.toEntity();
 
       expect(entity.duration, 125);
-      expect(entity.billedMinutes, 2);
+      expect(entity.billedUnits, 2);
       expect(entity.totalPointsDebited, 120);
     },
   );
@@ -73,7 +73,44 @@ void main() {
     final entity = dto.toEntity();
 
     expect(entity.duration, 125);
-    expect(entity.billedMinutes, 2);
+    expect(entity.billedUnits, 2);
     expect(entity.totalPointsDebited, 120);
+  });
+
+  test('reads billedUnits (per-second or per-minute) ahead of the legacy key', () {
+    final entity = CallSessionDto.fromJson({
+      'data': {
+        'callId': 'call-1',
+        'status': 'ended',
+        'callType': 'video',
+        'duration': 125,
+        'billedUnits': 125,
+        'billedMinutes': 3,
+        'totalPointsDebited': 7500,
+      },
+    }).toEntity();
+
+    expect(entity.billedUnits, 125);
+  });
+
+  test('parses initiate/accept credentials and activeAt', () {
+    final entity = CallSessionDto.fromJson({
+      'data': {
+        'callId': 'call-1',
+        'status': 'active',
+        'callType': 'audio',
+        'agoraChannel': 'call_1',
+        'agoraUid': 2,
+        'token': 'rtc-host',
+        'tokenExpiresInSeconds': 3600,
+        'activeAt': '2026-10-17T09:12:30.000Z',
+      },
+    }).toEntity();
+
+    expect(entity.agoraChannel, 'call_1');
+    expect(entity.agoraUid, 2);
+    expect(entity.agoraToken, 'rtc-host');
+    expect(entity.tokenExpiresInSeconds, 3600);
+    expect(entity.activeAt, DateTime.utc(2026, 10, 17, 9, 12, 30).toLocal());
   });
 }

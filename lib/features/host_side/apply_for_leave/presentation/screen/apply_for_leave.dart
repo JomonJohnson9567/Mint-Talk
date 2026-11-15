@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mint_talk/core/constants/app_texts.dart';
+import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/primary_app_bar.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_cubit.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/cubit/apply_for_leave_state.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/widgets/apply_for_leave_body.dart';
 import 'package:mint_talk/features/host_side/apply_for_leave/presentation/widgets/leave_history_list.dart';
+import 'package:mint_talk/features/host_side/shared/presentation/widgets/host_segmented_toggle.dart';
 
 class ApplyForLeave extends StatelessWidget {
   const ApplyForLeave({super.key});
@@ -34,23 +38,17 @@ class ApplyForLeave extends StatelessWidget {
       child: DefaultTabController(
         length: 2,
         child: Scaffold(
+          backgroundColor: AppColors.homeBackground,
           appBar: const CustomAppBar(
-            title: 'Apply for Leave',
+            title: AppTexts.leaveRequest,
             automaticallyImplyLeading: true,
+            foregroundColor: AppColors.plumDeep,
           ),
           body: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TabBar(
-                  labelColor: Colors.black,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Colors.blue,
-                  tabs: const [
-                    Tab(text: 'Request'),
-                    Tab(text: 'History'),
-                  ],
-                ),
+                padding: EdgeInsets.fromLTRB(20.cw, 4.cw, 20.cw, 0),
+                child: const _LeaveTabsToggle(),
               ),
               const Expanded(
                 child: TabBarView(
@@ -63,6 +61,26 @@ class ApplyForLeave extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Request/History toggle driven by the surrounding [DefaultTabController],
+/// so it stays in sync with swipes on the [TabBarView].
+class _LeaveTabsToggle extends StatelessWidget {
+  const _LeaveTabsToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => HostSegmentedToggle(
+        labels: const [AppTexts.leaveRequestTab, AppTexts.leaveHistoryTab],
+        selectedIndex: controller.index,
+        onChanged: controller.animateTo,
       ),
     );
   }

@@ -10,6 +10,11 @@ class UserProfileEditState extends Equatable {
   final String gender;
   final String imagePath;
   final String termsAcceptedAt;
+
+  /// Values as loaded, so [hasChanges] can tell whether there's anything to
+  /// save.
+  final String initialFullName;
+  final String initialImagePath;
   final Map<String, String> fieldErrors;
   final String? errorMessage;
 
@@ -21,11 +26,17 @@ class UserProfileEditState extends Equatable {
     this.gender = '',
     this.imagePath = '',
     this.termsAcceptedAt = '',
+    this.initialFullName = '',
+    this.initialImagePath = '',
     this.fieldErrors = const {},
     this.errorMessage,
   });
 
   bool get isSaving => status == UserProfileEditStatus.saving;
+
+  bool get hasChanges =>
+      fullName.trim() != initialFullName.trim() ||
+      imagePath != initialImagePath;
 
   UserProfileEditState copyWith({
     UserProfileEditStatus? status,
@@ -35,6 +46,8 @@ class UserProfileEditState extends Equatable {
     String? gender,
     String? imagePath,
     String? termsAcceptedAt,
+    String? initialFullName,
+    String? initialImagePath,
     Map<String, String>? fieldErrors,
     String? errorMessage,
     bool clearError = false,
@@ -47,6 +60,8 @@ class UserProfileEditState extends Equatable {
       gender: gender ?? this.gender,
       imagePath: imagePath ?? this.imagePath,
       termsAcceptedAt: termsAcceptedAt ?? this.termsAcceptedAt,
+      initialFullName: initialFullName ?? this.initialFullName,
+      initialImagePath: initialImagePath ?? this.initialImagePath,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
@@ -61,6 +76,8 @@ class UserProfileEditState extends Equatable {
     gender,
     imagePath,
     termsAcceptedAt,
+    initialFullName,
+    initialImagePath,
     fieldErrors,
     errorMessage,
   ];

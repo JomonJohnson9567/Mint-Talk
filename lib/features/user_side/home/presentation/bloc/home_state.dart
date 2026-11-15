@@ -1,7 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:mint_talk/features/user_side/home/domain/entities/host_entity.dart';
 
-enum HomeTab { active, favorites, offline }
+/// [all] is only offered on the video-call hosts screen; home shows the rest.
+enum HomeTab { active, favorites, offline, all }
+
+/// How [UserGrid] lays out hosts; the audio- and video-call hosts screens
+/// offer a toggle, home stays on [grid].
+enum HostLayout { grid, list }
 
 enum NotificationType { info, warning, success, error }
 
@@ -25,13 +30,17 @@ class HomeState extends Equatable {
   /// message text is the same.
   final int? notificationId;
 
-  // ── User call rates (read from local storage) ─────────────────────────────
-  final int? audioRate;
-  final int? videoRate;
-
   /// IDs of the current user's favorited hosts — used to render heart-icon
   /// state on cards across every tab, sourced from the backend.
   final Set<String> favoriteIds;
+
+  /// Logged-in user's full name (local storage) — drives the greeting banner.
+  final String? userName;
+
+  /// Case-insensitive name filter applied on top of [selectedTab].
+  final String searchQuery;
+
+  final HostLayout layout;
 
   const HomeState({
     this.selectedTab = HomeTab.active,
@@ -41,9 +50,10 @@ class HomeState extends Equatable {
     this.notificationMessage,
     this.notificationType,
     this.notificationId = 0,
-    this.audioRate,
-    this.videoRate,
     this.favoriteIds = const {},
+    this.userName,
+    this.searchQuery = '',
+    this.layout = HostLayout.grid,
   });
 
   HomeState copyWith({
@@ -54,9 +64,10 @@ class HomeState extends Equatable {
     String? notificationMessage,
     NotificationType? notificationType,
     int? notificationId,
-    int? audioRate,
-    int? videoRate,
     Set<String>? favoriteIds,
+    String? userName,
+    String? searchQuery,
+    HostLayout? layout,
   }) {
     return HomeState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -66,23 +77,25 @@ class HomeState extends Equatable {
       notificationMessage: notificationMessage ?? this.notificationMessage,
       notificationType: notificationType ?? this.notificationType,
       notificationId: notificationId ?? this.notificationId,
-      audioRate: audioRate ?? this.audioRate,
-      videoRate: videoRate ?? this.videoRate,
       favoriteIds: favoriteIds ?? this.favoriteIds,
+      userName: userName ?? this.userName,
+      searchQuery: searchQuery ?? this.searchQuery,
+      layout: layout ?? this.layout,
     );
   }
 
   @override
   List<Object?> get props => [
-        selectedTab,
-        hosts,
-        isLoading,
-        errorMessage,
-        notificationMessage,
-        notificationType,
-        notificationId,
-        audioRate,
-        videoRate,
-        favoriteIds,
-      ];
+    selectedTab,
+    hosts,
+    isLoading,
+    errorMessage,
+    notificationMessage,
+    notificationType,
+    notificationId,
+    favoriteIds,
+    userName,
+    searchQuery,
+    layout,
+  ];
 }

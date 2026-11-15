@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mint_talk/core/theme/color.dart';
+import 'package:mint_talk/core/utils/compact_size.dart';
 import 'package:mint_talk/core/widgets/skeleton_loader.dart';
 
 class HostDashSkeleton extends StatelessWidget {
@@ -9,130 +11,132 @@ class HostDashSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SkeletonShimmer(
       child: SafeArea(
-      bottom: false,
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 16.w).copyWith(bottom: 100.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 12.h),
-            // Header skeleton
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SkeletonBox(width: 140.w, height: 18.h),
-                    SizedBox(height: 6.h),
-                    SkeletonBox(width: 90.w, height: 14.h),
-                  ],
-                ),
-                SkeletonBox(
-                  width: 44.w,
-                  height: 44.h,
-                  shape: BoxShape.circle,
-                ),
-              ],
-            ),
-            SizedBox(height: 20.h),
-
-            // Welcome Card skeleton
-            Container(
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(color: const Color(0xFFE7EBF3)),
+        bottom: false,
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: 14.cw,
+          ).copyWith(top: 8.cw, bottom: 100.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: wordmark + two minutes chips
+              Row(
+                children: [
+                  SkeletonBox(width: 130.cw, height: 30.cw),
+                  const Spacer(),
+                  SkeletonBox(
+                    width: 74.cw,
+                    height: 38.cw,
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  SizedBox(width: 6.cw),
+                  SkeletonBox(
+                    width: 74.cw,
+                    height: 38.cw,
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ],
               ),
-              child: Row(
+              SizedBox(height: 14.cw),
+
+              // Profile row
+              Row(
                 children: [
                   SkeletonBox(
-                    width: 60.r,
-                    height: 60.r,
+                    width: 68.cw,
+                    height: 68.cw,
                     shape: BoxShape.circle,
                   ),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  SizedBox(width: 12.cw),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(width: 110.cw, height: 16.cw),
+                      SizedBox(height: 8.cw),
+                      SkeletonBox(width: 80.cw, height: 12.cw),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.cw),
+
+              // Greeting banner
+              SkeletonBox(
+                width: double.infinity,
+                height: 120.cw,
+                borderRadius: BorderRadius.circular(22.r),
+              ),
+              SizedBox(height: 10.cw),
+
+              // Ready to connect card
+              Container(
+                padding: EdgeInsets.all(14.cw),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(22.r),
+                  border: Border.all(color: AppColors.profileDivider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(width: 170.cw, height: 18.cw),
+                    SizedBox(height: 8.cw),
+                    SkeletonBox(width: 190.cw, height: 12.cw),
+                    SizedBox(height: 14.cw),
+                    Row(
                       children: [
-                        SkeletonBox(width: 120.w, height: 16.h),
-                        SizedBox(height: 8.h),
-                        Row(
-                          children: [
-                            SkeletonBox(width: 70.w, height: 24.h),
-                            SizedBox(width: 8.w),
-                            SkeletonBox(width: 80.w, height: 24.h),
-                          ],
+                        Expanded(
+                          child: SkeletonBox(
+                            height: 110.cw,
+                            borderRadius: BorderRadius.circular(18.r),
+                          ),
+                        ),
+                        SizedBox(width: 10.cw),
+                        Expanded(
+                          child: SkeletonBox(
+                            height: 110.cw,
+                            borderRadius: BorderRadius.circular(18.r),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16.h),
-
-            // Select Call Card skeleton
-            Container(
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(color: const Color(0xFFE7EBF3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonBox(width: 160.w, height: 16.h),
-                  SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      Expanded(child: SkeletonBox(height: 50.h)),
-                      SizedBox(width: 12.w),
-                      Expanded(child: SkeletonBox(height: 50.h)),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  SkeletonBox(width: double.infinity, height: 48.h),
-                ],
-              ),
-            ),
-            SizedBox(height: 20.h),
-
-            // Online Hosts section skeleton
-            SkeletonBox(width: 130.w, height: 16.h),
-            SizedBox(height: 12.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                4,
-                (index) => Column(
-                  children: [
+                    SizedBox(height: 14.cw),
                     SkeletonBox(
-                      width: 56.r,
-                      height: 56.r,
-                      shape: BoxShape.circle,
+                      width: double.infinity,
+                      height: 52.cw,
+                      borderRadius: BorderRadius.circular(30.r),
                     ),
-                    SizedBox(height: 6.h),
-                    SkeletonBox(width: 48.w, height: 12.h),
                   ],
                 ),
               ),
-            ),
-            SizedBox(height: 20.h),
+              SizedBox(height: 10.cw),
 
-            // Promo Banner skeleton
-            SkeletonBox(
-              width: double.infinity,
-              height: 110.h,
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-          ],
+              // Hosts online strip
+              SkeletonBox(
+                width: double.infinity,
+                height: 66.cw,
+                borderRadius: BorderRadius.circular(18.r),
+              ),
+              SizedBox(height: 10.cw),
+
+              // Promo banner
+              SkeletonBox(
+                width: double.infinity,
+                height: 104.cw,
+                borderRadius: BorderRadius.circular(22.r),
+              ),
+              SizedBox(height: 10.cw),
+
+              // Refer a host banner
+              SkeletonBox(
+                width: double.infinity,
+                height: 70.cw,
+                borderRadius: BorderRadius.circular(18.r),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
